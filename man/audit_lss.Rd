@@ -10,22 +10,35 @@ audit_lss(lss)
 \item{lss}{An \code{lss} object returned by \code{\link[=parse_lss]{parse_lss()}}.}
 }
 \value{
-An object of class \code{lss_audit}: a list of detected anomalies with
-a \code{print()} method that summarises them for the console.
+An object of class \code{lss_audit}: a list with \code{file}, \code{languages},
+summary counts, and a \code{findings} data frame (\code{severity}, \code{check},
+\code{location}, \code{language}, \code{message}). It has a \code{print()} method and an
+\code{as.data.frame()} method.
 }
 \description{
 Inspect an \code{lss} object and flag anomalies that can be detected without
-any AI: missing translations, empty labels, duplicate codes, broken
-subquestion or answer references, inconsistent option sets across
-languages, and similar structural issues. The result is meant to guide a
-human reviewer, not to silently correct anything.
+any AI. The audit is meant to guide a human reviewer, not to silently
+correct anything: every finding names a precise location and a severity.
+}
+\details{
+Checks performed:
+\itemize{
+\item \strong{Missing translations} -- a question, help, answer, or subquestion
+text that exists in at least one language but is empty in another.
+\item \strong{Empty in all languages} -- a translatable text that is empty in every
+language.
+\item \strong{Duplicate codes} -- a question variable code repeated in the survey,
+or an answer/subquestion code repeated within one question.
+\item \strong{Missing options for the type} -- a question whose type requires
+answer options or subquestions but has none (per the type taxonomy).
+\item \strong{Orphan references} -- a subquestion or answer that points to a
+question that does not exist.
+}
 }
 \examples{
-\dontrun{
 lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
   package = "lssdoc"
 ))
 audit <- audit_lss(lss)
 print(audit)
-}
 }
