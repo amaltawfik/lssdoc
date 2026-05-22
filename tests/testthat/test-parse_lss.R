@@ -10,8 +10,46 @@ test_that("parse_lss errors on a missing file", {
   )
 })
 
-test_that("the bundled example files exist", {
-  expect_true(file.exists(
-    system.file("extdata", "hesav_2026.lss", package = "lssdoc")
-  ))
+test_that("parse_lss errors on invalid XML", {
+  bad <- tempfile(fileext = ".lss")
+  writeLines("this is not xml <<<", bad)
+  expect_error(parse_lss(bad), class = "lssdoc_invalid_xml")
+})
+
+test_that("parse_lss rejects XML that is not a survey export", {
+  not_survey <- tempfile(fileext = ".lss")
+  writeLines(
+    "<document><LimeSurveyDocType>Token</LimeSurveyDocType></document>",
+    not_survey
+  )
+  expect_error(parse_lss(not_survey), class = "lssdoc_not_a_survey")
+})
+
+test_that("parse_lss reads the bundled hesav example", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- parse_lss(path)
+
+  expect_s3_class(lss, "lss")
+  expect_identical(lss$languages, c("de", "fr"))
+  expect_identical(lss$base_language, "fr")
+  expect_identical(lss$doc_type, "Survey")
+
+  expect_identical(nrow(lss$groups), 5L)
+  expect_identical(nrow(lss$questions), 31L)
+  expect_identical(nrow(lss$subquestions), 78L)
+  expect_identical(nrow(lss$answers), 86L)
+})
+
+test_that("parse_lss keeps localized text and distinguishes empty from absent", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- parse_lss(path)
+
+  expect_setequal(unique(lss$question_l10ns$language), c("de", "fr"))
+  expect_true(all(c("question", "help") %in% names(lss$question_l10ns)))
+  expect_true(any(nzchar(lss$question_l10ns$question)))
+
+  # A present-but-empty <help/> reads as "", never NA.
+  expect_false(anyNA(lss$question_l10ns$help))
 })

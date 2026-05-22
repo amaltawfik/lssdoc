@@ -10,9 +10,13 @@ parse_lss(path)
 \item{path}{Path to a \code{.lss} file.}
 }
 \value{
-An object of class \code{lss}: a list holding the survey languages,
-groups, questions, subquestions, answers, and the raw attributes, with
-user-supplied text (titles, labels, help) preserved verbatim.
+An object of class \code{lss}: a list holding the survey languages and
+metadata plus one data frame per \code{.lss} section. Structural sections
+(\code{surveys}, \code{groups}, \code{questions}, \code{subquestions}, \code{answers},
+\code{question_attributes}, \code{conditions}) are kept separate from the
+localized text sections (\code{survey_language_settings}, \code{group_l10ns},
+\code{question_l10ns}, \code{answer_l10ns}), which carry the per-language titles,
+labels, and help texts. All values are read verbatim as character.
 }
 \description{
 Read a LimeSurvey survey structure export (\code{.lss}, an XML file) and turn
@@ -20,15 +24,17 @@ it into a structured \code{lss} object that the rest of the package can audit
 and render. Parsing is fully local: the file is never uploaded anywhere.
 }
 \details{
-The \code{.lss} format is a LimeSurvey XML export containing, among others, the
-\verb{<languages>}, \verb{<groups>}, \verb{<questions>}, \verb{<subquestions>}, \verb{<answers>},
-and \verb{<question_attributes>} sections. \code{parse_lss()} reads these into tidy
-tables without mutating any user-facing identifier or text.
+The \code{.lss} format is a LimeSurvey XML export. Since DBVersion 4xx/7xx the
+translatable text lives in dedicated localization sections
+(\verb{*_l10ns}), keyed by language, while the structural sections hold
+identifiers and settings. \code{parse_lss()} reads every section into a tidy
+data frame without mutating any user-facing identifier or text. A field
+that is present but empty (e.g. \verb{<help/>}) is read as \code{""}; a field that
+is absent from a row is read as \code{NA}.
 }
 \examples{
-\dontrun{
 lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
   package = "lssdoc"
 ))
-}
+lss$languages
 }
