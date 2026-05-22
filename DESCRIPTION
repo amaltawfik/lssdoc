@@ -1,0 +1,29 @@
+Package: lssdoc
+Title: Generate Word Review Documents from LimeSurvey '.lss' Files
+Version: 0.0.0.9000
+Authors@R:
+    person("Amal", "Tawfik", , "amal.tawfik@hesav.ch", role = c("aut", "cre", "cph"), comment = c(ORCID = "0009-0006-2422-1555", ROR = "04j47fz63"))
+Description: Build a professional Word ('.docx') review document from a
+    LimeSurvey '.lss' export, displaying up to four languages side by side.
+    The output supports human review of multilingual questionnaires by
+    ethics committees, translators, and methodologists: it reproduces the
+    questionnaire content faithfully and flags automatically detectable
+    anomalies that do not require any AI. Processing is fully local, so no
+    questionnaire is uploaded to any third-party service.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.1)
+Imports:
+    cli,
+    rlang,
+    xml2
+Suggests:
+    flextable,
+    officer,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+URL: https://github.com/amaltawfik/lssdoc
+BugReports: https://github.com/amaltawfik/lssdoc/issues
+Config/roxygen2/version: 8.0.0
