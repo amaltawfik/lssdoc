@@ -300,7 +300,8 @@ lss_compose_plain <- function(text, theme, size = theme$size_meta,
 #' Cover page with the survey title in every language and a metadata table
 #' @keywords internal
 #' @noRd
-lss_render_cover <- function(doc, lss, model, theme) {
+lss_render_cover <- function(doc, lss, model, theme,
+                             subtitle = "LimeSurvey questionnaire review") {
   ls_settings <- lss$survey_language_settings
   langs <- model$languages
 
@@ -334,7 +335,7 @@ lss_render_cover <- function(doc, lss, model, theme) {
     doc,
     officer::fpar(
       officer::ftext(
-        "LimeSurvey questionnaire review",
+        subtitle,
         prop = officer::fp_text(
           font.family = theme$font_body, font.size = theme$size_cover_subtitle,
           color = theme$color_muted, italic = TRUE

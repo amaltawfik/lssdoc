@@ -1,5 +1,16 @@
 # lssdoc 0.0.0.9000
 
+* `lss_audit_to_docx()` and `lss_audit_to_pdf()` pipeline wrappers run the
+  audit and produce a focused report in one call.
+* `lss_docx_to_pdf()` converts a generated `.docx` to PDF locally via
+  LibreOffice (or Word) in headless mode. Nothing leaves the user's
+  machine. `lss_to_pdf()` ties the full pipeline together.
+* `lss_to_docx()` runs the full pipeline (`parse_lss()` then
+  `render_lss_docx()`) in one call.
+* `render_lss_audit_docx()` produces a focused audit-only Word document:
+  the same cover page, then one section per severity (errors, warnings,
+  notes) with a table of findings. Use it for QA follow-up, separate from
+  the full review.
 * `render_lss_docx()` produces a professional Word review document from a
   parsed `lss` object: cover page with the survey title in every language
   and a metadata table, table of contents, optional audit section near the

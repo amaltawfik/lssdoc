@@ -2,7 +2,7 @@
 % Please edit documentation in R/lss_to_docx.R
 \name{lss_to_docx}
 \alias{lss_to_docx}
-\title{Convert a LimeSurvey \code{.lss} file to a Word review document}
+\title{Convert a \code{.lss} file to a Word review document}
 \usage{
 lss_to_docx(input, output, ...)
 }
@@ -11,17 +11,16 @@ lss_to_docx(input, output, ...)
 
 \item{output}{Path to the \code{.docx} file to create.}
 
-\item{...}{Additional arguments passed on to \code{\link[=render_lss_docx]{render_lss_docx()}}, such as
-\code{languages}, \code{layout}, or \code{page_format}.}
+\item{...}{Additional arguments forwarded to \code{\link[=render_lss_docx]{render_lss_docx()}}.}
 }
 \value{
 The \code{output} path, invisibly.
 }
 \description{
-Convenience wrapper that runs the full pipeline in one call: it parses the
-\code{.lss} file with \code{\link[=parse_lss]{parse_lss()}} and renders it to a \code{.docx} file with
-\code{\link[=render_lss_docx]{render_lss_docx()}}. Use the underlying functions directly when you need
-finer control over the audit or the layout.
+One-shot pipeline: parse the LimeSurvey \code{.lss} file with \code{\link[=parse_lss]{parse_lss()}}
+and render it to a \code{.docx} review document with \code{\link[=render_lss_docx]{render_lss_docx()}}. Use
+the underlying functions directly when you need finer control over the
+audit or the layout.
 }
 \examples{
 \dontrun{
