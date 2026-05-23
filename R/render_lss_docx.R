@@ -12,8 +12,16 @@
 #'
 #' @param lss An `lss` object returned by [parse_lss()].
 #' @param output Path to the `.docx` file to create.
-#' @param languages Character vector of language codes to display, in order.
-#'   Defaults to all languages found in the `.lss` file.
+#' @param languages Character vector of language codes to display, **in the
+#'   order they will appear as columns**. Use this both to subset (display
+#'   only the languages you want) and to order them; for example
+#'   `c("fr", "de")` puts French first, while `c("de", "fr")` puts German
+#'   first. The first language is treated as the primary language: the
+#'   question heading shown in the table of contents includes the question
+#'   text in that language, and group headings fall back to it. Requesting a
+#'   language absent from the survey is an error (`lssdoc_unknown_language`).
+#'   Defaults to all languages found in the `.lss` file, in the order of the
+#'   `<languages>` section.
 #' @param layout Reserved for future use. Currently `"side-by-side"` only.
 #' @param show_audit Logical; include an audit summary section near the top
 #'   and inline markers on questions that carry findings.
@@ -213,9 +221,16 @@ lss_language_label <- function(code) {
 }
 
 #' Pick page-section properties for the given format and language count
+#'
+#' Also installs the default footer with a centered "Page X of Y" field so
+#' every page carries a number. The first page (cover) keeps the same
+#' footer; turning it off on the cover would require a Word "different
+#' first page" section setting that `prop_section()` does not expose.
+#'
 #' @keywords internal
 #' @noRd
-lss_render_section_props <- function(page_format, n_langs) {
+lss_render_section_props <- function(page_format, n_langs,
+                                     theme = lss_render_theme()) {
   if (identical(page_format, "auto")) {
     page_format <- if (n_langs <= 2L) "A4-portrait" else "A4-landscape"
   }
@@ -227,7 +242,28 @@ lss_render_section_props <- function(page_format, n_langs) {
   )
   officer::prop_section(
     page_size = size,
-    page_margins = officer::page_mar(top = 0.7, bottom = 0.7, left = 0.6, right = 0.6)
+    page_margins = officer::page_mar(top = 0.7, bottom = 0.7, left = 0.6, right = 0.6),
+    footer_default = lss_build_footer(theme)
+  )
+}
+
+#' Default footer with a centered "Page X of Y" Word field
+#' @keywords internal
+#' @noRd
+lss_build_footer <- function(theme) {
+  muted <- officer::fp_text(
+    font.family = theme$font_body,
+    font.size = theme$size_meta,
+    color = theme$color_muted
+  )
+  officer::block_list(
+    officer::fpar(
+      officer::ftext("Page ", prop = muted),
+      officer::run_word_field("PAGE"),
+      officer::ftext(" of ", prop = muted),
+      officer::run_word_field("NUMPAGES"),
+      fp_p = officer::fp_par(text.align = "center")
+    )
   )
 }
 
@@ -572,7 +608,7 @@ lss_render_localized_block <- function(doc, lss, langs, theme, field, title) {
     )
   }
   ft <- lss_table_polish(ft, theme, lang_cols = langs)
-  doc <- flextable::body_add_flextable(doc, ft, align = "left")
+  doc <- flextable::body_add_flextable(doc, ft, align = "center")
   doc
 }
 
@@ -617,7 +653,7 @@ lss_render_group <- function(doc, group, langs, theme,
       )
     }
     ft <- lss_table_polish(ft, theme, lang_cols = langs)
-    doc <- flextable::body_add_flextable(doc, ft, align = "left")
+    doc <- flextable::body_add_flextable(doc, ft, align = "center")
   }
 
   for (q in group$questions) {
@@ -638,12 +674,30 @@ lss_render_group <- function(doc, group, langs, theme,
 lss_render_question <- function(doc, q, langs, theme,
                                 show_help, show_attrs,
                                 show_technical_attrs, audit_idx) {
-  # Heading 2 with the question code as an anchor for the TOC.
+  # Heading 2 with the question code and, when available, the question text
+  # in the first requested language. This makes the Word table of contents
+  # readable in that language while keeping the variable code as a stable
+  # anchor for cross-references.
   audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
-  heading_text <- if (is.null(audit_marker)) {
-    q$code
+  primary <- langs[1]
+  q_first_text <- if (!is.null(q$texts[[primary]])) {
+    lss_html_to_text(q$texts[[primary]]$question)
   } else {
-    paste0(q$code, "  ", audit_marker$text)
+    ""
+  }
+  q_first_text <- trimws(q_first_text)
+  if (nchar(q_first_text) > 80L) {
+    q_first_text <- paste0(substr(q_first_text, 1L, 77L), "...")
+  }
+  display_label <- if (nzchar(q_first_text)) {
+    paste0(q$code, " \u2014 ", q_first_text)
+  } else {
+    q$code
+  }
+  heading_text <- if (is.null(audit_marker)) {
+    display_label
+  } else {
+    paste0(display_label, "  ", audit_marker$text)
   }
   heading_prop <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_heading2,
@@ -699,7 +753,7 @@ lss_render_question <- function(doc, q, langs, theme,
   }
 
   ft <- lss_table_polish(ft, theme, lang_cols = langs, meta_header = TRUE)
-  doc <- flextable::body_add_flextable(doc, ft, align = "left")
+  doc <- flextable::body_add_flextable(doc, ft, align = "center")
   doc
 }
 
@@ -961,7 +1015,7 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::width(ft, j = "location", width = 2.0, unit = "in")
   ft <- flextable::width(ft, j = "language", width = 0.5, unit = "in")
   ft <- flextable::width(ft, j = "message", width = 3.5, unit = "in")
-  doc <- flextable::body_add_flextable(doc, ft, align = "left")
+  doc <- flextable::body_add_flextable(doc, ft, align = "center")
   doc
 }
 

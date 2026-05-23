@@ -1,5 +1,15 @@
 # lssdoc 0.0.0.9000
 
+* Every page now carries a centered "Page X of Y" footer (Word fields, so
+  the totals update on open).
+* All flextables in the rendered document are horizontally centered
+  rather than left-aligned.
+* The Word table-of-contents entry for each question now combines the
+  variable code with the question text in the **first requested
+  language**, making the TOC readable in that language while keeping the
+  variable code as a stable cross-reference anchor. The `languages`
+  argument is documented as both a selector and an ordering: the first
+  language is treated as the primary language for headings and the TOC.
 * `render_lss_docx()` and `render_lss_audit_docx()` accept an optional
   `logo` argument (path to a PNG or JPEG) that places an image at the top
   of the cover page; `logo_width` and `logo_height` control its size. The

@@ -160,7 +160,7 @@ lss_render_audit_full <- function(doc, audit, theme) {
     ft <- flextable::width(ft, j = "location", width = 2.2, unit = "in")
     ft <- flextable::width(ft, j = "language", width = 0.5, unit = "in")
     ft <- flextable::width(ft, j = "message", width = 3.6, unit = "in")
-    doc <- flextable::body_add_flextable(doc, ft, align = "left")
+    doc <- flextable::body_add_flextable(doc, ft, align = "center")
   }
   doc
 }

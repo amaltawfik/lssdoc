@@ -24,8 +24,16 @@ render_lss_docx(
 
 \item{output}{Path to the \code{.docx} file to create.}
 
-\item{languages}{Character vector of language codes to display, in order.
-Defaults to all languages found in the \code{.lss} file.}
+\item{languages}{Character vector of language codes to display, \strong{in the
+order they will appear as columns}. Use this both to subset (display
+only the languages you want) and to order them; for example
+\code{c("fr", "de")} puts French first, while \code{c("de", "fr")} puts German
+first. The first language is treated as the primary language: the
+question heading shown in the table of contents includes the question
+text in that language, and group headings fall back to it. Requesting a
+language absent from the survey is an error (\code{lssdoc_unknown_language}).
+Defaults to all languages found in the \code{.lss} file, in the order of the
+\verb{<languages>} section.}
 
 \item{layout}{Reserved for future use. Currently \code{"side-by-side"} only.}
 
