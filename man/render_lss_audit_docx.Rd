@@ -4,7 +4,14 @@
 \alias{render_lss_audit_docx}
 \title{Render the audit alone as a focused Word document}
 \usage{
-render_lss_audit_docx(lss, output, languages = NULL)
+render_lss_audit_docx(
+  lss,
+  output,
+  languages = NULL,
+  logo = NULL,
+  logo_width = 1.5,
+  logo_height = 0.75
+)
 }
 \arguments{
 \item{lss}{An \code{lss} object returned by \code{\link[=parse_lss]{parse_lss()}}.}
@@ -13,6 +20,12 @@ render_lss_audit_docx(lss, output, languages = NULL)
 
 \item{languages}{Character vector of language codes for the cover page.
 Defaults to all languages of the survey.}
+
+\item{logo}{Optional path to a PNG or JPEG image to display at the top
+of the cover page. \code{NULL} (default) keeps the cover logo-free.}
+
+\item{logo_width, logo_height}{Image dimensions in inches. Defaults
+tuned to a 2:1 logo (1.5 x 0.75 inches).}
 }
 \value{
 The \code{output} path, invisibly.

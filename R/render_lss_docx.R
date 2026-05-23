@@ -26,6 +26,14 @@
 #' @param page_format Page format. `"auto"` picks portrait for one or two
 #'   languages and landscape from three. Use `"A4-portrait"`,
 #'   `"A4-landscape"`, or `"A3"` to force a layout.
+#' @param logo Optional path to an image (PNG or JPEG) to display at the top
+#'   of the cover page. The `.lss` file does not embed a logo, so this image
+#'   must be supplied by the caller. `NULL` (default) keeps the cover
+#'   logo-free, matching the neutral style of survey-methodology references
+#'   (ESS, MOSAiCH, Panel).
+#' @param logo_width,logo_height Image dimensions in inches. Defaults are
+#'   tuned to a 2:1 logo (1.5 x 0.75 inches). Resize or pre-crop your image
+#'   to fit if it has a different aspect ratio.
 #'
 #' @return The `output` path, invisibly.
 #'
@@ -46,7 +54,10 @@ render_lss_docx <- function(
   show_help = TRUE,
   show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
-  page_format = c("auto", "A4-portrait", "A4-landscape", "A3")
+  page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
+  logo = NULL,
+  logo_width = 1.5,
+  logo_height = 0.75
 ) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
@@ -62,6 +73,7 @@ render_lss_docx <- function(
   }
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
+  lss_validate_logo(logo)
   for (pkg in c("officer", "flextable")) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
       lssdoc_abort(
@@ -85,7 +97,10 @@ render_lss_docx <- function(
   section <- lss_render_section_props(page_format, length(langs))
 
   doc <- officer::read_docx()
-  doc <- lss_render_cover(doc, lss, model, theme)
+  doc <- lss_render_cover(
+    doc, lss, model, theme,
+    logo = logo, logo_width = logo_width, logo_height = logo_height
+  )
   doc <- officer::body_add_break(doc)
   doc <- lss_render_toc(doc, theme)
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
@@ -143,6 +158,38 @@ lss_render_theme <- function() {
 
     empty_marker = "\u2014"
   )
+}
+
+#' Validate the optional logo argument: NULL or an existing image path
+#' @keywords internal
+#' @noRd
+lss_validate_logo <- function(logo) {
+  if (is.null(logo)) {
+    return(invisible())
+  }
+  if (!is.character(logo) || length(logo) != 1L || is.na(logo)) {
+    lssdoc_abort(
+      "{.arg logo} must be {.code NULL} or a single file path.",
+      class = "lssdoc_bad_logo"
+    )
+  }
+  if (!file.exists(logo)) {
+    lssdoc_abort(
+      "Cannot find a logo file at {.path {logo}}.",
+      class = "lssdoc_logo_not_found"
+    )
+  }
+  ext <- tolower(tools::file_ext(logo))
+  if (!ext %in% c("png", "jpg", "jpeg")) {
+    lssdoc_abort(
+      c(
+        "{.arg logo} must be a PNG or JPEG image; got {.val {ext}}.",
+        "i" = "Convert your image to PNG or JPEG and retry."
+      ),
+      class = "lssdoc_bad_logo_format"
+    )
+  }
+  invisible()
 }
 
 #' Human-readable label for a language code
@@ -301,9 +348,25 @@ lss_compose_plain <- function(text, theme, size = theme$size_meta,
 #' @keywords internal
 #' @noRd
 lss_render_cover <- function(doc, lss, model, theme,
-                             subtitle = "LimeSurvey questionnaire review") {
+                             subtitle = "LimeSurvey questionnaire review",
+                             logo = NULL,
+                             logo_width = 1.5,
+                             logo_height = 0.75) {
   ls_settings <- lss$survey_language_settings
   langs <- model$languages
+
+  # Optional logo at the very top of the cover page.
+  if (!is.null(logo)) {
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::external_img(
+          src = logo, width = logo_width, height = logo_height
+        ),
+        fp_p = officer::fp_par(text.align = "center", padding.bottom = 6)
+      )
+    )
+  }
 
   # Title in every language (largest font).
   for (lg in langs) {
@@ -350,19 +413,32 @@ lss_render_cover <- function(doc, lss, model, theme,
   n_q <- sum(vapply(model$groups, function(g) length(g$questions), integer(1)))
   n_subq <- if (is.null(lss$subquestions)) 0L else nrow(lss$subquestions)
   n_ans  <- if (is.null(lss$answers)) 0L else nrow(lss$answers)
+  sid <- if (!is.null(lss$surveys) && "sid" %in% names(lss$surveys)) {
+    lss$surveys$sid[1]
+  } else {
+    NA_character_
+  }
+  last_mod <- if (!is.null(lss$surveys) && "lastmodified" %in% names(lss$surveys)) {
+    lss$surveys$lastmodified[1]
+  } else {
+    NA_character_
+  }
+  none <- theme$empty_marker
 
   meta <- data.frame(
     Field = c(
-      "Source file", "Languages", "Groups", "Questions",
-      "Subquestions", "Answer options", "Generated"
+      "Source file", "Survey ID", "Languages", "Groups", "Questions",
+      "Subquestions", "Answer options", "Last modified", "Generated"
     ),
     Value = c(
       basename(lss$file),
+      if (is.na(sid) || !nzchar(sid)) none else sid,
       paste(langs, collapse = ", "),
       as.character(n_groups),
       as.character(n_q),
       as.character(n_subq),
       as.character(n_ans),
+      if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod,
       format(Sys.time(), "%Y-%m-%d %H:%M")
     ),
     stringsAsFactors = FALSE

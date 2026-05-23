@@ -11,6 +11,10 @@
 #' @param output Path to the `.docx` file to create.
 #' @param languages Character vector of language codes for the cover page.
 #'   Defaults to all languages of the survey.
+#' @param logo Optional path to a PNG or JPEG image to display at the top
+#'   of the cover page. `NULL` (default) keeps the cover logo-free.
+#' @param logo_width,logo_height Image dimensions in inches. Defaults
+#'   tuned to a 2:1 logo (1.5 x 0.75 inches).
 #'
 #' @return The `output` path, invisibly.
 #'
@@ -22,7 +26,10 @@
 #' render_lss_audit_docx(lss, tempfile(fileext = ".docx"))
 #' }
 #' @export
-render_lss_audit_docx <- function(lss, output, languages = NULL) {
+render_lss_audit_docx <- function(lss, output, languages = NULL,
+                                  logo = NULL,
+                                  logo_width = 1.5,
+                                  logo_height = 0.75) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
       "{.arg lss} must be an {.cls lss} object from {.fn parse_lss}.",
@@ -35,6 +42,7 @@ render_lss_audit_docx <- function(lss, output, languages = NULL) {
       class = "lssdoc_bad_output"
     )
   }
+  lss_validate_logo(logo)
   for (pkg in c("officer", "flextable")) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
       lssdoc_abort(
@@ -52,7 +60,11 @@ render_lss_audit_docx <- function(lss, output, languages = NULL) {
   audit <- audit_lss(lss)
 
   doc <- officer::read_docx()
-  doc <- lss_render_cover(doc, lss, model, theme, subtitle = "Questionnaire audit report")
+  doc <- lss_render_cover(
+    doc, lss, model, theme,
+    subtitle = "Questionnaire audit report",
+    logo = logo, logo_width = logo_width, logo_height = logo_height
+  )
   doc <- officer::body_add_break(doc)
   doc <- lss_render_audit_full(doc, audit, theme)
 

@@ -13,7 +13,10 @@ render_lss_docx(
   show_help = TRUE,
   show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
-  page_format = c("auto", "A4-portrait", "A4-landscape", "A3")
+  page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
+  logo = NULL,
+  logo_width = 1.5,
+  logo_height = 0.75
 )
 }
 \arguments{
@@ -41,6 +44,16 @@ under the question text when present.}
 \item{page_format}{Page format. \code{"auto"} picks portrait for one or two
 languages and landscape from three. Use \code{"A4-portrait"},
 \code{"A4-landscape"}, or \code{"A3"} to force a layout.}
+
+\item{logo}{Optional path to an image (PNG or JPEG) to display at the top
+of the cover page. The \code{.lss} file does not embed a logo, so this image
+must be supplied by the caller. \code{NULL} (default) keeps the cover
+logo-free, matching the neutral style of survey-methodology references
+(ESS, MOSAiCH, Panel).}
+
+\item{logo_width, logo_height}{Image dimensions in inches. Defaults are
+tuned to a 2:1 logo (1.5 x 0.75 inches). Resize or pre-crop your image
+to fit if it has a different aspect ratio.}
 }
 \value{
 The \code{output} path, invisibly.

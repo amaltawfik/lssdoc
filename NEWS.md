@@ -1,5 +1,13 @@
 # lssdoc 0.0.0.9000
 
+* `render_lss_docx()` and `render_lss_audit_docx()` accept an optional
+  `logo` argument (path to a PNG or JPEG) that places an image at the top
+  of the cover page; `logo_width` and `logo_height` control its size. The
+  default keeps the cover logo-free, matching the neutral style of
+  survey-methodology references.
+* The cover page now shows the LimeSurvey **Survey ID** and **Last
+  modified** timestamp from the `.lss`, giving reviewers stable
+  traceability for the source questionnaire.
 * `lss_audit_to_docx()` and `lss_audit_to_pdf()` pipeline wrappers run the
   audit and produce a focused report in one call.
 * `lss_docx_to_pdf()` converts a generated `.docx` to PDF locally via
