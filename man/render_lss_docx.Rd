@@ -22,39 +22,45 @@ render_lss_docx(
 \item{output}{Path to the \code{.docx} file to create.}
 
 \item{languages}{Character vector of language codes to display, in order.
-Defaults to all languages found in the \code{.lss} file. At most four are
-shown side by side.}
+Defaults to all languages found in the \code{.lss} file.}
 
-\item{layout}{Column layout: \code{"auto"}, \code{"side-by-side"}, or \code{"stacked"}.}
+\item{layout}{Reserved for future use. Currently \code{"side-by-side"} only.}
 
-\item{show_audit}{Logical; include an audit section (from \code{\link[=audit_lss]{audit_lss()}})
-at the start of the document.}
+\item{show_audit}{Logical; include an audit summary section near the top
+and inline markers on questions that carry findings.}
 
-\item{show_help}{Logical; include question help texts.}
+\item{show_help}{Logical; include question help texts under the question
+text.}
 
-\item{show_attrs}{Character vector of question attributes to display, such
-as \code{"prefix"}, \code{"suffix"}, \code{"other_replace_text"}, and \code{"validation"}.}
+\item{show_attrs}{Character vector of question attributes to display
+under the question text when present.}
 
 \item{show_technical_attrs}{Logical; include technical attributes such as
-\code{answer_order} and \verb{location_*}. Defaults to \code{FALSE}.}
+\code{answer_order} and \verb{location_*}.}
 
-\item{page_format}{Page format: \code{"auto"}, \code{"A4-portrait"},
-\code{"A4-landscape"}, or \code{"A3"}.}
+\item{page_format}{Page format. \code{"auto"} picks portrait for one or two
+languages and landscape from three. Use \code{"A4-portrait"},
+\code{"A4-landscape"}, or \code{"A3"} to force a layout.}
 }
 \value{
 The \code{output} path, invisibly.
 }
 \description{
 Build a professional \code{.docx} review document from an \code{lss} object,
-displaying up to four languages side by side. Rendering uses the
-suggested packages \pkg{officer} and \pkg{flextable}; both must be
-installed.
+displaying up to four languages side by side. Each question becomes a
+compact \code{flextable} with a meta header (variable code, type, mandatory,
+filter) shown once, language column headers, the question text per
+language, and the subquestion or answer-option rows underneath -- codes
+on the left, labels per language on the right. Headings, a metadata
+cover page, an optional table of contents, and an optional audit summary
+tie the document together. Rendering uses the suggested packages
+\pkg{officer} and \pkg{flextable}; both must be installed.
 }
 \examples{
 \dontrun{
 lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
   package = "lssdoc"
 ))
-render_lss_docx(lss, "rapport.docx", languages = c("fr", "de"))
+render_lss_docx(lss, tempfile(fileext = ".docx"))
 }
 }
