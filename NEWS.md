@@ -1,5 +1,19 @@
 # lssdoc 0.0.0.9000
 
+* The meta description of every question is now a **structured 5-column
+  table** (`No` / `Variable` / `Type` / `Oblig.` / `Filter`) instead of
+  the previous colored band string. The `Variable` header replaces the
+  former `Code` label, matching the SPSS / Stata convention. The Filter
+  cell shows a human-readable form of the LimeSurvey relevance
+  expression on top (best-effort: `is_empty(X.NAOK)` -> `X is empty`,
+  `!is_empty(X.NAOK)` -> `X is answered`, `X.NAOK == N` -> `X = N`, `&&`
+  / `||` -> `AND` / `OR`); when the new `show_raw_filter` argument is
+  `TRUE` (the default), the raw expression is shown underneath in small
+  italic gray for verification. Parent stems of compound questions show
+  a 4-column variant (no `No`, since their subquestions below carry the
+  numbering).
+* Answer scale tables now label the code column **`Value`** (rather than
+  `Code`), in line with the variable/value convention.
 * The rendered document is now organized **item-by-item** (ESS / MOSAiCH
   style) rather than question-by-question. Each leaf question becomes one
   numbered item with its own answer scale; for compound questions

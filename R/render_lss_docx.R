@@ -34,6 +34,11 @@
 #' @param page_format Page format. `"auto"` picks portrait for one or two
 #'   languages and landscape from three. Use `"A4-portrait"`,
 #'   `"A4-landscape"`, or `"A3"` to force a layout.
+#' @param show_raw_filter Logical; when `TRUE` (the default) the Filter
+#'   cell of each meta table shows the human-readable form on top and the
+#'   raw LimeSurvey relevance expression in smaller italic gray underneath.
+#'   Set to `FALSE` for a cleaner cell that shows only the plain form (the
+#'   raw expression is still shown when it could not be simplified).
 #' @param logo Optional path to an image (PNG or JPEG) to display at the top
 #'   of the cover page. The `.lss` file does not embed a logo, so this image
 #'   must be supplied by the caller. `NULL` (default) keeps the cover
@@ -63,6 +68,7 @@ render_lss_docx <- function(
   show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
+  show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
   logo_height = 0.75
@@ -102,6 +108,8 @@ render_lss_docx <- function(
   } else {
     NULL
   }
+  state <- lss_render_state(model)
+  state$show_raw_filter <- isTRUE(show_raw_filter)
   section <- lss_render_section_props(page_format, length(langs))
 
   doc <- officer::read_docx()
@@ -114,6 +122,8 @@ render_lss_docx <- function(
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
     doc <- officer::body_add_break(doc)
     doc <- lss_render_audit_section(doc, audit_idx, theme)
+    # Keep our item counter aligned with Word's H1 numbering.
+    state$item_no <- state$item_no + 1L
   }
   doc <- lss_render_welcome(doc, lss, langs, theme)
   for (group in model$groups) {
@@ -122,7 +132,8 @@ render_lss_docx <- function(
       show_help = show_help,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
-      audit_idx = audit_idx
+      audit_idx = audit_idx,
+      state = state
     )
   }
   doc <- lss_render_endtext(doc, lss, langs, theme)
@@ -130,6 +141,20 @@ render_lss_docx <- function(
   doc <- officer::body_set_default_section(doc, section)
   print(doc, target = output)
   invisible(output)
+}
+
+#' Mutable state passed through the render functions
+#'
+#' Holds the running item counter so the "No" column of each item's meta
+#' table matches Word's Heading 1 auto-numbering of the same paragraph.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_state <- function(model) {
+  state <- new.env(parent = emptyenv())
+  state$item_no <- 0L
+  state$model <- model
+  state
 }
 
 
@@ -635,7 +660,7 @@ lss_render_localized_block <- function(doc, lss, langs, theme, field, title) {
 #' @noRd
 lss_render_group <- function(doc, group, langs, theme,
                              show_help, show_attrs, show_technical_attrs,
-                             audit_idx) {
+                             audit_idx, state) {
   gname <- lss_first_label(group$names, langs)
   if (is.na(gname)) gname <- paste0("Group ", group$gid)
   doc <- officer::body_add_par(doc, "", style = "Normal")
@@ -664,7 +689,8 @@ lss_render_group <- function(doc, group, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
-      audit_idx = audit_idx
+      audit_idx = audit_idx,
+      state = state
     )
   }
   doc
@@ -675,7 +701,7 @@ lss_render_group <- function(doc, group, langs, theme,
 #' @noRd
 lss_render_question_block <- function(doc, q, langs, theme,
                                       show_help, show_attrs,
-                                      show_technical_attrs, audit_idx) {
+                                      show_technical_attrs, audit_idx, state) {
   info <- lss_type_info(q$type)
   if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
     lss_render_compound_question(
@@ -684,7 +710,8 @@ lss_render_question_block <- function(doc, q, langs, theme,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
       audit_idx = audit_idx,
-      info = info
+      info = info,
+      state = state
     )
   } else {
     lss_render_leaf_item(
@@ -695,7 +722,8 @@ lss_render_question_block <- function(doc, q, langs, theme,
       audit_idx = audit_idx,
       item_code = q$code,
       texts_by_lang = lapply(langs, function(lg) q$texts[[lg]]$question),
-      help_by_lang = lapply(langs, function(lg) q$texts[[lg]]$help)
+      help_by_lang = lapply(langs, function(lg) q$texts[[lg]]$help),
+      state = state
     )
   }
 }
@@ -712,11 +740,12 @@ lss_render_question_block <- function(doc, q, langs, theme,
 lss_render_compound_question <- function(doc, q, langs, theme,
                                          show_help, show_attrs,
                                          show_technical_attrs, audit_idx,
-                                         info) {
+                                         info, state) {
   doc <- lss_render_parent_stem(doc, q, langs, theme,
                                 show_help = show_help,
                                 show_attrs = show_attrs,
-                                audit_idx = audit_idx)
+                                audit_idx = audit_idx,
+                                state = state)
   if (isTRUE(info$has_answers) && length(q$answers) > 0L) {
     doc <- lss_render_shared_scale(doc, q, langs, theme)
   }
@@ -730,7 +759,8 @@ lss_render_compound_question <- function(doc, q, langs, theme,
       texts_by_lang = item_text,
       help_by_lang = item_help,
       show_help = show_help,
-      audit_idx = audit_idx
+      audit_idx = audit_idx,
+      state = state
     )
   }
   doc
@@ -745,41 +775,14 @@ lss_render_compound_question <- function(doc, q, langs, theme,
 #' @keywords internal
 #' @noRd
 lss_render_parent_stem <- function(doc, q, langs, theme,
-                                   show_help, show_attrs, audit_idx) {
-  audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
-  meta <- lss_question_meta(q, theme)
-  if (!is.null(audit_marker)) {
-    meta <- paste0(meta, "  \u2022  ", audit_marker$text)
-  }
-
-  # Render the meta line as a solid-colored band (a one-cell flextable
-  # spans the full width and renders consistently in Word and LibreOffice).
-  doc <- officer::body_add_par(doc, "", style = "Normal")
-  meta_df <- data.frame(band = "", stringsAsFactors = FALSE)
-  meta_ft <- flextable::flextable(meta_df)
-  meta_ft <- flextable::delete_part(meta_ft, part = "header")
-  meta_ft <- flextable::compose(
-    meta_ft, i = 1L, j = "band",
-    value = flextable::as_paragraph(flextable::as_chunk(
-      meta,
-      props = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_meta,
-        bold = TRUE, color = theme$color_white
-      )
-    ))
+                                   show_help, show_attrs, audit_idx, state) {
+  # No H1 emitted here, so the running item counter must NOT advance: the
+  # parent stem is a banner, only its subq items below carry a number.
+  doc <- lss_render_question_meta_table(
+    doc, q, langs, theme,
+    item_no = NA_integer_,
+    audit_idx = audit_idx
   )
-  meta_ft <- flextable::bg(meta_ft, bg = theme$color_primary, part = "body")
-  meta_ft <- flextable::border_remove(meta_ft)
-  meta_ft <- flextable::align(meta_ft, align = "left", part = "body")
-  meta_ft <- flextable::padding(
-    meta_ft, padding.top = 3, padding.bottom = 3,
-    padding.left = 6, padding.right = 6, part = "body"
-  )
-  meta_ft <- flextable::width(
-    meta_ft, j = "band",
-    width = 0.6 + 2.5 * length(langs), unit = "in"
-  )
-  doc <- flextable::body_add_flextable(doc, meta_ft, align = "center")
 
   texts_by_lang <- stats::setNames(
     lapply(langs, function(lg) q$texts[[lg]]$question), langs
@@ -841,7 +844,7 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
   ft <- flextable::set_header_labels(
     ft,
     values = c(
-      list(code = "Code"),
+      list(code = "Value"),
       stats::setNames(as.list(lss_language_label(langs)), langs)
     )
   )
@@ -863,7 +866,8 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
 #' @noRd
 lss_render_subq_item <- function(doc, q, sq, langs, theme,
                                  item_code, texts_by_lang, help_by_lang,
-                                 show_help, audit_idx) {
+                                 show_help, audit_idx, state) {
+  state$item_no <- state$item_no + 1L
   audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
   heading_text <- if (is.null(audit_marker)) item_code else {
     paste0(item_code, "  ", audit_marker$text)
@@ -900,7 +904,8 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
 lss_render_leaf_item <- function(doc, q, langs, theme,
                                  show_help, show_attrs, show_technical_attrs,
                                  audit_idx, item_code,
-                                 texts_by_lang, help_by_lang) {
+                                 texts_by_lang, help_by_lang, state) {
+  state$item_no <- state$item_no + 1L
   audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
   heading_text <- if (is.null(audit_marker)) item_code else {
     paste0(item_code, "  ", audit_marker$text)
@@ -916,16 +921,12 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
     style = "heading 1"
   )
 
-  # Meta line with type, mandatory, filter (no QID).
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      lss_question_meta(q, theme),
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_meta,
-        color = theme$color_muted
-      )
-    ))
+  # Structured meta table: No | Variable | Type | Oblig. | Filter
+  doc <- lss_render_question_meta_table(
+    doc, q, langs, theme,
+    item_no = state$item_no,
+    audit_idx = audit_idx,
+    show_raw_filter = isTRUE(state$show_raw_filter)
   )
 
   doc <- lss_render_lang_block(
@@ -1192,4 +1193,150 @@ lss_relevance_label <- function(x) {
   if (is.null(x) || is.na(x) || !nzchar(x)) return("\u2014")
   if (identical(x, "1")) return("All")
   x
+}
+
+#' Best-effort translation of a LimeSurvey relevance expression into plain
+#' English
+#'
+#' Recognized patterns: `is_empty(X.NAOK)` -> "X is empty";
+#' `!is_empty(X.NAOK)` -> "X is answered"; `X.NAOK == N` -> "X = N";
+#' `X.NAOK != N` -> "X != N"; `&&` -> "AND"; `||` -> "OR". The function
+#' strips obviously balanced outer parentheses. When the expression cannot
+#' be matched it is returned unchanged, so the raw text is never lost.
+#'
+#' @param x A character relevance expression as stored in LimeSurvey.
+#' @return A single human-readable string. `"All"` for `1`, empty, or `NA`.
+#' @keywords internal
+#' @noRd
+lss_humanize_relevance <- function(x) {
+  if (is.null(x) || is.na(x) || !nzchar(x) || identical(x, "1")) {
+    return("All")
+  }
+  s <- as.character(x)
+  # Strip up to a few layers of redundant outer parentheses.
+  for (i in seq_len(6L)) {
+    inner <- sub("^\\s*\\((.*)\\)\\s*$", "\\1", s, perl = TRUE)
+    if (identical(inner, s) || !lss_parens_balanced(inner)) break
+    s <- inner
+  }
+  s <- gsub("!\\s*is_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)", "\\1 is answered",
+            s, perl = TRUE)
+  s <- gsub("\\bis_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)", "\\1 is empty",
+            s, perl = TRUE)
+  s <- gsub("([A-Za-z0-9_]+)\\.NAOK", "\\1", s, perl = TRUE)
+  s <- gsub("\\s*&&\\s*", " AND ", s)
+  s <- gsub("\\s*\\|\\|\\s*", " OR ", s)
+  s <- gsub("\\s*!=\\s*", " \u2260 ", s)
+  s <- gsub("\\s*==\\s*", " = ", s)
+  trimws(s)
+}
+
+#' Check whether parentheses are balanced in a string
+#' @keywords internal
+#' @noRd
+lss_parens_balanced <- function(s) {
+  depth <- 0L
+  for (ch in strsplit(s, "", fixed = TRUE)[[1]]) {
+    if (ch == "(") {
+      depth <- depth + 1L
+    } else if (ch == ")") {
+      depth <- depth - 1L
+      if (depth < 0L) return(FALSE)
+    }
+  }
+  depth == 0L
+}
+
+#' Render the 5-column structured meta table for a question
+#'
+#' Columns: `No` (item number, matching Word's Heading 1 auto-number),
+#' `Variable` (the LimeSurvey question code), `Type` (legacy code + label),
+#' `Oblig.` (mandatory yes/no), `Filter`. The Filter cell shows the plain
+#' English form on top (bold) with the raw LimeSurvey expression beneath
+#' (small italic gray); reviewers see the intent and can still verify the
+#' actual expression.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_question_meta_table <- function(doc, q, langs, theme,
+                                           item_no, audit_idx,
+                                           show_raw_filter = TRUE) {
+  filter_raw <- if (is.null(q$relevance) || is.na(q$relevance) ||
+                    !nzchar(q$relevance)) {
+    "1"
+  } else {
+    q$relevance
+  }
+  filter_plain <- lss_humanize_relevance(filter_raw)
+  type_label <- paste0(q$type, " - ", q$type_label)
+
+  with_no <- !is.null(item_no) && !is.na(item_no)
+  df <- if (with_no) {
+    data.frame(
+      No = as.character(item_no),
+      Variable = q$code,
+      Type = type_label,
+      `Oblig.` = lss_yes_no(q$mandatory),
+      Filter = "",
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+  } else {
+    data.frame(
+      Variable = q$code,
+      Type = type_label,
+      `Oblig.` = lss_yes_no(q$mandatory),
+      Filter = "",
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  ft <- flextable::flextable(df)
+  plain_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_meta,
+    color = theme$color_text
+  )
+  raw_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_meta - 1L,
+    color = theme$color_muted, italic = TRUE
+  )
+  filter_chunks <- list(flextable::as_chunk(filter_plain, props = plain_props))
+  # Append the raw expression when explicitly requested, or when the
+  # humanizer could not simplify it (so the user always sees the technical
+  # source if our plain form is identical to the raw input).
+  show_raw <- isTRUE(show_raw_filter) && !identical(filter_plain, filter_raw)
+  if (show_raw) {
+    filter_chunks <- c(
+      filter_chunks,
+      list(flextable::as_chunk("\n", props = plain_props)),
+      list(flextable::as_chunk(filter_raw, props = raw_props))
+    )
+  }
+  ft <- flextable::compose(
+    ft, i = 1L, j = "Filter",
+    value = do.call(flextable::as_paragraph, filter_chunks)
+  )
+
+  ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
+  ft <- flextable::fontsize(ft, size = theme$size_meta, part = "all")
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::color(ft, color = theme$color_primary, part = "header")
+  ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
+  ft <- flextable::border_remove(ft)
+  thin <- officer::fp_border(color = "#BFBFBF", width = 0.5)
+  ft <- flextable::hline(ft, border = thin, part = "all")
+  ft <- flextable::vline(ft, border = thin, part = "all")
+  ft <- flextable::valign(ft, valign = "top", part = "all")
+  ft <- flextable::padding(ft, padding = 2, part = "all")
+  center_cols <- if (with_no) c("No", "Oblig.") else "Oblig."
+  ft <- flextable::align(ft, align = "center", j = center_cols, part = "all")
+  if (with_no) {
+    ft <- flextable::width(ft, j = "No", width = 0.4, unit = "in")
+  }
+  ft <- flextable::width(ft, j = "Variable", width = 1.3, unit = "in")
+  ft <- flextable::width(ft, j = "Type", width = 1.8, unit = "in")
+  ft <- flextable::width(ft, j = "Oblig.", width = 0.5, unit = "in")
+  ft <- flextable::width(ft, j = "Filter", width = 2.6, unit = "in")
+  flextable::body_add_flextable(doc, ft, align = "center")
 }

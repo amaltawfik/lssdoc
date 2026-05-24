@@ -14,6 +14,7 @@ render_lss_docx(
   show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
+  show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
   logo_height = 0.75
@@ -52,6 +53,12 @@ under the question text when present.}
 \item{page_format}{Page format. \code{"auto"} picks portrait for one or two
 languages and landscape from three. Use \code{"A4-portrait"},
 \code{"A4-landscape"}, or \code{"A3"} to force a layout.}
+
+\item{show_raw_filter}{Logical; when \code{TRUE} (the default) the Filter
+cell of each meta table shows the human-readable form on top and the
+raw LimeSurvey relevance expression in smaller italic gray underneath.
+Set to \code{FALSE} for a cleaner cell that shows only the plain form (the
+raw expression is still shown when it could not be simplified).}
 
 \item{logo}{Optional path to an image (PNG or JPEG) to display at the top
 of the cover page. The \code{.lss} file does not embed a logo, so this image
