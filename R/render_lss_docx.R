@@ -674,30 +674,15 @@ lss_render_group <- function(doc, group, langs, theme,
 lss_render_question <- function(doc, q, langs, theme,
                                 show_help, show_attrs,
                                 show_technical_attrs, audit_idx) {
-  # Heading 2 with the question code and, when available, the question text
-  # in the first requested language. This makes the Word table of contents
-  # readable in that language while keeping the variable code as a stable
-  # anchor for cross-references.
+  # Heading 2 is the variable code, optionally followed by the audit
+  # marker. We deliberately do NOT repeat the question text here -- it
+  # already appears once in the table below, in every language. The TOC
+  # entry is the code, which is a stable cross-reference anchor.
   audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
-  primary <- langs[1]
-  q_first_text <- if (!is.null(q$texts[[primary]])) {
-    lss_html_to_text(q$texts[[primary]]$question)
-  } else {
-    ""
-  }
-  q_first_text <- trimws(q_first_text)
-  if (nchar(q_first_text) > 80L) {
-    q_first_text <- paste0(substr(q_first_text, 1L, 77L), "...")
-  }
-  display_label <- if (nzchar(q_first_text)) {
-    paste0(q$code, " \u2014 ", q_first_text)
-  } else {
-    q$code
-  }
   heading_text <- if (is.null(audit_marker)) {
-    display_label
+    q$code
   } else {
-    paste0(display_label, "  ", audit_marker$text)
+    paste0(q$code, "  ", audit_marker$text)
   }
   heading_prop <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_heading2,
@@ -792,7 +777,7 @@ lss_question_rows <- function(q, langs, theme,
     }), langs)
   }
   rows[[length(rows) + 1L]] <- list(
-    code = "Q",
+    code = "",
     texts = q_texts,
     size = theme$size_question,
     color = theme$color_text,
@@ -883,7 +868,6 @@ lss_question_rows <- function(q, langs, theme,
 lss_question_meta <- function(q, theme) {
   parts <- c(
     sprintf("Q %s", q$code),
-    sprintf("QID %s", q$qid),
     sprintf("Type: %s", q$type_label),
     sprintf("Mandatory: %s", lss_yes_no(q$mandatory)),
     sprintf("Filter: %s", lss_relevance_label(q$relevance))
@@ -1035,6 +1019,6 @@ lss_yes_no <- function(x) {
 #' @noRd
 lss_relevance_label <- function(x) {
   if (is.null(x) || is.na(x) || !nzchar(x)) return("\u2014")
-  if (identical(x, "1")) return("always shown")
+  if (identical(x, "1")) return("All")
   x
 }
