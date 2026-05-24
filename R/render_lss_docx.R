@@ -1213,12 +1213,29 @@ lss_humanize_relevance <- function(x) {
     return("All")
   }
   s <- as.character(x)
-  # Strip up to a few layers of redundant outer parentheses.
-  for (i in seq_len(6L)) {
-    inner <- sub("^\\s*\\((.*)\\)\\s*$", "\\1", s, perl = TRUE)
-    if (identical(inner, s) || !lss_parens_balanced(inner)) break
-    s <- inner
+  s <- lss_strip_outer_parens(s)
+
+  # Collapse the LimeSurvey "answered-and-equals" idiom on the SAME
+  # variable. LimeSurvey's conditional designer always emits
+  # `!is_empty(X.NAOK) && (X.NAOK OP value)` as a defensive guard, even
+  # though the comparison alone is enough semantically. For human review
+  # the guard is noise, so we drop it. The collapse repeats so chained
+  # conditions on different variables each get simplified.
+  idiom_left <- paste0(
+    "!\\s*is_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)\\s*&&\\s*",
+    "\\(\\s*\\1\\.NAOK\\s*(==|!=|>=|<=|>|<)\\s*([^)&|]+)\\s*\\)"
+  )
+  idiom_right <- paste0(
+    "\\(\\s*([A-Za-z0-9_]+)\\.NAOK\\s*(==|!=|>=|<=|>|<)\\s*([^)&|]+)\\s*\\)",
+    "\\s*&&\\s*!\\s*is_empty\\(\\1\\.NAOK\\)"
+  )
+  for (i in seq_len(5L)) {
+    before <- s
+    s <- gsub(idiom_left, "\\1.NAOK \\2 \\3", s, perl = TRUE)
+    s <- gsub(idiom_right, "\\1.NAOK \\2 \\3", s, perl = TRUE)
+    if (identical(s, before)) break
   }
+
   s <- gsub("!\\s*is_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)", "\\1 is answered",
             s, perl = TRUE)
   s <- gsub("\\bis_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)", "\\1 is empty",
@@ -1228,7 +1245,20 @@ lss_humanize_relevance <- function(x) {
   s <- gsub("\\s*\\|\\|\\s*", " OR ", s)
   s <- gsub("\\s*!=\\s*", " \u2260 ", s)
   s <- gsub("\\s*==\\s*", " = ", s)
+  s <- lss_strip_outer_parens(s)
   trimws(s)
+}
+
+#' Strip balanced outer parentheses up to a few levels deep
+#' @keywords internal
+#' @noRd
+lss_strip_outer_parens <- function(s) {
+  for (i in seq_len(8L)) {
+    inner <- sub("^\\s*\\((.*)\\)\\s*$", "\\1", s, perl = TRUE)
+    if (identical(inner, s) || !lss_parens_balanced(inner)) break
+    s <- inner
+  }
+  s
 }
 
 #' Check whether parentheses are balanced in a string

@@ -1,5 +1,13 @@
 # lssdoc 0.0.0.9000
 
+* The filter humanizer now collapses LimeSurvey's defensive
+  `!is_empty(X.NAOK) && (X.NAOK OP value)` idiom into the equivalent
+  human-readable form `X OP value`. The LimeSurvey conditional designer
+  emits this guard automatically for every comparison; for a human
+  reviewer it is redundant boilerplate. The collapse only applies when
+  both clauses reference the **same** variable (so a real two-variable
+  filter like `!is_empty(a.NAOK) && (b.NAOK == 1)` is preserved as
+  `a is answered AND (b = 1)`).
 * The meta description of every question is now a **structured 5-column
   table** (`No` / `Variable` / `Type` / `Oblig.` / `Filter`) instead of
   the previous colored band string. The `Variable` header replaces the
