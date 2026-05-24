@@ -272,12 +272,21 @@ lss_build_footer <- function(theme) {
 #' @noRd
 lss_audit_index <- function(audit) {
   fdf <- audit$findings
-  fdf$question_code <- sub(
-    "^(?:Question|Subquestion|Answer) '([^/= ]+).*$", "\\1",
-    fdf$location, perl = TRUE
-  )
-  fdf$question_code[!grepl("^[A-Za-z0-9_]+$", fdf$question_code)] <- NA_character_
-  by_code <- split(fdf, fdf$question_code)
+  fdf$item_code <- vapply(fdf$location, function(loc) {
+    if (grepl("^Question '[^']+'$", loc)) {
+      sub("^Question '([^']+)'$", "\\1", loc)
+    } else if (grepl("^Subquestion '[^/]+ / .+'$", loc)) {
+      # Match the item-centric code used in the renderer: parent_subq.
+      sub("^Subquestion '([^/]+) / (.+)'$", "\\1_\\2", loc)
+    } else if (grepl("^Answer '[^=]+ = .+'$", loc)) {
+      # Findings on answer options attach to the parent question.
+      sub("^Answer '([^=]+) = .+'$", "\\1", loc)
+    } else {
+      NA_character_
+    }
+  }, character(1), USE.NAMES = FALSE)
+  fdf$item_code[!grepl("^[A-Za-z0-9_]+$", fdf$item_code)] <- NA_character_
+  by_code <- split(fdf, fdf$item_code)
   list(audit = audit, findings = fdf, by_code = by_code)
 }
 
@@ -615,7 +624,13 @@ lss_render_localized_block <- function(doc, lss, langs, theme, field, title) {
 
 # Group and question rendering ------------------------------------------
 
-#' Render one group: heading, optional description, then each question
+#' Render one group: a banner, optional description, then each item
+#'
+#' Groups become a visible section banner (bold colored paragraph, not a
+#' Heading style) followed by their items. Items themselves use Heading 1
+#' so Word numbers them sequentially across the whole document, which keeps
+#' the navigation index flat and ignores the group hierarchy in numbering.
+#'
 #' @keywords internal
 #' @noRd
 lss_render_group <- function(doc, group, langs, theme,
@@ -632,32 +647,19 @@ lss_render_group <- function(doc, group, langs, theme,
         font.family = theme$font_body, font.size = theme$size_heading1,
         bold = TRUE, color = theme$color_primary
       )
-    )),
-    style = "heading 1"
+    ))
   )
   any_desc <- any(vapply(
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
     logical(1)
   ))
   if (any_desc) {
-    df <- as.data.frame(matrix("", nrow = 1, ncol = length(langs)), stringsAsFactors = FALSE)
-    names(df) <- langs
-    ft <- flextable::flextable(df)
-    ft <- flextable::set_header_labels(
-      ft, values = stats::setNames(lss_language_label(langs), langs)
-    )
-    for (lg in langs) {
-      ft <- flextable::compose(
-        ft, i = 1L, j = lg,
-        value = lss_compose(group$descriptions[[lg]], theme, size = theme$size_subq, italic_default = TRUE)
-      )
-    }
-    ft <- lss_table_polish(ft, theme, lang_cols = langs)
-    doc <- flextable::body_add_flextable(doc, ft, align = "center")
+    doc <- lss_render_lang_block(doc, group$descriptions, langs, theme,
+                                 size = theme$size_subq, italic = TRUE)
   }
 
   for (q in group$questions) {
-    doc <- lss_render_question(
+    doc <- lss_render_question_block(
       doc, q, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
@@ -668,43 +670,174 @@ lss_render_group <- function(doc, group, langs, theme,
   doc
 }
 
-#' Render one question as a self-contained flextable
+#' Dispatch a parent question to leaf or compound rendering
 #' @keywords internal
 #' @noRd
-lss_render_question <- function(doc, q, langs, theme,
-                                show_help, show_attrs,
-                                show_technical_attrs, audit_idx) {
-  # Heading 2 is the variable code, optionally followed by the audit
-  # marker. We deliberately do NOT repeat the question text here -- it
-  # already appears once in the table below, in every language. The TOC
-  # entry is the code, which is a stable cross-reference anchor.
-  audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
-  heading_text <- if (is.null(audit_marker)) {
-    q$code
+lss_render_question_block <- function(doc, q, langs, theme,
+                                      show_help, show_attrs,
+                                      show_technical_attrs, audit_idx) {
+  info <- lss_type_info(q$type)
+  if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
+    lss_render_compound_question(
+      doc, q, langs, theme,
+      show_help = show_help,
+      show_attrs = show_attrs,
+      show_technical_attrs = show_technical_attrs,
+      audit_idx = audit_idx,
+      info = info
+    )
   } else {
-    paste0(q$code, "  ", audit_marker$text)
+    lss_render_leaf_item(
+      doc, q, langs, theme,
+      show_help = show_help,
+      show_attrs = show_attrs,
+      show_technical_attrs = show_technical_attrs,
+      audit_idx = audit_idx,
+      item_code = q$code,
+      texts_by_lang = lapply(langs, function(lg) q$texts[[lg]]$question),
+      help_by_lang = lapply(langs, function(lg) q$texts[[lg]]$help)
+    )
   }
-  heading_prop <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_heading2,
-    bold = TRUE,
-    color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
-  )
+}
+
+#' Render a compound question (a parent with subquestions, ESS/Mosaich style)
+#'
+#' Emits a parent stem banner, then the shared answer scale (when the type
+#' carries one in `q$answers`), then each subquestion as its own numbered
+#' item (Heading 1) with the full LimeSurvey response variable code
+#' (`parent_subqcode`).
+#'
+#' @keywords internal
+#' @noRd
+lss_render_compound_question <- function(doc, q, langs, theme,
+                                         show_help, show_attrs,
+                                         show_technical_attrs, audit_idx,
+                                         info) {
+  doc <- lss_render_parent_stem(doc, q, langs, theme,
+                                show_help = show_help,
+                                show_attrs = show_attrs,
+                                audit_idx = audit_idx)
+  if (isTRUE(info$has_answers) && length(q$answers) > 0L) {
+    doc <- lss_render_shared_scale(doc, q, langs, theme)
+  }
+  for (sq in q$subquestions) {
+    item_code <- paste0(q$code, "_", sq$code)
+    item_help <- lapply(langs, function(lg) sq$texts[[lg]]$help)
+    item_text <- lapply(langs, function(lg) sq$texts[[lg]]$question)
+    doc <- lss_render_subq_item(
+      doc, q, sq, langs, theme,
+      item_code = item_code,
+      texts_by_lang = item_text,
+      help_by_lang = item_help,
+      show_help = show_help,
+      audit_idx = audit_idx
+    )
+  }
+  doc
+}
+
+#' Render the parent stem of a compound question as a small bordered block
+#'
+#' A meta line with the parent code and type, then a one-row flextable with
+#' one column per language showing the stem text. Optional help and
+#' attributes (prefix, suffix, validation, etc.) follow below.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_parent_stem <- function(doc, q, langs, theme,
+                                   show_help, show_attrs, audit_idx) {
+  audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
+  meta <- lss_question_meta(q, theme)
+  if (!is.null(audit_marker)) {
+    meta <- paste0(meta, "  \u2022  ", audit_marker$text)
+  }
+
+  # Render the meta line as a solid-colored band (a one-cell flextable
+  # spans the full width and renders consistently in Word and LibreOffice).
   doc <- officer::body_add_par(doc, "", style = "Normal")
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(heading_text, prop = heading_prop)),
-    style = "heading 2"
+  meta_df <- data.frame(band = "", stringsAsFactors = FALSE)
+  meta_ft <- flextable::flextable(meta_df)
+  meta_ft <- flextable::delete_part(meta_ft, part = "header")
+  meta_ft <- flextable::compose(
+    meta_ft, i = 1L, j = "band",
+    value = flextable::as_paragraph(flextable::as_chunk(
+      meta,
+      props = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_meta,
+        bold = TRUE, color = theme$color_white
+      )
+    ))
   )
+  meta_ft <- flextable::bg(meta_ft, bg = theme$color_primary, part = "body")
+  meta_ft <- flextable::border_remove(meta_ft)
+  meta_ft <- flextable::align(meta_ft, align = "left", part = "body")
+  meta_ft <- flextable::padding(
+    meta_ft, padding.top = 3, padding.bottom = 3,
+    padding.left = 6, padding.right = 6, part = "body"
+  )
+  meta_ft <- flextable::width(
+    meta_ft, j = "band",
+    width = 0.6 + 2.5 * length(langs), unit = "in"
+  )
+  doc <- flextable::body_add_flextable(doc, meta_ft, align = "center")
 
-  rows <- lss_question_rows(q, langs, theme,
-                            show_help = show_help,
-                            show_attrs = show_attrs,
-                            show_technical_attrs = show_technical_attrs)
-  df <- rows$df
+  texts_by_lang <- stats::setNames(
+    lapply(langs, function(lg) q$texts[[lg]]$question), langs
+  )
+  doc <- lss_render_lang_block(doc, texts_by_lang, langs, theme,
+                               size = theme$size_question)
+
+  if (isTRUE(show_help)) {
+    help_by_lang <- stats::setNames(
+      lapply(langs, function(lg) q$texts[[lg]]$help), langs
+    )
+    doc <- lss_render_optional_lang_block(doc, help_by_lang, langs, theme,
+                                          size = theme$size_help,
+                                          color = theme$color_muted,
+                                          italic = TRUE)
+  }
+  doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
+  doc
+}
+
+#' Render the shared answer scale of an array-style question
+#' @keywords internal
+#' @noRd
+lss_render_shared_scale <- function(doc, q, langs, theme) {
+  scales <- if (!is.null(q$scales) && length(q$scales) > 1L) q$scales else list(default = q$answers)
+  for (si in seq_along(scales)) {
+    answers <- scales[[si]]
+    if (length(answers) == 0L) next
+    title <- if (length(scales) > 1L) {
+      sprintf("Shared answer scale %d", si)
+    } else {
+      "Shared answer scale"
+    }
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(officer::ftext(
+        title,
+        prop = officer::fp_text(
+          font.family = theme$font_body, font.size = theme$size_meta,
+          bold = TRUE, color = theme$color_primary
+        )
+      ))
+    )
+    doc <- lss_render_scale_table(doc, answers, langs, theme)
+  }
+  doc
+}
+
+#' Build the answer-scale flextable
+#' @keywords internal
+#' @noRd
+lss_render_scale_table <- function(doc, answers, langs, theme) {
+  df <- data.frame(
+    code = vapply(answers, function(a) a$code, character(1)),
+    stringsAsFactors = FALSE
+  )
+  for (lg in langs) df[[lg]] <- ""
   ft <- flextable::flextable(df)
-
-  meta_line <- lss_question_meta(q, theme)
-  ft <- flextable::add_header_lines(ft, values = meta_line)
   ft <- flextable::set_header_labels(
     ft,
     values = c(
@@ -712,154 +845,192 @@ lss_render_question <- function(doc, q, langs, theme,
       stats::setNames(as.list(lss_language_label(langs)), langs)
     )
   )
-
-  # Compose rich cells.
-  for (i in seq_len(nrow(df))) {
-    rspec <- rows$specs[[i]]
-    if (!is.null(rspec$code)) {
-      ft <- flextable::compose(
-        ft, i = i, j = "code",
-        value = lss_compose_plain(
-          rspec$code, theme, size = theme$size_meta,
-          bold = TRUE, color = theme$color_primary
-        )
-      )
-    }
+  for (i in seq_along(answers)) {
     for (lg in langs) {
       ft <- flextable::compose(
         ft, i = i, j = lg,
-        value = lss_compose(
-          rspec$texts[[lg]], theme,
-          size = rspec$size, color = rspec$color,
-          italic_default = isTRUE(rspec$italic)
-        )
+        value = lss_compose(answers[[i]]$labels[[lg]], theme,
+                            size = theme$size_answer)
       )
     }
   }
+  ft <- lss_table_polish(ft, theme, lang_cols = langs, has_code = TRUE)
+  flextable::body_add_flextable(doc, ft, align = "center")
+}
 
-  ft <- lss_table_polish(ft, theme, lang_cols = langs, meta_header = TRUE)
-  doc <- flextable::body_add_flextable(doc, ft, align = "center")
+#' Render a subquestion as a numbered item
+#' @keywords internal
+#' @noRd
+lss_render_subq_item <- function(doc, q, sq, langs, theme,
+                                 item_code, texts_by_lang, help_by_lang,
+                                 show_help, audit_idx) {
+  audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
+  heading_text <- if (is.null(audit_marker)) item_code else {
+    paste0(item_code, "  ", audit_marker$text)
+  }
+  heading_prop <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_heading2,
+    bold = TRUE,
+    color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+  )
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(heading_text, prop = heading_prop)),
+    style = "heading 1"
+  )
+  doc <- lss_render_lang_block(
+    doc,
+    stats::setNames(texts_by_lang, langs),
+    langs, theme, size = theme$size_subq
+  )
+  if (isTRUE(show_help)) {
+    doc <- lss_render_optional_lang_block(
+      doc,
+      stats::setNames(help_by_lang, langs),
+      langs, theme,
+      size = theme$size_help, color = theme$color_muted, italic = TRUE
+    )
+  }
   doc
 }
 
-#' Build the data frame and per-row rendering spec for a question table
+#' Render a leaf question (no subquestions) as a numbered item
 #' @keywords internal
 #' @noRd
-lss_question_rows <- function(q, langs, theme,
-                              show_help, show_attrs,
-                              show_technical_attrs) {
-  rows <- list()
-
-  # Row 1: question text (and optional help under it via paragraph break).
-  q_texts <- stats::setNames(
-    lapply(langs, function(lg) q$texts[[lg]]$question),
-    langs
-  )
-  help_texts <- stats::setNames(
-    lapply(langs, function(lg) q$texts[[lg]]$help),
-    langs
-  )
-  if (isTRUE(show_help) && any(vapply(
-    help_texts, function(h) !is.null(h) && !is.na(h) && nzchar(trimws(h)),
-    logical(1)
-  ))) {
-    q_texts <- stats::setNames(lapply(langs, function(lg) {
-      qh <- trimws(if (is.null(help_texts[[lg]])) "" else as.character(help_texts[[lg]]))
-      qt <- if (is.null(q_texts[[lg]])) NA_character_ else q_texts[[lg]]
-      if (nzchar(qh)) {
-        paste0(
-          if (is.na(qt)) "" else qt,
-          "<br><i>", qh, "</i>"
-        )
-      } else {
-        qt
-      }
-    }), langs)
+lss_render_leaf_item <- function(doc, q, langs, theme,
+                                 show_help, show_attrs, show_technical_attrs,
+                                 audit_idx, item_code,
+                                 texts_by_lang, help_by_lang) {
+  audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
+  heading_text <- if (is.null(audit_marker)) item_code else {
+    paste0(item_code, "  ", audit_marker$text)
   }
-  rows[[length(rows) + 1L]] <- list(
-    code = "",
-    texts = q_texts,
-    size = theme$size_question,
-    color = theme$color_text,
-    italic = FALSE
+  heading_prop <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_heading2,
+    bold = TRUE,
+    color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+  )
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(heading_text, prop = heading_prop)),
+    style = "heading 1"
   )
 
-  # Subquestions.
-  if (length(q$subquestions) > 0) {
-    for (s in q$subquestions) {
-      stxt <- stats::setNames(lapply(langs, function(lg) s$texts[[lg]]$question), langs)
-      rows[[length(rows) + 1L]] <- list(
-        code = s$code,
-        texts = stxt,
-        size = theme$size_subq,
-        color = theme$color_text,
-        italic = FALSE
+  # Meta line with type, mandatory, filter (no QID).
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(
+      lss_question_meta(q, theme),
+      prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_meta,
+        color = theme$color_muted
       )
-    }
+    ))
+  )
+
+  doc <- lss_render_lang_block(
+    doc,
+    stats::setNames(texts_by_lang, langs),
+    langs, theme, size = theme$size_question
+  )
+
+  if (isTRUE(show_help)) {
+    doc <- lss_render_optional_lang_block(
+      doc,
+      stats::setNames(help_by_lang, langs),
+      langs, theme,
+      size = theme$size_help, color = theme$color_muted, italic = TRUE
+    )
   }
 
-  # Answer options (grouped by scale_id when dual scale).
-  if (length(q$answers) > 0) {
-    if (!is.null(q$scales) && length(q$scales) > 1L) {
-      scale_ids <- names(q$scales)
-      for (si in scale_ids) {
-        rows[[length(rows) + 1L]] <- list(
-          code = paste0("Scale ", as.integer(si) + 1L),
-          texts = stats::setNames(
-            lapply(langs, function(lg) NA_character_), langs
-          ),
-          size = theme$size_meta,
-          color = theme$color_muted,
-          italic = TRUE,
-          scale_header = TRUE
-        )
-        for (a in q$scales[[si]]) {
-          atxt <- stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs)
-          rows[[length(rows) + 1L]] <- list(
-            code = a$code, texts = atxt,
-            size = theme$size_answer, color = theme$color_text, italic = FALSE
-          )
-        }
-      }
-    } else {
-      for (a in q$answers) {
-        atxt <- stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs)
-        rows[[length(rows) + 1L]] <- list(
-          code = a$code, texts = atxt,
-          size = theme$size_answer, color = theme$color_text, italic = FALSE
-        )
-      }
-    }
+  if (length(q$answers) > 0L) {
+    doc <- lss_render_scale_table(doc, q$answers, langs, theme)
   }
+  doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
+  doc
+}
 
-  # Optional question attributes (prefix/suffix/other_replace_text/validation).
-  if (length(show_attrs) > 0 && !is.null(q$attributes)) {
-    attrs <- q$attributes
-    keep <- attrs$attribute %in% show_attrs
-    if (any(keep)) {
-      attrs <- attrs[keep, , drop = FALSE]
-      for (i in seq_len(nrow(attrs))) {
-        atxt <- stats::setNames(lapply(langs, function(lg) {
-          if (!nzchar(attrs$language[i]) || identical(attrs$language[i], lg)) {
-            attrs$value[i]
-          } else {
-            NA_character_
-          }
-        }), langs)
-        rows[[length(rows) + 1L]] <- list(
-          code = attrs$attribute[i], texts = atxt,
-          size = theme$size_meta, color = theme$color_muted, italic = TRUE
-        )
-      }
-    }
-  }
-
+#' Render a one-row flextable with one column per language
+#'
+#' Generic helper used everywhere a snippet of text needs to be shown side
+#' by side per language (stems, descriptions, help, subquestion items).
+#'
+#' @keywords internal
+#' @noRd
+lss_render_lang_block <- function(doc, texts_by_lang, langs, theme,
+                                  size = theme$size_question,
+                                  color = theme$color_text,
+                                  italic = FALSE,
+                                  show_header = FALSE) {
   df <- as.data.frame(
-    matrix("", nrow = length(rows), ncol = 1L + length(langs)),
+    matrix("", nrow = 1L, ncol = length(langs)),
     stringsAsFactors = FALSE
   )
-  names(df) <- c("code", langs)
-  list(df = df, specs = rows)
+  names(df) <- langs
+  ft <- flextable::flextable(df)
+  if (isTRUE(show_header)) {
+    ft <- flextable::set_header_labels(
+      ft, values = stats::setNames(lss_language_label(langs), langs)
+    )
+  } else {
+    ft <- flextable::delete_part(ft, part = "header")
+  }
+  for (lg in langs) {
+    ft <- flextable::compose(
+      ft, i = 1L, j = lg,
+      value = lss_compose(
+        texts_by_lang[[lg]], theme,
+        size = size, color = color, italic_default = italic
+      )
+    )
+  }
+  ft <- lss_table_polish(ft, theme, lang_cols = langs)
+  flextable::body_add_flextable(doc, ft, align = "center")
+}
+
+#' Render a language block only when at least one language has non-empty text
+#' @keywords internal
+#' @noRd
+lss_render_optional_lang_block <- function(doc, texts_by_lang, langs, theme,
+                                           size, color, italic = FALSE) {
+  any_present <- any(vapply(
+    texts_by_lang,
+    function(v) !is.null(v) && !is.na(v) && nzchar(trimws(as.character(v))),
+    logical(1)
+  ))
+  if (!any_present) return(doc)
+  lss_render_lang_block(doc, texts_by_lang, langs, theme,
+                        size = size, color = color, italic = italic)
+}
+
+#' Render question attributes (prefix, suffix, validation, etc.) as small lines
+#' @keywords internal
+#' @noRd
+lss_render_attrs <- function(doc, q, langs, theme, show_attrs) {
+  if (length(show_attrs) == 0L || is.null(q$attributes)) return(doc)
+  attrs <- q$attributes
+  keep <- attrs$attribute %in% show_attrs &
+    !is.na(attrs$value) & nzchar(trimws(attrs$value))
+  if (!any(keep)) return(doc)
+  attrs <- attrs[keep, , drop = FALSE]
+  for (i in seq_len(nrow(attrs))) {
+    lang_suffix <- if (nzchar(attrs$language[i])) {
+      sprintf(" [%s]", attrs$language[i])
+    } else {
+      ""
+    }
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(officer::ftext(
+        sprintf("%s%s: %s", attrs$attribute[i], lang_suffix, attrs$value[i]),
+        prop = officer::fp_text(
+          font.family = theme$font_body, font.size = theme$size_meta,
+          color = theme$color_muted, italic = TRUE
+        )
+      ))
+    )
+  }
+  doc
 }
 
 #' Build the meta header line text for a question

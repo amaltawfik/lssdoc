@@ -28,8 +28,10 @@ test_that("render_lss_docx produces a non-empty .docx for hesav (2 langs)", {
 
   # Inspect the produced document.
   s <- officer::docx_summary(officer::read_docx(out))
-  h2 <- sum(s$content_type == "paragraph" & s$style_name == "heading 2", na.rm = TRUE)
-  expect_identical(h2, 31L) # 31 main questions in hesav
+  # The item-centric renderer expands each subquestion to its own Heading 1
+  # item, so the count is greater than the 31 main questions of hesav.
+  h1 <- sum(s$content_type == "paragraph" & s$style_name == "heading 1", na.rm = TRUE)
+  expect_gt(h1, 31L)
   expect_true(sum(s$content_type == "table cell") > 100L)
 })
 

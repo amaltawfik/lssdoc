@@ -1,5 +1,17 @@
 # lssdoc 0.0.0.9000
 
+* The rendered document is now organized **item-by-item** (ESS / MOSAiCH
+  style) rather than question-by-question. Each leaf question becomes one
+  numbered item with its own answer scale; for compound questions
+  (multiple choice, arrays, multiple numerical, etc.), the parent stem is
+  shown once in a colored band, the shared answer scale once below it,
+  and each subquestion becomes its **own numbered item** with the full
+  LimeSurvey response variable code (`parent_subq`). The Word table of
+  contents now lists items sequentially across the whole document; groups
+  remain visible as section banners but are not numbered. The redundant
+  "Francais / Deutsch" header that previously repeated above every small
+  table is dropped; the language column header is kept only where it adds
+  information (the shared answer scale, leaf-item answer tables).
 * Every page now carries a centered "Page X of Y" footer (Word fields, so
   the totals update on open).
 * All flextables in the rendered document are horizontally centered
