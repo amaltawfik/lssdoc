@@ -582,7 +582,7 @@ lss_render_index <- function(doc, entries, theme) {
   ft <- flextable::align(ft, align = "right", j = "No", part = "all")
   ft <- flextable::width(ft, j = "Variable", width = 2.6, unit = "in")
   ft <- flextable::width(ft, j = "No", width = 0.6, unit = "in")
-  flextable::body_add_flextable(doc, ft, align = "center")
+  flextable::body_add_flextable(doc, ft, align = "left")
 }
 
 #' Index audit findings by question code for inline lookup
@@ -885,9 +885,7 @@ lss_render_toc <- function(doc, model, theme) {
           text = entry_text,
           prop = link_props
         ),
-        fp_p = officer::fp_par(
-          padding.left = 12, padding.top = 2, padding.bottom = 2
-        )
+        fp_p = officer::fp_par(padding.top = 2, padding.bottom = 2)
       )
     )
   }
@@ -955,7 +953,7 @@ lss_render_localized_block <- function(doc, lss, langs, theme, field, title) {
     )
   }
   ft <- lss_table_polish(ft, theme, lang_cols = langs)
-  doc <- flextable::body_add_flextable(doc, ft, align = "center")
+  doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }
 
@@ -1144,6 +1142,8 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
       italic = TRUE
     )
   }
+  coding <- lss_coding_row(q, langs, theme)
+  if (!is.null(coding)) rows[[length(rows) + 1L]] <- coding
   rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
@@ -1270,7 +1270,7 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
     }
   }
   ft <- lss_table_polish(ft, theme, lang_cols = langs, has_code = TRUE)
-  flextable::body_add_flextable(doc, ft, align = "center")
+  flextable::body_add_flextable(doc, ft, align = "left")
 }
 
 #' Render a subquestion as a numbered item
@@ -1393,6 +1393,10 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
       italic = TRUE
     )
   }
+  # For predefined leaf types (Y, 5, G) the response coding is implicit.
+  # Show it as a small italic row so reviewers see the value scheme.
+  coding <- lss_coding_row(q, langs, theme)
+  if (!is.null(coding)) rows[[length(rows) + 1L]] <- coding
   # Question attributes (prefix, suffix, validation, ...) as italic rows
   # inside the item table itself, between Help and the Value section.
   rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
@@ -1489,6 +1493,40 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
+#' Item-table row describing the response coding for types where it is
+#' implicit rather than listed as enumerated answers
+#'
+#' For multiple-choice questions and predefined types (Yes/No, 5-point,
+#' gender), LimeSurvey stores responses with implicit codes (`Y/empty`,
+#' `Y/N`, `1..5`, ...). The Value section of the item table either
+#' lists the answer codes explicitly (for `has_answers` types) or stays
+#' empty (for predefined types). This helper produces a small italic
+#' "Coding" row that documents the value mapping for the latter case.
+#'
+#' @return A single row list compatible with `lss_render_item_table`,
+#'   or `NULL` when the type has no implicit coding worth printing.
+#' @keywords internal
+#' @noRd
+lss_coding_row <- function(q, langs, theme) {
+  coding <- switch(
+    q$type,
+    "M" = "Y = selected, blank = not selected",
+    "P" = "Y = selected, blank = not selected (plus a `<subq>comment` text variable)",
+    "Y" = "Y = Yes, N = No",
+    "G" = "M = Male, F = Female",
+    "5" = "1, 2, 3, 4, 5 (1 = lowest, 5 = highest)",
+    NULL
+  )
+  if (is.null(coding)) return(NULL)
+  list(
+    label = "Coding",
+    texts = stats::setNames(rep(list(coding), length(langs)), langs),
+    size = theme$size_meta,
+    color = theme$color_muted,
+    italic = TRUE
+  )
+}
+
 #' Insert a small vertical spacer before each item so consecutive
 #' meta tables do not touch.
 #' @keywords internal
@@ -1553,7 +1591,7 @@ lss_render_lang_block <- function(doc, texts_by_lang, langs, theme,
     )
   }
   ft <- lss_table_polish(ft, theme, lang_cols = langs)
-  flextable::body_add_flextable(doc, ft, align = "center")
+  flextable::body_add_flextable(doc, ft, align = "left")
 }
 
 #' Render a language block only when at least one language has non-empty text
@@ -1769,7 +1807,7 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::width(ft, j = "location", width = 2.0, unit = "in")
   ft <- flextable::width(ft, j = "language", width = 0.5, unit = "in")
   ft <- flextable::width(ft, j = "message", width = 3.5, unit = "in")
-  doc <- flextable::body_add_flextable(doc, ft, align = "center")
+  doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }
 
@@ -1995,5 +2033,5 @@ lss_render_question_meta_table <- function(doc, theme,
   ft <- flextable::width(ft, j = "Type", width = 1.7, unit = "in")
   ft <- flextable::width(ft, j = "Mand.", width = 0.7, unit = "in")
   ft <- flextable::width(ft, j = "Filter", width = 2.3, unit = "in")
-  flextable::body_add_flextable(doc, ft, align = "center")
+  flextable::body_add_flextable(doc, ft, align = "left")
 }
