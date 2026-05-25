@@ -45,11 +45,17 @@
 #' @param show_footer_title Logical; show the survey title (in every
 #'   displayed language, separated by " | ") on the left of the page
 #'   footer. The page number stays on the right regardless.
-#' @param show_item_heading Logical; show the bold heading
-#'   `"N. variable"` above each item. Default `TRUE`: the heading
-#'   provides visual hierarchy at scroll time and the item-number anchor
-#'   referenced by the variable index. Set to `FALSE` for a more compact
-#'   layout where the meta table starts each item directly.
+#' @param show_source Logical; show the **Source file** name and the
+#'   **Survey ID** rows in the cover metadata table. Default `TRUE`
+#'   keeps them for traceability; pass `FALSE` to hide both (some
+#'   reviewers prefer not to expose the LimeSurvey survey id or the
+#'   internal filename).
+#' @param show_item_heading Logical; show a bold heading
+#'   `"N. variable"` above each item. Default `FALSE`: the meta table
+#'   starts each item directly, for a compact layout. Set to `TRUE` to
+#'   add the heading line for scroll-time navigation; the item number is
+#'   already present in the meta table's `No` column and in the variable
+#'   index so the heading is redundant for cross-reference purposes.
 #' @param show_raw_filter Logical; when `TRUE` (the default) the Filter
 #'   cell of each meta table shows the human-readable form on top and the
 #'   raw LimeSurvey relevance expression in smaller italic gray underneath.
@@ -87,7 +93,8 @@ render_lss_docx <- function(
   show_toc = TRUE,
   show_index = TRUE,
   show_footer_title = TRUE,
-  show_item_heading = TRUE,
+  show_source = TRUE,
+  show_item_heading = FALSE,
   show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
@@ -144,7 +151,8 @@ render_lss_docx <- function(
   doc <- officer::read_docx()
   doc <- lss_render_cover(
     doc, lss, model, theme,
-    logo = logo, logo_width = logo_width, logo_height = logo_height
+    logo = logo, logo_width = logo_width, logo_height = logo_height,
+    show_source = isTRUE(show_source)
   )
   doc <- officer::body_add_break(doc)
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
@@ -173,7 +181,66 @@ render_lss_docx <- function(
 
   doc <- officer::body_set_default_section(doc, section)
   print(doc, target = output)
+  # Make Word and LibreOffice refresh fields (TOC, PAGE, NUMPAGES) when
+  # the document is opened, so the reader does not need to press F9 and
+  # so headless PDF conversion picks up the populated TOC.
+  lss_inject_update_fields(output)
   invisible(output)
+}
+
+#' Inject `<w:updateFields w:val="true"/>` into the .docx settings.xml
+#'
+#' This Word setting tells the reader application (Word, LibreOffice) to
+#' refresh every field in the document when it is opened. For our use
+#' that means the table of contents and the page-number fields populate
+#' immediately, without the reader having to press F9. It also propagates
+#' to headless PDF conversion via LibreOffice, which honors the flag.
+#'
+#' Post-processes the .docx zip in place: unzips to a temp directory,
+#' modifies `word/settings.xml`, repacks. Silent no-op if the file does
+#' not contain a settings.xml (it always does for officer output, but
+#' we stay defensive).
+#'
+#' @keywords internal
+#' @noRd
+lss_inject_update_fields <- function(docx_path) {
+  if (!file.exists(docx_path)) return(invisible(docx_path))
+  docx_path <- normalizePath(docx_path, mustWork = TRUE)
+  tmp <- tempfile()
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  utils::unzip(docx_path, exdir = tmp)
+  settings_file <- file.path(tmp, "word", "settings.xml")
+  if (!file.exists(settings_file)) return(invisible(docx_path))
+
+  # Read settings.xml as raw bytes, modify, write back as raw bytes.
+  raw_in <- readBin(settings_file, what = "raw",
+                    n = file.info(settings_file)$size)
+  content <- rawToChar(raw_in)
+  content <- gsub("<w:updateFields\\b[^/]*/>", "", content, perl = TRUE)
+  content <- sub(
+    "</w:settings>",
+    "<w:updateFields w:val=\"true\"/></w:settings>",
+    content, fixed = TRUE
+  )
+  writeBin(charToRaw(content), settings_file, useBytes = TRUE)
+
+  # Repack: switch to the temp dir so the relative paths returned by
+  # list.files are stored as-is inside the .docx zip
+  # ('word/settings.xml', etc.), matching the layout Word and LibreOffice
+  # expect.
+  if (file.exists(docx_path)) file.remove(docx_path)
+  # `all.files = TRUE` is critical: a .docx contains hidden entries like
+  # `_rels/.rels` whose basename starts with a dot, which list.files
+  # otherwise omits.
+  files <- list.files(tmp, recursive = TRUE, all.files = TRUE,
+                      no.. = TRUE)
+  old_wd <- getwd()
+  setwd(tmp)
+  on.exit(setwd(old_wd), add = TRUE)
+  zip::zip(zipfile = docx_path, files = files, compression_level = 9)
+  invisible(docx_path)
 }
 
 #' Build the multilingual footer title (per-language survey titles joined
@@ -531,7 +598,8 @@ lss_render_cover <- function(doc, lss, model, theme,
                              subtitle = "LimeSurvey questionnaire review",
                              logo = NULL,
                              logo_width = 1.5,
-                             logo_height = 0.75) {
+                             logo_height = 0.75,
+                             show_source = TRUE) {
   ls_settings <- lss$survey_language_settings
   langs <- model$languages
 
@@ -605,22 +673,22 @@ lss_render_cover <- function(doc, lss, model, theme,
   }
   none <- theme$empty_marker
 
+  field_pairs <- list()
+  if (isTRUE(show_source)) {
+    field_pairs[["Source file"]] <- basename(lss$file)
+    field_pairs[["Survey ID"]]   <- if (is.na(sid) || !nzchar(sid)) none else sid
+  }
+  field_pairs[["Languages"]]      <- paste(langs, collapse = ", ")
+  field_pairs[["Groups"]]         <- as.character(n_groups)
+  field_pairs[["Questions"]]      <- as.character(n_q)
+  field_pairs[["Subquestions"]]   <- as.character(n_subq)
+  field_pairs[["Answer options"]] <- as.character(n_ans)
+  field_pairs[["Last modified"]]  <- if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod
+  field_pairs[["Generated"]]      <- format(Sys.time(), "%Y-%m-%d %H:%M")
+
   meta <- data.frame(
-    Field = c(
-      "Source file", "Survey ID", "Languages", "Groups", "Questions",
-      "Subquestions", "Answer options", "Last modified", "Generated"
-    ),
-    Value = c(
-      basename(lss$file),
-      if (is.na(sid) || !nzchar(sid)) none else sid,
-      paste(langs, collapse = ", "),
-      as.character(n_groups),
-      as.character(n_q),
-      as.character(n_subq),
-      as.character(n_ans),
-      if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod,
-      format(Sys.time(), "%Y-%m-%d %H:%M")
-    ),
+    Field = names(field_pairs),
+    Value = unlist(field_pairs, use.names = FALSE),
     stringsAsFactors = FALSE
   )
   ft <- flextable::flextable(meta)
@@ -641,25 +709,17 @@ lss_render_cover <- function(doc, lss, model, theme,
   ft <- flextable::padding(ft, padding.top = 2, padding.bottom = 2, part = "all")
   doc <- officer::body_add_par(doc, "", style = "Normal")
   doc <- flextable::body_add_flextable(doc, ft, align = "center")
-
-  doc <- officer::body_add_par(doc, "", style = "Normal")
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(
-      officer::ftext(
-        "Processed locally with lssdoc. Nothing is uploaded.",
-        prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_meta,
-          color = theme$color_muted, italic = TRUE
-        )
-      ),
-      fp_p = officer::fp_par(text.align = "center")
-    )
-  )
   doc
 }
 
-#' Insert a Word table-of-contents field; updates on F9 in Word
+#' Insert a Word table-of-contents field
+#'
+#' The TOC is rendered as a Word field that lists Heading 1 paragraphs
+#' (groups). `render_lss_docx()` injects `<w:updateFields w:val="true"/>`
+#' into the resulting .docx so Word and LibreOffice both refresh the
+#' TOC automatically on open -- no F9 needed by the reader, and the
+#' field is populated when the document is converted to PDF.
+#'
 #' @keywords internal
 #' @noRd
 lss_render_toc <- function(doc, theme) {
@@ -671,18 +731,6 @@ lss_render_toc <- function(doc, theme) {
         prop = officer::fp_text(
           font.family = theme$font_body, font.size = theme$size_heading1,
           bold = TRUE, color = theme$color_primary
-        )
-      )
-    )
-  )
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(
-      officer::ftext(
-        "Press F9 in Word to refresh page numbers after opening.",
-        prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_meta,
-          color = theme$color_muted, italic = TRUE
         )
       )
     )

@@ -11,9 +11,13 @@
 #' @return The `pdf` path, invisibly.
 #'
 #' @details
-#' LibreOffice headless does not populate Word table-of-contents fields. If
-#' the source document contains a TOC, open the `.docx` in Word once and
-#' press F9, then re-export; or work directly from the `.docx`.
+#' LibreOffice headless does not refresh Word field values (TOC, page
+#' counts) during conversion, even when the document is flagged to
+#' update fields on open. As a result, the table-of-contents field
+#' produced by [render_lss_docx()] appears empty in the converted PDF.
+#' To obtain a PDF with a populated TOC, open the generated `.docx` in
+#' Word -- the TOC refreshes automatically -- and use `File > Save As >
+#' PDF`. Working directly from the `.docx` is the simplest path.
 #'
 #' @examples
 #' \dontrun{

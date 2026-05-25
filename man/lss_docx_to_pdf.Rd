@@ -21,9 +21,12 @@ upload, no network call. LibreOffice (the \code{soffice} executable) must be
 available; the function reports an actionable error if it is not.
 }
 \details{
-LibreOffice headless does not populate Word table-of-contents fields. If
-the source document contains a TOC, open the \code{.docx} in Word once and
-press F9, then re-export; or work directly from the \code{.docx}.
+LibreOffice headless does not refresh Word field values (TOC, page
+counts) during conversion, even when the document is flagged to
+update fields on open. As a result, the table-of-contents field
+produced by \code{\link[=render_lss_docx]{render_lss_docx()}} appears empty in the converted PDF.
+To obtain a PDF with a populated TOC, open the generated \code{.docx} in
+Word -- the TOC refreshes automatically -- and use \verb{File > Save As > PDF}. Working directly from the \code{.docx} is the simplest path.
 }
 \examples{
 \dontrun{

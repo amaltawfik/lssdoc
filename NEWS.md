@@ -1,5 +1,23 @@
 # lssdoc 0.0.0.9000
 
+* Generated `.docx` files now embed the `<w:updateFields w:val="true"/>`
+  setting, so Word refreshes the table-of-contents and page-number
+  fields automatically when the document is opened -- no F9 needed.
+  The instruction line "Press F9 in Word to refresh page numbers"
+  above the TOC has been removed, and the marketing line "Processed
+  locally with lssdoc. Nothing is uploaded." has been dropped from the
+  cover page. (LibreOffice headless PDF conversion still does not
+  refresh fields, so `lss_to_pdf()` produces a PDF with an empty TOC;
+  open the .docx in Word and save as PDF to obtain a populated TOC.)
+* New `show_source` argument (default `TRUE`). When `FALSE`, the
+  `Source file` and `Survey ID` rows are hidden from the cover
+  metadata table -- useful when sharing a review document without
+  exposing the internal LimeSurvey survey id or the original filename.
+* `show_item_heading` default flipped to `FALSE`: the meta table now
+  starts each item directly for a more compact layout. The item number
+  is still visible in the meta table's `No` column and the variable
+  index, so the bold "N. variable" heading is redundant for cross-
+  reference. Pass `show_item_heading = TRUE` to restore it.
 * Each **subquestion** now carries its own structured meta table (with its
   own No, composite variable code `parent_subq`, and the type / mandatory /
   filter inherited from the parent question). Every numbered item is now

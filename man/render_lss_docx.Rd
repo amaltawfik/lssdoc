@@ -17,6 +17,8 @@ render_lss_docx(
   show_toc = TRUE,
   show_index = TRUE,
   show_footer_title = TRUE,
+  show_source = TRUE,
+  show_item_heading = FALSE,
   show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
@@ -70,6 +72,19 @@ alphabetically. Useful for cross-referencing a specific variable.}
 \item{show_footer_title}{Logical; show the survey title (in every
 displayed language, separated by " | ") on the left of the page
 footer. The page number stays on the right regardless.}
+
+\item{show_source}{Logical; show the \strong{Source file} name and the
+\strong{Survey ID} rows in the cover metadata table. Default \code{TRUE}
+keeps them for traceability; pass \code{FALSE} to hide both (some
+reviewers prefer not to expose the LimeSurvey survey id or the
+internal filename).}
+
+\item{show_item_heading}{Logical; show a bold heading
+\code{"N. variable"} above each item. Default \code{FALSE}: the meta table
+starts each item directly, for a compact layout. Set to \code{TRUE} to
+add the heading line for scroll-time navigation; the item number is
+already present in the meta table's \code{No} column and in the variable
+index so the heading is redundant for cross-reference purposes.}
 
 \item{show_raw_filter}{Logical; when \code{TRUE} (the default) the Filter
 cell of each meta table shows the human-readable form on top and the
