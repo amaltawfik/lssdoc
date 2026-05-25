@@ -178,12 +178,25 @@ lss_subquestion_models <- function(lss, qid, langs) {
   lapply(seq_len(nrow(sq)), function(i) {
     sqid <- sq$qid[i]
     texts <- lss_localized(lss$question_l10ns, "qid", sqid, langs, c("question", "help"))
+    # LimeSurvey stores per-subquestion attributes (`exclude_all_others`,
+    # display rules, ...) in the same `question_attributes` table keyed
+    # by the subquestion's own qid. Surface them so renderers can show
+    # subq-level flags alongside the inherited parent meta.
+    attrs <- if (!is.null(lss$question_attributes)) {
+      lss$question_attributes[
+        lss$question_attributes$qid == sqid, ,
+        drop = FALSE
+      ]
+    } else {
+      NULL
+    }
     list(
       qid = sqid,
       code = sq$title[i],
       scale_id = sq$scale_id[i],
       relevance = sq$relevance[i],
-      texts = texts
+      texts = texts,
+      attributes = attrs
     )
   })
 }

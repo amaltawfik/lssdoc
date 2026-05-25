@@ -148,6 +148,7 @@ render_lss_docx <- function(
   state <- lss_render_state(model)
   state$show_raw_filter <- isTRUE(show_raw_filter)
   state$show_item_heading <- isTRUE(show_item_heading)
+  state$show_attrs <- show_attrs
   resolved_titles <- lss_resolve_titles(title, lss, langs)
   section <- lss_render_section_props(
     page_format, length(langs),
@@ -1333,6 +1334,9 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
       italic = TRUE
     )
   }
+  # Subquestion-level attributes (e.g. exclude_all_others on the subq
+  # marked exclusive in a multi-choice question) come from sq, not q.
+  rows <- c(rows, lss_attr_rows(sq, langs, theme, state$show_attrs))
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
 }

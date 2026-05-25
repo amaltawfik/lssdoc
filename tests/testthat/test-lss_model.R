@@ -61,6 +61,37 @@ test_that("multiple-choice questions use subquestions, not answers", {
   expect_length(q$answers, 0L)
 })
 
+test_that("subquestion attributes are exposed on the model subq objects", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- parse_lss(path)
+  # The bundled fixtures do not use per-subquestion attributes, so we
+  # inject a synthetic one to confirm the propagation path works.
+  sq_row <- lss$subquestions[1, ]
+  lss$question_attributes <- rbind(
+    lss$question_attributes,
+    data.frame(
+      qid = sq_row$qid, attribute = "exclude_all_others",
+      value = "1", language = "",
+      stringsAsFactors = FALSE
+    )
+  )
+  m <- lss_model(lss)
+  found <- FALSE
+  for (g in m$groups) {
+    for (q in g$questions) {
+      for (sq in q$subquestions) {
+        if (identical(sq$qid, sq_row$qid)) {
+          expect_false(is.null(sq$attributes))
+          expect_true("exclude_all_others" %in% sq$attributes$attribute)
+          found <- TRUE
+        }
+      }
+    }
+  }
+  expect_true(found)
+})
+
 test_that("a missing translation surfaces as NA, not a dropped entry", {
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
