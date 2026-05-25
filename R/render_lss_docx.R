@@ -1038,21 +1038,24 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
 
-  texts_by_lang <- stats::setNames(
-    lapply(langs, function(lg) q$texts[[lg]]$question), langs
+  texts_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$question)
+  help_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$help)
+  rows <- list()
+  rows[[length(rows) + 1L]] <- list(
+    label = "Question",
+    texts = stats::setNames(texts_by_lang, langs),
+    size = theme$size_question
   )
-  doc <- lss_render_lang_block(doc, texts_by_lang, langs, theme,
-                               size = theme$size_question)
-
-  if (isTRUE(show_help)) {
-    help_by_lang <- stats::setNames(
-      lapply(langs, function(lg) q$texts[[lg]]$help), langs
+  if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = "Help",
+      texts = stats::setNames(help_by_lang, langs),
+      size = theme$size_help,
+      color = theme$color_muted,
+      italic = TRUE
     )
-    doc <- lss_render_optional_lang_block(doc, help_by_lang, langs, theme,
-                                          size = theme$size_help,
-                                          color = theme$color_muted,
-                                          italic = TRUE)
   }
+  doc <- lss_render_item_table(doc, theme, langs, rows)
   doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
   doc
 }
@@ -1156,19 +1159,22 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
-  doc <- lss_render_lang_block(
-    doc,
-    stats::setNames(texts_by_lang, langs),
-    langs, theme, size = theme$size_subq
+  rows <- list()
+  rows[[length(rows) + 1L]] <- list(
+    label = "Question",
+    texts = stats::setNames(texts_by_lang, langs),
+    size = theme$size_subq
   )
-  if (isTRUE(show_help)) {
-    doc <- lss_render_optional_lang_block(
-      doc,
-      stats::setNames(help_by_lang, langs),
-      langs, theme,
-      size = theme$size_help, color = theme$color_muted, italic = TRUE
+  if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = "Help",
+      texts = stats::setNames(help_by_lang, langs),
+      size = theme$size_help,
+      color = theme$color_muted,
+      italic = TRUE
     )
   }
+  doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
 }
 
@@ -1213,26 +1219,102 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
 
-  doc <- lss_render_lang_block(
-    doc,
-    stats::setNames(texts_by_lang, langs),
-    langs, theme, size = theme$size_question
+  # Build the unified item table: Question, optional Help, then one
+  # row per answer option (for has_answers leaf types like L, !, O).
+  rows <- list()
+  rows[[length(rows) + 1L]] <- list(
+    label = "Question",
+    texts = stats::setNames(texts_by_lang, langs),
+    size = theme$size_question
   )
-
-  if (isTRUE(show_help)) {
-    doc <- lss_render_optional_lang_block(
-      doc,
-      stats::setNames(help_by_lang, langs),
-      langs, theme,
-      size = theme$size_help, color = theme$color_muted, italic = TRUE
+  if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = "Help",
+      texts = stats::setNames(help_by_lang, langs),
+      size = theme$size_help,
+      color = theme$color_muted,
+      italic = TRUE
     )
   }
-
   if (length(q$answers) > 0L) {
-    doc <- lss_render_scale_table(doc, q$answers, langs, theme)
+    for (a in q$answers) {
+      rows[[length(rows) + 1L]] <- list(
+        label = paste0("Value ", a$code),
+        texts = stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs),
+        size = theme$size_answer
+      )
+    }
   }
+  doc <- lss_render_item_table(doc, theme, langs, rows)
   doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
   doc
+}
+
+#' Render a unified item table with a left "Label" column
+#'
+#' Builds a single flextable per item with the layout
+#' `Language | Français | Deutsch | ...` as header and one body row per
+#' content element (`Question`, `Help`, `Value 1`, `Value 2`, ...).
+#' Each row carries its own label so the document reads as
+#' self-describing: the reviewer sees `Question:` and `Help:` rather
+#' than having to infer it from position. This is the ESS/MOSAiCH
+#' convention where each tabular row names what it represents.
+#'
+#' @param rows A list of `list(label = "...", texts = list(lang = "..."), size = ...)`.
+#'   `texts` is a named list keyed by language code; `size` is the body
+#'   font size for that row (defaults to `theme$size_question` when
+#'   omitted). Rows missing or empty across every language are kept
+#'   (we never silently drop content), with cells filled by the muted
+#'   em-dash placeholder.
+#' @keywords internal
+#' @noRd
+lss_render_item_table <- function(doc, theme, langs, rows) {
+  if (length(rows) == 0L) return(doc)
+
+  df <- data.frame(
+    Label = vapply(rows, function(r) r$label, character(1)),
+    stringsAsFactors = FALSE
+  )
+  for (lg in langs) df[[lg]] <- ""
+
+  ft <- flextable::flextable(df)
+  ft <- flextable::set_header_labels(
+    ft,
+    values = c(
+      list(Label = "Language"),
+      stats::setNames(as.list(lss_language_label(langs)), langs)
+    )
+  )
+  for (i in seq_along(rows)) {
+    sz <- if (!is.null(rows[[i]]$size)) rows[[i]]$size else theme$size_question
+    italic <- isTRUE(rows[[i]]$italic)
+    color <- if (!is.null(rows[[i]]$color)) rows[[i]]$color else theme$color_text
+    for (lg in langs) {
+      ft <- flextable::compose(
+        ft, i = i, j = lg,
+        value = lss_compose(rows[[i]]$texts[[lg]], theme,
+                            size = sz, color = color, italic_default = italic)
+      )
+    }
+  }
+  ft <- lss_table_polish(ft, theme, lang_cols = langs)
+  ft <- flextable::bold(ft, j = "Label", part = "body")
+  ft <- flextable::color(ft, j = "Label", color = theme$color_primary, part = "body")
+  ft <- flextable::align(ft, j = "Label", align = "left", part = "body")
+  ft <- flextable::width(ft, j = "Label", width = 0.9, unit = "in")
+  flextable::body_add_flextable(doc, ft, align = "center")
+}
+
+#' Helper: TRUE if at least one element of a named list of strings is
+#' non-empty after trimming.
+#' @keywords internal
+#' @noRd
+lss_any_present <- function(values) {
+  any(vapply(
+    values,
+    function(v) !is.null(v) && !is.na(v) && nzchar(trimws(as.character(v))),
+    logical(1)
+  ))
 }
 
 #' Render a one-row flextable with one column per language
