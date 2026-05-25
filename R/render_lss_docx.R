@@ -42,9 +42,11 @@
 #' @param show_index Logical; append a variable index at the end of the
 #'   document listing every item code with its item number, sorted
 #'   alphabetically. Useful for cross-referencing a specific variable.
-#' @param show_footer_title Logical; show the survey title (in every
-#'   displayed language, separated by " | ") on the left of the page
-#'   footer. The page number stays on the right regardless.
+#' @param show_header_title Logical; show the survey title at the top
+#'   right of every page, one line per displayed language. Long titles
+#'   are truncated to 80 characters with a trailing ellipsis. Default
+#'   `TRUE`. When `FALSE`, only the `X/Y` page counter shows at the
+#'   bottom right.
 #' @param show_source Logical; show the **Source file** name and the
 #'   **Survey ID** rows in the cover metadata table. Default `TRUE`
 #'   keeps them for traceability; pass `FALSE` to hide both (some
@@ -61,6 +63,12 @@
 #'   raw LimeSurvey relevance expression in smaller italic gray underneath.
 #'   Set to `FALSE` for a cleaner cell that shows only the plain form (the
 #'   raw expression is still shown when it could not be simplified).
+#' @param title Optional override of the survey title shown on the cover
+#'   page and the top-right header. `NULL` (default) uses the per-
+#'   language titles from the `.lss` survey settings. Pass a single
+#'   string to use the same title in every displayed language, or a
+#'   named character vector keyed by language code (e.g.
+#'   `c(fr = "Mon titre", de = "Mein Titel")`) for per-language overrides.
 #' @param logo Optional path to an image (PNG or JPEG) to display at the top
 #'   of the cover page. The `.lss` file does not embed a logo, so this image
 #'   must be supplied by the caller. `NULL` (default) keeps the cover
@@ -92,10 +100,11 @@ render_lss_docx <- function(
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,
   show_index = TRUE,
-  show_footer_title = TRUE,
+  show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,
   show_raw_filter = TRUE,
+  title = NULL,
   logo = NULL,
   logo_width = 1.5,
   logo_height = 0.75
@@ -138,13 +147,14 @@ render_lss_docx <- function(
   state <- lss_render_state(model)
   state$show_raw_filter <- isTRUE(show_raw_filter)
   state$show_item_heading <- isTRUE(show_item_heading)
+  resolved_titles <- lss_resolve_titles(title, lss, langs)
   section <- lss_render_section_props(
     page_format, length(langs),
     theme = theme,
-    footer_title = if (isTRUE(show_footer_title)) {
-      lss_footer_title(lss, langs)
+    header_titles = if (isTRUE(show_header_title)) {
+      unname(resolved_titles)
     } else {
-      ""
+      character(0)
     }
   )
 
@@ -152,7 +162,8 @@ render_lss_docx <- function(
   doc <- lss_render_cover(
     doc, lss, model, theme,
     logo = logo, logo_width = logo_width, logo_height = logo_height,
-    show_source = isTRUE(show_source)
+    show_source = isTRUE(show_source),
+    titles = resolved_titles
   )
   doc <- officer::body_add_break(doc)
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
@@ -277,19 +288,48 @@ lss_inject_update_fields <- function(docx_path) {
   invisible(docx_path)
 }
 
-#' Build the multilingual footer title (per-language survey titles joined
-#' by " | "). Returns "" when no usable title is available.
+#' Resolve the final per-language titles from the user `title` argument
+#'
+#' Returns a named character vector keyed by `langs`. When `title` is
+#' `NULL`, the survey-language settings of the `.lss` are used. A bare
+#' string is used for every language. A named vector is matched on
+#' language code; missing entries fall back to the `.lss` setting.
+#'
 #' @keywords internal
 #' @noRd
-lss_footer_title <- function(lss, langs) {
+lss_resolve_titles <- function(title, lss, langs) {
+  defaults <- lss_header_titles(lss, langs)
+  names(defaults) <- langs
+  if (is.null(title)) {
+    return(defaults)
+  }
+  if (length(title) == 1L && is.null(names(title))) {
+    return(stats::setNames(rep(as.character(title), length(langs)), langs))
+  }
+  out <- defaults
+  for (lg in intersect(langs, names(title))) {
+    out[[lg]] <- as.character(title[[lg]])
+  }
+  out
+}
+
+#' Per-language survey titles for the header, in the order of `langs`.
+#'
+#' Empty / missing titles produce empty strings (the header helper
+#' skips them); the order of the returned vector matches `langs` so
+#' the primary language shows on the top line.
+#'
+#' @keywords internal
+#' @noRd
+lss_header_titles <- function(lss, langs) {
   ls_settings <- lss$survey_language_settings
-  if (is.null(ls_settings) || nrow(ls_settings) == 0L) return("")
-  titles <- vapply(langs, function(lg) {
+  if (is.null(ls_settings) || nrow(ls_settings) == 0L) {
+    return(rep("", length(langs)))
+  }
+  vapply(langs, function(lg) {
     v <- ls_settings$surveyls_title[ls_settings$surveyls_language == lg]
     if (length(v) == 0L) "" else as.character(v[1])
   }, character(1))
-  titles <- titles[nzchar(trimws(titles))]
-  if (length(titles) == 0L) "" else paste(titles, collapse = " | ")
 }
 
 #' Mutable state passed through the render functions
@@ -414,7 +454,7 @@ lss_language_label <- function(code) {
 #' @noRd
 lss_render_section_props <- function(page_format, n_langs,
                                      theme = lss_render_theme(),
-                                     footer_title = "") {
+                                     header_titles = character(0)) {
   if (identical(page_format, "auto")) {
     page_format <- if (n_langs <= 2L) "A4-portrait" else "A4-landscape"
   }
@@ -424,26 +464,50 @@ lss_render_section_props <- function(page_format, n_langs,
     "A4-landscape" = officer::page_size(width = 11.69, height = 8.27, orient = "landscape"),
     "A3"           = officer::page_size(width = 16.53, height = 11.69, orient = "landscape")
   )
-  # Right tab stop = page width minus left+right margins, so the page
-  # number sits on the right edge of the printable area.
   margin <- 0.6
-  tab_pos <- size$width - 2 * margin
   officer::prop_section(
     page_size = size,
     page_margins = officer::page_mar(top = 0.7, bottom = 0.7, left = margin, right = margin),
-    footer_default = lss_build_footer(theme, footer_title, tab_pos)
+    header_default = lss_build_header(theme, header_titles),
+    footer_default = lss_build_footer(theme)
   )
 }
 
-#' Page footer with the survey title on the left and "X / Y" on the right.
+#' Page header with the survey title(s), right-aligned, one line per language.
 #'
-#' A single paragraph with a right-aligned tab stop at the printable-area
-#' edge places the page number flush right while the title flows from the
-#' left margin. When `footer_title` is empty, only the page number shows.
+#' Each language gets its own line so long titles never collide. Titles
+#' longer than 80 characters are truncated with a trailing ellipsis to
+#' keep the header to a single visual line per language.
 #'
+#' @param header_titles Character vector, one entry per displayed language.
+#'   Empty entries are skipped. When the vector is empty (the user opted
+#'   out via `show_header_title = FALSE`), the header is left blank.
 #' @keywords internal
 #' @noRd
-lss_build_footer <- function(theme, footer_title = "", tab_pos = 7) {
+lss_build_header <- function(theme, header_titles = character(0)) {
+  if (length(header_titles) == 0L) return(officer::block_list())
+  muted <- officer::fp_text(
+    font.family = theme$font_body,
+    font.size = theme$size_meta,
+    color = theme$color_muted
+  )
+  right_align <- officer::fp_par(text.align = "right")
+  pars <- lapply(header_titles, function(t) {
+    if (is.null(t) || is.na(t) || !nzchar(trimws(t))) return(NULL)
+    officer::fpar(
+      officer::ftext(lss_truncate_title(t), prop = muted),
+      fp_p = right_align
+    )
+  })
+  pars <- Filter(Negate(is.null), pars)
+  if (length(pars) == 0L) return(officer::block_list())
+  do.call(officer::block_list, pars)
+}
+
+#' Page footer with a compact `X/Y` page counter, right-aligned.
+#' @keywords internal
+#' @noRd
+lss_build_footer <- function(theme) {
   muted <- officer::fp_text(
     font.family = theme$font_body,
     font.size = theme$size_meta,
@@ -451,16 +515,22 @@ lss_build_footer <- function(theme, footer_title = "", tab_pos = 7) {
   )
   officer::block_list(
     officer::fpar(
-      officer::ftext(footer_title, prop = muted),
-      officer::run_tab(),
       officer::run_word_field("PAGE", prop = muted),
-      officer::ftext(" / ", prop = muted),
+      officer::ftext("/", prop = muted),
       officer::run_word_field("NUMPAGES", prop = muted),
-      fp_p = officer::fp_par(
-        tabs = officer::fp_tabs(officer::fp_tab(pos = tab_pos, style = "right"))
-      )
+      fp_p = officer::fp_par(text.align = "right")
     )
   )
+}
+
+#' Truncate a title with an ASCII ellipsis if it exceeds the budget
+#' @keywords internal
+#' @noRd
+lss_truncate_title <- function(text, max_chars = 80L) {
+  if (is.null(text) || is.na(text) || !nzchar(text)) return("")
+  text <- trimws(text)
+  if (nchar(text) <= max_chars) return(text)
+  paste0(substr(text, 1L, max_chars - 3L), "...")
 }
 
 #' Render the variable index at the end of the document
@@ -641,9 +711,13 @@ lss_render_cover <- function(doc, lss, model, theme,
                              logo = NULL,
                              logo_width = 1.5,
                              logo_height = 0.75,
-                             show_source = TRUE) {
+                             show_source = TRUE,
+                             titles = NULL) {
   ls_settings <- lss$survey_language_settings
   langs <- model$languages
+  if (is.null(titles)) {
+    titles <- stats::setNames(lss_header_titles(lss, langs), langs)
+  }
 
   # Optional logo at the very top of the cover page.
   if (!is.null(logo)) {
@@ -660,12 +734,10 @@ lss_render_cover <- function(doc, lss, model, theme,
 
   # Title in every language (largest font).
   for (lg in langs) {
-    title <- if (!is.null(ls_settings) && nrow(ls_settings) > 0) {
-      ls_settings$surveyls_title[ls_settings$surveyls_language == lg][1]
-    } else {
-      NA_character_
+    title <- titles[[lg]]
+    if (is.null(title) || is.na(title) || !nzchar(title)) {
+      title <- "(untitled survey)"
     }
-    if (is.na(title) || !nzchar(title)) title <- "(untitled survey)"
     doc <- officer::body_add_fpar(
       doc,
       officer::fpar(
@@ -955,7 +1027,7 @@ lss_render_question_block <- function(doc, q, langs, theme,
                                       show_technical_attrs, audit_idx, state) {
   info <- lss_type_info(q$type)
   if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
-    lss_render_compound_question(
+    doc <- lss_render_compound_question(
       doc, q, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
@@ -965,7 +1037,7 @@ lss_render_question_block <- function(doc, q, langs, theme,
       state = state
     )
   } else {
-    lss_render_leaf_item(
+    doc <- lss_render_leaf_item(
       doc, q, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
@@ -977,6 +1049,18 @@ lss_render_question_block <- function(doc, q, langs, theme,
       state = state
     )
   }
+  # When the question's `other` flag is set, LimeSurvey adds a free-text
+  # input as a sibling response variable named `parent_other`. We
+  # document it as an item in its own right so the reader sees the
+  # variable and the customized prompt.
+  if (identical(q$other, "Y")) {
+    doc <- lss_render_other_item(
+      doc, q, langs, theme,
+      audit_idx = audit_idx,
+      state = state
+    )
+  }
+  doc
 }
 
 #' Render a compound question (a parent with subquestions, ESS/Mosaich style)
@@ -1058,6 +1142,71 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
   doc
+}
+
+#' Render the LimeSurvey "Other:" text input as a standalone item
+#'
+#' When a question has `other = "Y"`, LimeSurvey generates an
+#' additional response variable named `<parent>_other` that holds the
+#' free text the respondent typed in the "Other:" field. The prompt
+#' shown next to that input can be customized via the
+#' `other_replace_text` attribute (per language). We surface this as
+#' its own numbered item so the reader sees the variable code in the
+#' index and meta table, alongside any other items.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
+  state$item_no <- state$item_no + 1L
+  item_code <- paste0(q$code, "_other")
+  state$index_entries[[length(state$index_entries) + 1L]] <- list(
+    code = item_code, no = state$item_no
+  )
+
+  # Look up the customized "Other:" prompt per language; fall back to a
+  # generic "Other:" label when the attribute is missing.
+  prompt_for_lang <- function(lg) {
+    if (is.null(q$attributes) || nrow(q$attributes) == 0L) return("Other:")
+    attrs <- q$attributes[q$attributes$attribute == "other_replace_text", , drop = FALSE]
+    if (nrow(attrs) == 0L) return("Other:")
+    lang_hit <- attrs$value[attrs$language == lg]
+    if (length(lang_hit) > 0L && nzchar(trimws(lang_hit[1]))) return(lang_hit[1])
+    empty_lang <- attrs$value[!nzchar(attrs$language)]
+    if (length(empty_lang) > 0L && nzchar(trimws(empty_lang[1]))) return(empty_lang[1])
+    "Other:"
+  }
+  texts_by_lang <- stats::setNames(lapply(langs, prompt_for_lang), langs)
+
+  if (isTRUE(state$show_item_heading)) {
+    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    heading_prop <- officer::fp_text(
+      font.family = theme$font_body, font.size = theme$size_heading2,
+      bold = TRUE, color = theme$color_text
+    )
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(heading_text, prop = heading_prop),
+        fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+      )
+    )
+  }
+
+  doc <- lss_render_question_meta_table(
+    doc, theme,
+    item_no = state$item_no,
+    variable = item_code,
+    type = "T", type_label = "Other - free text",
+    mandatory = "N",
+    relevance = q$relevance,
+    show_raw_filter = isTRUE(state$show_raw_filter)
+  )
+  rows <- list(list(
+    label = "Question",
+    texts = texts_by_lang,
+    size = theme$size_question
+  ))
+  lss_render_item_table(doc, theme, langs, rows)
 }
 
 #' Render the shared answer scale of an array-style question

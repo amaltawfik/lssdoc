@@ -1,5 +1,25 @@
 # lssdoc 0.0.0.9000
 
+* The survey title now appears at the **top-right header** of every
+  page (one line per displayed language, truncated to 80 characters
+  with a trailing ellipsis when longer), replacing the previous
+  footer-left position. The footer now holds only the compact `X/Y`
+  page counter (no spaces) right-aligned. Controlled by the renamed
+  `show_header_title` argument (was `show_footer_title`).
+* New `title` argument to `render_lss_docx()`. Pass a single string
+  to override every language with the same title, or a named
+  character vector like `c(fr = "Mon titre", de = "Mein Titel")` for
+  per-language overrides. `NULL` (the default) keeps the per-language
+  titles from the survey settings. Drives both the cover page and the
+  header.
+* Each item now renders as a **unified mini-table** with a left label
+  column and one row per content element
+  (`Language | Question | Help | Value 1 | Value 2 | ...`). Each row
+  is self-describing in line with ESS / MOSAiCH convention.
+* When a question has `other = "Y"`, the LimeSurvey free-text
+  variable `<parent>_other` is now surfaced as its own numbered item
+  with the customized `other_replace_text` prompt, instead of being
+  buried in the attributes section.
 * Table-of-contents entries are now **clickable hyperlinks** that jump
   to the corresponding group heading. Each group heading is anchored
   with a bookmark and the TOC entry is an internal hyperlink to that
