@@ -14,6 +14,9 @@ render_lss_docx(
   show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
+  show_toc = TRUE,
+  show_index = TRUE,
+  show_footer_title = TRUE,
   show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
@@ -53,6 +56,20 @@ under the question text when present.}
 \item{page_format}{Page format. \code{"auto"} picks portrait for one or two
 languages and landscape from three. Use \code{"A4-portrait"},
 \code{"A4-landscape"}, or \code{"A3"} to force a layout.}
+
+\item{show_toc}{Logical; include a table of contents listing the groups
+of the survey. Skipped automatically when the survey has fewer than
+two groups (a single-group survey makes the TOC redundant). Items
+themselves are not in the TOC; use \code{show_index} for a navigable
+variable index.}
+
+\item{show_index}{Logical; append a variable index at the end of the
+document listing every item code with its item number, sorted
+alphabetically. Useful for cross-referencing a specific variable.}
+
+\item{show_footer_title}{Logical; show the survey title (in every
+displayed language, separated by " | ") on the left of the page
+footer. The page number stays on the right regardless.}
 
 \item{show_raw_filter}{Logical; when \code{TRUE} (the default) the Filter
 cell of each meta table shows the human-readable form on top and the

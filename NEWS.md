@@ -1,5 +1,23 @@
 # lssdoc 0.0.0.9000
 
+* New navigation layer for the rendered document:
+  - **Table of contents** now lists groups only, not items: a 95-item
+    survey produces a clean 5-line TOC instead of a 95-line list.
+    Controlled by `show_toc` (default `TRUE`), skipped automatically when
+    the survey has fewer than two groups.
+  - **Variable index** appended at the end of the document: every item
+    code with its sequential number, sorted alphabetically, so the
+    reader can look up a specific variable. Controlled by `show_index`
+    (default `TRUE`).
+  - **Page footer** redesigned: survey title (per displayed language,
+    joined by ` | `) on the left, `X / Y` page number on the right.
+    Controlled by `show_footer_title` (default `TRUE`); the page number
+    is always shown.
+* Items are now rendered as styled paragraphs with a manual sequential
+  prefix (`12. variable`) instead of Heading 1 paragraphs. Groups
+  become Heading 1 so the TOC reads as a list of sections. Word's
+  auto-numbering of Heading 1 thus increments per group, not per item;
+  the manual prefix on items preserves the flat per-item numbering.
 * The filter humanizer now collapses LimeSurvey's defensive
   `!is_empty(X.NAOK) && (X.NAOK OP value)` idiom into the equivalent
   human-readable form `X OP value`. The LimeSurvey conditional designer

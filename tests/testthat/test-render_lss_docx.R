@@ -28,11 +28,16 @@ test_that("render_lss_docx produces a non-empty .docx for hesav (2 langs)", {
 
   # Inspect the produced document.
   s <- officer::docx_summary(officer::read_docx(out))
-  # The item-centric renderer expands each subquestion to its own Heading 1
-  # item, so the count is greater than the 31 main questions of hesav.
-  h1 <- sum(s$content_type == "paragraph" & s$style_name == "heading 1", na.rm = TRUE)
-  expect_gt(h1, 31L)
-  expect_true(sum(s$content_type == "table cell") > 100L)
+  # Groups now use Heading 1 (one per group, in the TOC); items use a
+  # styled paragraph with our manual sequential number. We verify the
+  # group H1 count plus the item expansion via the total number of table
+  # cells produced (each item has its own meta table; arrays add a
+  # shared answer scale on top).
+  h1 <- sum(
+    !is.na(s$style_name) & s$style_name == "heading 1", na.rm = TRUE
+  )
+  expect_gt(h1, 0L)
+  expect_true(sum(s$content_type == "table cell") > 200L)
 })
 
 test_that("render_lss_docx with show_audit = FALSE drops the audit section", {

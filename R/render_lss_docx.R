@@ -34,6 +34,17 @@
 #' @param page_format Page format. `"auto"` picks portrait for one or two
 #'   languages and landscape from three. Use `"A4-portrait"`,
 #'   `"A4-landscape"`, or `"A3"` to force a layout.
+#' @param show_toc Logical; include a table of contents listing the groups
+#'   of the survey. Skipped automatically when the survey has fewer than
+#'   two groups (a single-group survey makes the TOC redundant). Items
+#'   themselves are not in the TOC; use `show_index` for a navigable
+#'   variable index.
+#' @param show_index Logical; append a variable index at the end of the
+#'   document listing every item code with its item number, sorted
+#'   alphabetically. Useful for cross-referencing a specific variable.
+#' @param show_footer_title Logical; show the survey title (in every
+#'   displayed language, separated by " | ") on the left of the page
+#'   footer. The page number stays on the right regardless.
 #' @param show_raw_filter Logical; when `TRUE` (the default) the Filter
 #'   cell of each meta table shows the human-readable form on top and the
 #'   raw LimeSurvey relevance expression in smaller italic gray underneath.
@@ -68,6 +79,9 @@ render_lss_docx <- function(
   show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
+  show_toc = TRUE,
+  show_index = TRUE,
+  show_footer_title = TRUE,
   show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
@@ -110,7 +124,15 @@ render_lss_docx <- function(
   }
   state <- lss_render_state(model)
   state$show_raw_filter <- isTRUE(show_raw_filter)
-  section <- lss_render_section_props(page_format, length(langs))
+  section <- lss_render_section_props(
+    page_format, length(langs),
+    theme = theme,
+    footer_title = if (isTRUE(show_footer_title)) {
+      lss_footer_title(lss, langs)
+    } else {
+      ""
+    }
+  )
 
   doc <- officer::read_docx()
   doc <- lss_render_cover(
@@ -118,12 +140,12 @@ render_lss_docx <- function(
     logo = logo, logo_width = logo_width, logo_height = logo_height
   )
   doc <- officer::body_add_break(doc)
-  doc <- lss_render_toc(doc, theme)
+  if (isTRUE(show_toc) && length(model$groups) >= 2L) {
+    doc <- lss_render_toc(doc, theme)
+  }
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
     doc <- officer::body_add_break(doc)
     doc <- lss_render_audit_section(doc, audit_idx, theme)
-    # Keep our item counter aligned with Word's H1 numbering.
-    state$item_no <- state$item_no + 1L
   }
   doc <- lss_render_welcome(doc, lss, langs, theme)
   for (group in model$groups) {
@@ -137,10 +159,28 @@ render_lss_docx <- function(
     )
   }
   doc <- lss_render_endtext(doc, lss, langs, theme)
+  if (isTRUE(show_index) && length(state$index_entries) > 0L) {
+    doc <- lss_render_index(doc, state$index_entries, theme)
+  }
 
   doc <- officer::body_set_default_section(doc, section)
   print(doc, target = output)
   invisible(output)
+}
+
+#' Build the multilingual footer title (per-language survey titles joined
+#' by " | "). Returns "" when no usable title is available.
+#' @keywords internal
+#' @noRd
+lss_footer_title <- function(lss, langs) {
+  ls_settings <- lss$survey_language_settings
+  if (is.null(ls_settings) || nrow(ls_settings) == 0L) return("")
+  titles <- vapply(langs, function(lg) {
+    v <- ls_settings$surveyls_title[ls_settings$surveyls_language == lg]
+    if (length(v) == 0L) "" else as.character(v[1])
+  }, character(1))
+  titles <- titles[nzchar(trimws(titles))]
+  if (length(titles) == 0L) "" else paste(titles, collapse = " | ")
 }
 
 #' Mutable state passed through the render functions
@@ -154,6 +194,7 @@ lss_render_state <- function(model) {
   state <- new.env(parent = emptyenv())
   state$item_no <- 0L
   state$model <- model
+  state$index_entries <- list()
   state
 }
 
@@ -255,7 +296,8 @@ lss_language_label <- function(code) {
 #' @keywords internal
 #' @noRd
 lss_render_section_props <- function(page_format, n_langs,
-                                     theme = lss_render_theme()) {
+                                     theme = lss_render_theme(),
+                                     footer_title = "") {
   if (identical(page_format, "auto")) {
     page_format <- if (n_langs <= 2L) "A4-portrait" else "A4-landscape"
   }
@@ -265,17 +307,26 @@ lss_render_section_props <- function(page_format, n_langs,
     "A4-landscape" = officer::page_size(width = 11.69, height = 8.27, orient = "landscape"),
     "A3"           = officer::page_size(width = 16.53, height = 11.69, orient = "landscape")
   )
+  # Right tab stop = page width minus left+right margins, so the page
+  # number sits on the right edge of the printable area.
+  margin <- 0.6
+  tab_pos <- size$width - 2 * margin
   officer::prop_section(
     page_size = size,
-    page_margins = officer::page_mar(top = 0.7, bottom = 0.7, left = 0.6, right = 0.6),
-    footer_default = lss_build_footer(theme)
+    page_margins = officer::page_mar(top = 0.7, bottom = 0.7, left = margin, right = margin),
+    footer_default = lss_build_footer(theme, footer_title, tab_pos)
   )
 }
 
-#' Default footer with a centered "Page X of Y" Word field
+#' Page footer with the survey title on the left and "X / Y" on the right.
+#'
+#' A single paragraph with a right-aligned tab stop at the printable-area
+#' edge places the page number flush right while the title flows from the
+#' left margin. When `footer_title` is empty, only the page number shows.
+#'
 #' @keywords internal
 #' @noRd
-lss_build_footer <- function(theme) {
+lss_build_footer <- function(theme, footer_title = "", tab_pos = 7) {
   muted <- officer::fp_text(
     font.family = theme$font_body,
     font.size = theme$size_meta,
@@ -283,13 +334,64 @@ lss_build_footer <- function(theme) {
   )
   officer::block_list(
     officer::fpar(
-      officer::ftext("Page ", prop = muted),
+      officer::ftext(footer_title, prop = muted),
+      officer::run_tab(),
       officer::run_word_field("PAGE"),
-      officer::ftext(" of ", prop = muted),
+      officer::ftext(" / ", prop = muted),
       officer::run_word_field("NUMPAGES"),
-      fp_p = officer::fp_par(text.align = "center")
+      fp_p = officer::fp_par(
+        tabs = officer::fp_tabs(officer::fp_tab(pos = tab_pos, style = "right"))
+      )
     )
   )
+}
+
+#' Render the variable index at the end of the document
+#'
+#' One row per item with its variable code and item number, sorted
+#' alphabetically (case-insensitive). The numbers match the `No` column
+#' of each item's meta table and the visible numeric prefix on the item
+#' heading, so the reader can use them as cross-references.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_index <- function(doc, entries, theme) {
+  doc <- officer::body_add_break(doc)
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(
+      "Variable index",
+      prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_heading1,
+        bold = TRUE, color = theme$color_primary
+      )
+    )),
+    style = "heading 1"
+  )
+  codes <- vapply(entries, function(e) e$code, character(1))
+  nos <- vapply(entries, function(e) as.integer(e$no), integer(1))
+  ord <- order(tolower(codes))
+  df <- data.frame(
+    Variable = codes[ord],
+    No = nos[ord],
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  ft <- flextable::flextable(df)
+  ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
+  ft <- flextable::fontsize(ft, size = theme$size_answer, part = "all")
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::color(ft, color = theme$color_primary, part = "header")
+  ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
+  ft <- flextable::border_remove(ft)
+  thin <- officer::fp_border(color = "#BFBFBF", width = 0.5)
+  ft <- flextable::hline(ft, border = thin, part = "all")
+  ft <- flextable::valign(ft, valign = "top", part = "all")
+  ft <- flextable::padding(ft, padding = 2, part = "all")
+  ft <- flextable::align(ft, align = "right", j = "No", part = "all")
+  ft <- flextable::width(ft, j = "Variable", width = 2.6, unit = "in")
+  ft <- flextable::width(ft, j = "No", width = 0.6, unit = "in")
+  flextable::body_add_flextable(doc, ft, align = "center")
 }
 
 #' Index audit findings by question code for inline lookup
@@ -577,7 +679,7 @@ lss_render_toc <- function(doc, theme) {
       )
     )
   )
-  doc <- officer::body_add_toc(doc, level = 2)
+  doc <- officer::body_add_toc(doc, level = 1)
   doc
 }
 
@@ -672,7 +774,8 @@ lss_render_group <- function(doc, group, langs, theme,
         font.family = theme$font_body, font.size = theme$size_heading1,
         bold = TRUE, color = theme$color_primary
       )
-    ))
+    )),
+    style = "heading 1"
   )
   any_desc <- any(vapply(
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
@@ -868,9 +971,13 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
                                  item_code, texts_by_lang, help_by_lang,
                                  show_help, audit_idx, state) {
   state$item_no <- state$item_no + 1L
+  state$index_entries[[length(state$index_entries) + 1L]] <- list(
+    code = item_code, no = state$item_no
+  )
   audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
-  heading_text <- if (is.null(audit_marker)) item_code else {
-    paste0(item_code, "  ", audit_marker$text)
+  heading_text <- sprintf("%d. %s", state$item_no, item_code)
+  if (!is.null(audit_marker)) {
+    heading_text <- paste0(heading_text, "  ", audit_marker$text)
   }
   heading_prop <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_heading2,
@@ -879,8 +986,10 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   )
   doc <- officer::body_add_fpar(
     doc,
-    officer::fpar(officer::ftext(heading_text, prop = heading_prop)),
-    style = "heading 1"
+    officer::fpar(
+      officer::ftext(heading_text, prop = heading_prop),
+      fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+    )
   )
   doc <- lss_render_lang_block(
     doc,
@@ -906,9 +1015,13 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
                                  audit_idx, item_code,
                                  texts_by_lang, help_by_lang, state) {
   state$item_no <- state$item_no + 1L
+  state$index_entries[[length(state$index_entries) + 1L]] <- list(
+    code = item_code, no = state$item_no
+  )
   audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
-  heading_text <- if (is.null(audit_marker)) item_code else {
-    paste0(item_code, "  ", audit_marker$text)
+  heading_text <- sprintf("%d. %s", state$item_no, item_code)
+  if (!is.null(audit_marker)) {
+    heading_text <- paste0(heading_text, "  ", audit_marker$text)
   }
   heading_prop <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_heading2,
@@ -917,8 +1030,10 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   )
   doc <- officer::body_add_fpar(
     doc,
-    officer::fpar(officer::ftext(heading_text, prop = heading_prop)),
-    style = "heading 1"
+    officer::fpar(
+      officer::ftext(heading_text, prop = heading_prop),
+      fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+    )
   )
 
   # Structured meta table: No | Variable | Type | Oblig. | Filter
