@@ -1,5 +1,17 @@
 # lssdoc 0.0.0.9000
 
+* Table-of-contents entries are now **clickable hyperlinks** that jump
+  to the corresponding group heading. Each group heading is anchored
+  with a bookmark and the TOC entry is an internal hyperlink to that
+  anchor. Works in Word, LibreOffice and PDF.
+* Group headings are rendered as a **uniformly styled paragraph**
+  (manual `"N. group name"` prefix in Calibri 14pt blue bold) rather
+  than a Word Heading 1 paragraph. Word's Heading 1 style ships with a
+  linked list definition whose number style does not match the body
+  font; using a styled paragraph keeps the whole heading
+  typographically uniform. Trade-off: groups no longer appear in
+  Word's left-side navigation pane, but the clickable TOC at the
+  start of the document provides the same navigation in every viewer.
 * The table of contents is now a **manual list** of group names with
   sequential numbering, rather than a Word `TOC` field. The previous
   field-based implementation had two practical limitations: Word's

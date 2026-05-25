@@ -302,9 +302,17 @@ lss_footer_title <- function(lss, langs) {
 lss_render_state <- function(model) {
   state <- new.env(parent = emptyenv())
   state$item_no <- 0L
+  state$group_index <- 0L
   state$model <- model
   state$index_entries <- list()
   state
+}
+
+#' Bookmark name for a group, used to wire TOC entries to group headings
+#' @keywords internal
+#' @noRd
+lss_group_bookmark <- function(index) {
+  sprintf("lssdoc_group_%d", as.integer(index))
 }
 
 
@@ -777,9 +785,12 @@ lss_render_toc <- function(doc, model, theme) {
     return(doc)
   }
   primary <- model$languages[1]
-  entry_props <- officer::fp_text(
+  # TOC entries: clickable, in the accent color so the reader sees they
+  # are hyperlinks. Each entry points to the bookmark we add on the
+  # corresponding group heading in lss_render_group().
+  link_props <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_question,
-    color = theme$color_text
+    color = theme$color_accent, underlined = FALSE
   )
   for (i in seq_along(model$groups)) {
     group <- model$groups[[i]]
@@ -789,10 +800,15 @@ lss_render_toc <- function(doc, model, theme) {
     }
     gname <- lss_strip_group_number_prefix(gname)
     entry_text <- sprintf("%d.  %s", i, gname)
+    bookmark <- lss_group_bookmark(i)
     doc <- officer::body_add_fpar(
       doc,
       officer::fpar(
-        officer::ftext(entry_text, prop = entry_props),
+        officer::hyperlink_ftext(
+          href = paste0("#", bookmark),
+          text = entry_text,
+          prop = link_props
+        ),
         fp_p = officer::fp_par(
           padding.left = 12, padding.top = 2, padding.bottom = 2
         )
@@ -884,22 +900,31 @@ lss_render_group <- function(doc, group, langs, theme,
                              audit_idx, state) {
   gname <- lss_first_label(group$names, langs)
   if (is.na(gname)) gname <- paste0("Group ", group$gid)
-  # Strip a leading numeric prefix written by the LimeSurvey author
-  # ("1. ", "1) ", "1 - ", "Section A - ", "1.1. ") so Word's own
-  # Heading 1 auto-numbering does not double up.
+  # Strip a leading numeric prefix written by the LimeSurvey author so we
+  # do not get a doubled "1. 1. Vos etudes".
   gname <- lss_strip_group_number_prefix(gname)
+  state$group_index <- state$group_index + 1L
+  heading_text <- sprintf("%d. %s", state$group_index, gname)
   doc <- officer::body_add_par(doc, "", style = "Normal")
+  # Render as a styled paragraph (no Heading 1 style) so Word does NOT
+  # add its own list number on top of ours -- the auto-number Word
+  # injects via the linked numbering definition uses a different font
+  # face/size than our heading text, which looks inconsistent. Doing
+  # the numbering manually keeps the whole heading typographically
+  # uniform.
   doc <- officer::body_add_fpar(
     doc,
     officer::fpar(officer::ftext(
-      gname,
+      heading_text,
       prop = officer::fp_text(
         font.family = theme$font_body, font.size = theme$size_heading1,
         bold = TRUE, color = theme$color_primary
       )
-    )),
-    style = "heading 1"
+    ))
   )
+  # Anchor the group heading with a bookmark so the manual TOC entries
+  # can hyperlink to it.
+  doc <- officer::body_bookmark(doc, lss_group_bookmark(state$group_index))
   any_desc <- any(vapply(
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
     logical(1)
