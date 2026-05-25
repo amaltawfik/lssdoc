@@ -1,15 +1,37 @@
 # lssdoc 0.0.0.9000
 
+* Each **subquestion** now carries its own structured meta table (with its
+  own No, composite variable code `parent_subq`, and the type / mandatory /
+  filter inherited from the parent question). Every numbered item is now
+  fully self-documented.
+* **Compound parent banners** use the same 5-column meta layout as leaf
+  items (No, Variable, Type, Mand., Filter) instead of a 4-column variant,
+  with the No cell left empty since the parent itself is not a numbered
+  item (its subquestions below carry the numbers). Visual structure is
+  now consistent across leaf and compound questions.
+* Group names with a leading author-written numeric prefix (`"1. Vos
+  etudes"`, `"Section A - Demographics"`) are now stripped before being
+  passed to Heading 1, so Word's auto-numbering is the only visible one
+  ("1. Vos etudes" rather than "1. 1. Vos etudes").
+* New `show_item_heading` argument (default `TRUE`). When `FALSE`, the
+  bold "N. variable" line above each item is suppressed and the meta
+  table starts the item directly. Use it for a more compact layout.
+* The mandatory column is now labelled **`Mand.`** (was `Oblig.`),
+  widened to 0.7", and recognizes LimeSurvey's `S` value as `soft`
+  (soft-mandatory questions). Headers stay short while accommodating the
+  longer value.
+* A page break now follows the table of contents so the welcome text and
+  groups start on a fresh page.
 * New navigation layer for the rendered document:
-  - **Table of contents** now lists groups only, not items: a 95-item
+  * **Table of contents** now lists groups only, not items: a 95-item
     survey produces a clean 5-line TOC instead of a 95-line list.
     Controlled by `show_toc` (default `TRUE`), skipped automatically when
     the survey has fewer than two groups.
-  - **Variable index** appended at the end of the document: every item
+  * **Variable index** appended at the end of the document: every item
     code with its sequential number, sorted alphabetically, so the
     reader can look up a specific variable. Controlled by `show_index`
     (default `TRUE`).
-  - **Page footer** redesigned: survey title (per displayed language,
+  * **Page footer** redesigned: survey title (per displayed language,
     joined by ` | `) on the left, `X / Y` page number on the right.
     Controlled by `show_footer_title` (default `TRUE`); the page number
     is always shown.

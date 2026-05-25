@@ -45,6 +45,11 @@
 #' @param show_footer_title Logical; show the survey title (in every
 #'   displayed language, separated by " | ") on the left of the page
 #'   footer. The page number stays on the right regardless.
+#' @param show_item_heading Logical; show the bold heading
+#'   `"N. variable"` above each item. Default `TRUE`: the heading
+#'   provides visual hierarchy at scroll time and the item-number anchor
+#'   referenced by the variable index. Set to `FALSE` for a more compact
+#'   layout where the meta table starts each item directly.
 #' @param show_raw_filter Logical; when `TRUE` (the default) the Filter
 #'   cell of each meta table shows the human-readable form on top and the
 #'   raw LimeSurvey relevance expression in smaller italic gray underneath.
@@ -82,6 +87,7 @@ render_lss_docx <- function(
   show_toc = TRUE,
   show_index = TRUE,
   show_footer_title = TRUE,
+  show_item_heading = TRUE,
   show_raw_filter = TRUE,
   logo = NULL,
   logo_width = 1.5,
@@ -124,6 +130,7 @@ render_lss_docx <- function(
   }
   state <- lss_render_state(model)
   state$show_raw_filter <- isTRUE(show_raw_filter)
+  state$show_item_heading <- isTRUE(show_item_heading)
   section <- lss_render_section_props(
     page_format, length(langs),
     theme = theme,
@@ -142,6 +149,7 @@ render_lss_docx <- function(
   doc <- officer::body_add_break(doc)
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
     doc <- lss_render_toc(doc, theme)
+    doc <- officer::body_add_break(doc)
   }
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
     doc <- officer::body_add_break(doc)
@@ -765,6 +773,10 @@ lss_render_group <- function(doc, group, langs, theme,
                              audit_idx, state) {
   gname <- lss_first_label(group$names, langs)
   if (is.na(gname)) gname <- paste0("Group ", group$gid)
+  # Strip a leading numeric prefix written by the LimeSurvey author
+  # ("1. ", "1) ", "1 - ", "Section A - ", "1.1. ") so Word's own
+  # Heading 1 auto-numbering does not double up.
+  gname <- lss_strip_group_number_prefix(gname)
   doc <- officer::body_add_par(doc, "", style = "Normal")
   doc <- officer::body_add_fpar(
     doc,
@@ -882,9 +894,12 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
   # No H1 emitted here, so the running item counter must NOT advance: the
   # parent stem is a banner, only its subq items below carry a number.
   doc <- lss_render_question_meta_table(
-    doc, q, langs, theme,
+    doc, theme,
     item_no = NA_integer_,
-    audit_idx = audit_idx
+    variable = q$code,
+    type = q$type, type_label = q$type_label,
+    mandatory = q$mandatory, relevance = q$relevance,
+    show_raw_filter = isTRUE(state$show_raw_filter)
   )
 
   texts_by_lang <- stats::setNames(
@@ -974,22 +989,36 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
   )
-  audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
-  heading_text <- sprintf("%d. %s", state$item_no, item_code)
-  if (!is.null(audit_marker)) {
-    heading_text <- paste0(heading_text, "  ", audit_marker$text)
-  }
-  heading_prop <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_heading2,
-    bold = TRUE,
-    color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
-  )
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(
-      officer::ftext(heading_text, prop = heading_prop),
-      fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+  if (isTRUE(state$show_item_heading)) {
+    audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
+    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    if (!is.null(audit_marker)) {
+      heading_text <- paste0(heading_text, "  ", audit_marker$text)
+    }
+    heading_prop <- officer::fp_text(
+      font.family = theme$font_body, font.size = theme$size_heading2,
+      bold = TRUE,
+      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
     )
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(heading_text, prop = heading_prop),
+        fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+      )
+    )
+  }
+  # Each subquestion is documented as its own item: meta table with the
+  # composite variable code (parent_subq) and the type / mandatory /
+  # filter inherited from the parent (LimeSurvey subquestions do not
+  # carry their own).
+  doc <- lss_render_question_meta_table(
+    doc, theme,
+    item_no = state$item_no,
+    variable = item_code,
+    type = q$type, type_label = q$type_label,
+    mandatory = q$mandatory, relevance = q$relevance,
+    show_raw_filter = isTRUE(state$show_raw_filter)
   )
   doc <- lss_render_lang_block(
     doc,
@@ -1018,29 +1047,33 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
   )
-  audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
-  heading_text <- sprintf("%d. %s", state$item_no, item_code)
-  if (!is.null(audit_marker)) {
-    heading_text <- paste0(heading_text, "  ", audit_marker$text)
-  }
-  heading_prop <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_heading2,
-    bold = TRUE,
-    color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
-  )
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(
-      officer::ftext(heading_text, prop = heading_prop),
-      fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+  if (isTRUE(state$show_item_heading)) {
+    audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
+    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    if (!is.null(audit_marker)) {
+      heading_text <- paste0(heading_text, "  ", audit_marker$text)
+    }
+    heading_prop <- officer::fp_text(
+      font.family = theme$font_body, font.size = theme$size_heading2,
+      bold = TRUE,
+      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
     )
-  )
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(heading_text, prop = heading_prop),
+        fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+      )
+    )
+  }
 
-  # Structured meta table: No | Variable | Type | Oblig. | Filter
+  # Structured meta table: No | Variable | Type | Mand. | Filter
   doc <- lss_render_question_meta_table(
-    doc, q, langs, theme,
+    doc, theme,
     item_no = state$item_no,
-    audit_idx = audit_idx,
+    variable = q$code,
+    type = q$type, type_label = q$type_label,
+    mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
 
@@ -1298,7 +1331,42 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
 #' @noRd
 lss_yes_no <- function(x) {
   if (is.null(x) || is.na(x) || !nzchar(x)) return("\u2014")
-  switch(toupper(x), Y = "yes", N = "no", x)
+  switch(toupper(x), Y = "yes", N = "no", S = "soft", x)
+}
+
+#' Strip a leading author-written numeric prefix from a group name
+#'
+#' LimeSurvey authors often prefix their group names with their own
+#' numbering ("1. Vos etudes", "Section A - Demographics"). Word adds
+#' its own Heading 1 list number on top, leading to "1. 1. Vos etudes".
+#' This helper removes the most common explicit-numbering prefixes so
+#' Word's auto-number is the only visible one. Patterns recognized:
+#' `N.`, `N)`, `N -`, `N:`, `N.M.`, and `Section X -` (where X is a
+#' letter or roman numeral). Conservative -- leaves any other prefix
+#' untouched.
+#'
+#' @keywords internal
+#' @noRd
+lss_strip_group_number_prefix <- function(name) {
+  if (is.null(name) || is.na(name) || !nzchar(trimws(name))) {
+    return(name)
+  }
+  s <- name
+  patterns <- c(
+    "^\\d+\\.\\d+\\.\\s+",
+    "^\\d+\\.\\s+",
+    "^\\d+\\)\\s+",
+    "^\\d+\\s*[-\u2013\u2014]\\s+",
+    "^\\d+:\\s+",
+    "^Section\\s+[A-Z]+\\s*[-\u2013\u2014]\\s+"
+  )
+  for (p in patterns) {
+    new_s <- sub(p, "", s, perl = TRUE)
+    if (!identical(new_s, s)) {
+      return(trimws(new_s))
+    }
+  }
+  s
 }
 
 #' Display label for a relevance expression
@@ -1392,50 +1460,50 @@ lss_parens_balanced <- function(s) {
   depth == 0L
 }
 
-#' Render the 5-column structured meta table for a question
+#' Render the 5-column structured meta table for an item
 #'
-#' Columns: `No` (item number, matching Word's Heading 1 auto-number),
-#' `Variable` (the LimeSurvey question code), `Type` (legacy code + label),
-#' `Oblig.` (mandatory yes/no), `Filter`. The Filter cell shows the plain
-#' English form on top (bold) with the raw LimeSurvey expression beneath
-#' (small italic gray); reviewers see the intent and can still verify the
-#' actual expression.
+#' Columns: `No` (item number; empty for compound-parent banners since
+#' those are not numbered items themselves), `Variable` (the LimeSurvey
+#' variable code, `parent_subq` for subquestion items), `Type` (legacy
+#' code + label), `Mand.` (mandatory: `yes`, `no`, `soft`), `Filter`.
+#' The Filter cell shows the plain English form on top with the raw
+#' LimeSurvey expression beneath (small italic gray) when `show_raw_filter`
+#' is `TRUE`.
+#'
+#' Takes the fields explicitly rather than a `q` object so subquestion
+#' items can pass their composite variable code with the parent's type /
+#' mandatory / relevance (those are inherited from the parent in
+#' LimeSurvey -- subquestions do not carry their own type or relevance).
 #'
 #' @keywords internal
 #' @noRd
-lss_render_question_meta_table <- function(doc, q, langs, theme,
-                                           item_no, audit_idx,
+lss_render_question_meta_table <- function(doc, theme,
+                                           item_no = NA_integer_,
+                                           variable,
+                                           type,
+                                           type_label,
+                                           mandatory,
+                                           relevance,
                                            show_raw_filter = TRUE) {
-  filter_raw <- if (is.null(q$relevance) || is.na(q$relevance) ||
-                    !nzchar(q$relevance)) {
+  filter_raw <- if (is.null(relevance) || is.na(relevance) ||
+                    !nzchar(relevance)) {
     "1"
   } else {
-    q$relevance
+    relevance
   }
   filter_plain <- lss_humanize_relevance(filter_raw)
-  type_label <- paste0(q$type, " - ", q$type_label)
+  type_full <- paste0(type, " - ", type_label)
+  no_value <- if (is.null(item_no) || is.na(item_no)) "" else as.character(item_no)
 
-  with_no <- !is.null(item_no) && !is.na(item_no)
-  df <- if (with_no) {
-    data.frame(
-      No = as.character(item_no),
-      Variable = q$code,
-      Type = type_label,
-      `Oblig.` = lss_yes_no(q$mandatory),
-      Filter = "",
-      check.names = FALSE,
-      stringsAsFactors = FALSE
-    )
-  } else {
-    data.frame(
-      Variable = q$code,
-      Type = type_label,
-      `Oblig.` = lss_yes_no(q$mandatory),
-      Filter = "",
-      check.names = FALSE,
-      stringsAsFactors = FALSE
-    )
-  }
+  df <- data.frame(
+    No = no_value,
+    Variable = variable,
+    Type = type_full,
+    `Mand.` = lss_yes_no(mandatory),
+    Filter = "",
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
 
   ft <- flextable::flextable(df)
   plain_props <- officer::fp_text(
@@ -1447,9 +1515,6 @@ lss_render_question_meta_table <- function(doc, q, langs, theme,
     color = theme$color_muted, italic = TRUE
   )
   filter_chunks <- list(flextable::as_chunk(filter_plain, props = plain_props))
-  # Append the raw expression when explicitly requested, or when the
-  # humanizer could not simplify it (so the user always sees the technical
-  # source if our plain form is identical to the raw input).
   show_raw <- isTRUE(show_raw_filter) && !identical(filter_plain, filter_raw)
   if (show_raw) {
     filter_chunks <- c(
@@ -1474,14 +1539,11 @@ lss_render_question_meta_table <- function(doc, q, langs, theme,
   ft <- flextable::vline(ft, border = thin, part = "all")
   ft <- flextable::valign(ft, valign = "top", part = "all")
   ft <- flextable::padding(ft, padding = 2, part = "all")
-  center_cols <- if (with_no) c("No", "Oblig.") else "Oblig."
-  ft <- flextable::align(ft, align = "center", j = center_cols, part = "all")
-  if (with_no) {
-    ft <- flextable::width(ft, j = "No", width = 0.4, unit = "in")
-  }
+  ft <- flextable::align(ft, align = "center", j = c("No", "Mand."), part = "all")
+  ft <- flextable::width(ft, j = "No", width = 0.4, unit = "in")
   ft <- flextable::width(ft, j = "Variable", width = 1.3, unit = "in")
-  ft <- flextable::width(ft, j = "Type", width = 1.8, unit = "in")
-  ft <- flextable::width(ft, j = "Oblig.", width = 0.5, unit = "in")
-  ft <- flextable::width(ft, j = "Filter", width = 2.6, unit = "in")
+  ft <- flextable::width(ft, j = "Type", width = 1.7, unit = "in")
+  ft <- flextable::width(ft, j = "Mand.", width = 0.7, unit = "in")
+  ft <- flextable::width(ft, j = "Filter", width = 2.3, unit = "in")
   flextable::body_add_flextable(doc, ft, align = "center")
 }
