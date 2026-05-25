@@ -1124,6 +1124,7 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
+  doc <- lss_render_intra_item_gap(doc, theme)
 
   texts_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$question)
   help_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$help)
@@ -1207,6 +1208,7 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
     relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
+  doc <- lss_render_intra_item_gap(doc, theme)
   rows <- list(list(
     label = "Question",
     texts = texts_by_lang,
@@ -1315,6 +1317,7 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
+  doc <- lss_render_intra_item_gap(doc, theme)
   rows <- list()
   rows[[length(rows) + 1L]] <- list(
     label = "Question",
@@ -1366,7 +1369,7 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
     )
   }
 
-  # Structured meta table: No | Variable | Type | Mand. | Filter
+  # Structured meta table: No | Variable | Type | Mandatory | Filter
   doc <- lss_render_question_meta_table(
     doc, theme,
     item_no = state$item_no,
@@ -1375,6 +1378,7 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
+  doc <- lss_render_intra_item_gap(doc, theme)
 
   # Build the unified item table: Question, optional Help, then one
   # row per answer option (for has_answers leaf types like L, !, O).
@@ -1483,11 +1487,22 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   ft <- flextable::bold(ft, j = "Label", part = "body")
   ft <- flextable::color(ft, j = "Label", color = theme$color_primary, part = "body")
   ft <- flextable::align(ft, j = "Label", align = "left", part = "body")
-  ft <- flextable::width(ft, j = "Label", width = 0.9, unit = "in")
-  # Light tint on section-header rows to set them apart from content.
+  # Match the meta table total width (6.4 in) so the two tables align
+  # visually. Label takes the same width as the No + Variable + Type
+  # columns combined start (1.0 in), the remaining 5.4 in is split
+  # evenly across the language columns.
+  label_w <- 1.0
+  total_w <- 6.4
+  lang_w <- (total_w - label_w) / length(langs)
+  ft <- flextable::width(ft, j = "Label", width = label_w, unit = "in")
+  for (lg in langs) {
+    ft <- flextable::width(ft, j = lg, width = lang_w, unit = "in")
+  }
+  # Section-header rows share the header's light-blue band background so
+  # the Language / Value bands are visually consistent.
   for (i in seq_along(rows)) {
     if (isTRUE(rows[[i]]$section_header)) {
-      ft <- flextable::bg(ft, i = i, bg = theme$color_zebra, part = "body")
+      ft <- flextable::bg(ft, i = i, bg = theme$color_band, part = "body")
     }
   }
   flextable::body_add_flextable(doc, ft, align = "left")
@@ -1540,6 +1555,22 @@ lss_render_item_spacer <- function(doc, theme) {
         font.size = theme$size_meta
       )),
       fp_p = officer::fp_par(padding.top = 6, padding.bottom = 0)
+    )
+  )
+}
+
+#' Thin breathing space between the meta table and the item table
+#' so they read as two separate panels rather than one continuous block.
+#' @keywords internal
+#' @noRd
+lss_render_intra_item_gap <- function(doc, theme) {
+  officer::body_add_fpar(
+    doc,
+    officer::fpar(
+      officer::ftext(" ", prop = officer::fp_text(
+        font.family = theme$font_body,
+        font.size = 4
+      ))
     )
   )
 }
