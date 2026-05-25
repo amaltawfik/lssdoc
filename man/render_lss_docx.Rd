@@ -16,10 +16,11 @@ render_lss_docx(
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,
   show_index = TRUE,
-  show_footer_title = TRUE,
+  show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,
   show_raw_filter = TRUE,
+  title = NULL,
   logo = NULL,
   logo_width = 1.5,
   logo_height = 0.75
@@ -69,9 +70,11 @@ variable index.}
 document listing every item code with its item number, sorted
 alphabetically. Useful for cross-referencing a specific variable.}
 
-\item{show_footer_title}{Logical; show the survey title (in every
-displayed language, separated by " | ") on the left of the page
-footer. The page number stays on the right regardless.}
+\item{show_header_title}{Logical; show the survey title at the top
+right of every page, one line per displayed language. Long titles
+are truncated to 80 characters with a trailing ellipsis. Default
+\code{TRUE}. When \code{FALSE}, only the \code{X/Y} page counter shows at the
+bottom right.}
 
 \item{show_source}{Logical; show the \strong{Source file} name and the
 \strong{Survey ID} rows in the cover metadata table. Default \code{TRUE}
@@ -91,6 +94,13 @@ cell of each meta table shows the human-readable form on top and the
 raw LimeSurvey relevance expression in smaller italic gray underneath.
 Set to \code{FALSE} for a cleaner cell that shows only the plain form (the
 raw expression is still shown when it could not be simplified).}
+
+\item{title}{Optional override of the survey title shown on the cover
+page and the top-right header. \code{NULL} (default) uses the per-
+language titles from the \code{.lss} survey settings. Pass a single
+string to use the same title in every displayed language, or a
+named character vector keyed by language code (e.g.
+\code{c(fr = "Mon titre", de = "Mein Titel")}) for per-language overrides.}
 
 \item{logo}{Optional path to an image (PNG or JPEG) to display at the top
 of the cover page. The \code{.lss} file does not embed a logo, so this image

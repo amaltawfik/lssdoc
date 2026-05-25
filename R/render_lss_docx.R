@@ -95,7 +95,8 @@ render_lss_docx <- function(
   layout = c("auto", "side-by-side", "stacked"),
   show_audit = TRUE,
   show_help = TRUE,
-  show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
+  show_attrs = c("prefix", "suffix", "other_replace_text", "validation",
+                 "exclude_all_others", "exclude_all_others_auto"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,
@@ -485,7 +486,10 @@ lss_render_section_props <- function(page_format, n_langs,
 #' @keywords internal
 #' @noRd
 lss_build_header <- function(theme, header_titles = character(0)) {
-  if (length(header_titles) == 0L) return(officer::block_list())
+  # Return NULL (not an empty block_list) when there is no title to
+  # show; officer chokes on an empty header_default during section
+  # processing.
+  if (length(header_titles) == 0L) return(NULL)
   muted <- officer::fp_text(
     font.family = theme$font_body,
     font.size = theme$size_meta,
@@ -500,7 +504,7 @@ lss_build_header <- function(theme, header_titles = character(0)) {
     )
   })
   pars <- Filter(Negate(is.null), pars)
-  if (length(pars) == 0L) return(officer::block_list())
+  if (length(pars) == 0L) return(NULL)
   do.call(officer::block_list, pars)
 }
 
@@ -1113,6 +1117,7 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
                                    show_help, show_attrs, audit_idx, state) {
   # No H1 emitted here, so the running item counter must NOT advance: the
   # parent stem is a banner, only its subq items below carry a number.
+  doc <- lss_render_item_spacer(doc, theme)
   doc <- lss_render_question_meta_table(
     doc, theme,
     item_no = NA_integer_,
@@ -1139,8 +1144,8 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
       italic = TRUE
     )
   }
+  rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
   doc <- lss_render_item_table(doc, theme, langs, rows)
-  doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
   doc
 }
 
@@ -1162,6 +1167,7 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
   )
+  doc <- lss_render_item_spacer(doc, theme)
 
   # Look up the customized "Other:" prompt per language; fall back to a
   # generic "Other:" label when the attribute is missing.
@@ -1277,6 +1283,7 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
   )
+  doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
     audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
     heading_text <- sprintf("%d. %s", state$item_no, item_code)
@@ -1338,6 +1345,7 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
   )
+  doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
     audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
     heading_text <- sprintf("%d. %s", state$item_no, item_code)
@@ -1385,17 +1393,28 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
       italic = TRUE
     )
   }
+  # Question attributes (prefix, suffix, validation, ...) as italic rows
+  # inside the item table itself, between Help and the Value section.
+  rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
   if (length(q$answers) > 0L) {
+    # "Value" is a section label spanning the language columns blank;
+    # the actual answer codes (1, 2, ...) follow below as their own
+    # labelled rows.
+    rows[[length(rows) + 1L]] <- list(
+      label = "Value",
+      texts = stats::setNames(as.list(rep("", length(langs))), langs),
+      size = theme$size_meta,
+      section_header = TRUE
+    )
     for (a in q$answers) {
       rows[[length(rows) + 1L]] <- list(
-        label = paste0("Value ", a$code),
+        label = a$code,
         texts = stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs),
         size = theme$size_answer
       )
     }
   }
   doc <- lss_render_item_table(doc, theme, langs, rows)
-  doc <- lss_render_attrs(doc, q, langs, theme, show_attrs)
   doc
 }
 
@@ -1438,12 +1457,22 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
     sz <- if (!is.null(rows[[i]]$size)) rows[[i]]$size else theme$size_question
     italic <- isTRUE(rows[[i]]$italic)
     color <- if (!is.null(rows[[i]]$color)) rows[[i]]$color else theme$color_text
+    is_section <- isTRUE(rows[[i]]$section_header)
     for (lg in langs) {
-      ft <- flextable::compose(
-        ft, i = i, j = lg,
-        value = lss_compose(rows[[i]]$texts[[lg]], theme,
-                            size = sz, color = color, italic_default = italic)
-      )
+      if (is_section) {
+        # Section header row: language cells stay truly blank (no em-dash
+        # placeholder), so the row reads as a category label.
+        ft <- flextable::compose(
+          ft, i = i, j = lg,
+          value = flextable::as_paragraph(flextable::as_chunk(""))
+        )
+      } else {
+        ft <- flextable::compose(
+          ft, i = i, j = lg,
+          value = lss_compose(rows[[i]]$texts[[lg]], theme,
+                              size = sz, color = color, italic_default = italic)
+        )
+      }
     }
   }
   ft <- lss_table_polish(ft, theme, lang_cols = langs)
@@ -1451,7 +1480,30 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   ft <- flextable::color(ft, j = "Label", color = theme$color_primary, part = "body")
   ft <- flextable::align(ft, j = "Label", align = "left", part = "body")
   ft <- flextable::width(ft, j = "Label", width = 0.9, unit = "in")
-  flextable::body_add_flextable(doc, ft, align = "center")
+  # Light tint on section-header rows to set them apart from content.
+  for (i in seq_along(rows)) {
+    if (isTRUE(rows[[i]]$section_header)) {
+      ft <- flextable::bg(ft, i = i, bg = theme$color_zebra, part = "body")
+    }
+  }
+  flextable::body_add_flextable(doc, ft, align = "left")
+}
+
+#' Insert a small vertical spacer before each item so consecutive
+#' meta tables do not touch.
+#' @keywords internal
+#' @noRd
+lss_render_item_spacer <- function(doc, theme) {
+  officer::body_add_fpar(
+    doc,
+    officer::fpar(
+      officer::ftext(" ", prop = officer::fp_text(
+        font.family = theme$font_body,
+        font.size = theme$size_meta
+      )),
+      fp_p = officer::fp_par(padding.top = 6, padding.bottom = 0)
+    )
+  )
 }
 
 #' Helper: TRUE if at least one element of a named list of strings is
@@ -1519,26 +1571,57 @@ lss_render_optional_lang_block <- function(doc, texts_by_lang, langs, theme,
                         size = size, color = color, italic = italic)
 }
 
-#' Render question attributes (prefix, suffix, validation, etc.) as small lines
+#' Build item-table rows for the requested question attributes
+#'
+#' Each rendered attribute becomes one labelled row inside the item
+#' table (Prefix, Suffix, Validation, ...), in italic muted gray so it
+#' stays visually distinct from the question text and the answer
+#' values. Attributes that are empty in every language are skipped.
+#' `other_replace_text` is omitted because it is documented as its own
+#' numbered item via `lss_render_other_item()`.
+#'
+#' @keywords internal
+#' @noRd
+lss_attr_rows <- function(q, langs, theme, show_attrs) {
+  if (length(show_attrs) == 0L || is.null(q$attributes)) {
+    return(list())
+  }
+  attrs <- q$attributes
+  rows <- list()
+  for (attr_name in setdiff(show_attrs, "other_replace_text")) {
+    hit <- attrs$attribute == attr_name
+    if (!any(hit)) next
+    matches <- attrs[hit, , drop = FALSE]
+    per_lang <- vapply(langs, function(lg) {
+      lang_hit <- matches$value[matches$language == lg]
+      if (length(lang_hit) > 0L && nzchar(trimws(lang_hit[1]))) return(lang_hit[1])
+      empty_lang <- matches$value[!nzchar(matches$language)]
+      if (length(empty_lang) > 0L && nzchar(trimws(empty_lang[1]))) return(empty_lang[1])
+      ""
+    }, character(1))
+    if (!lss_any_present(as.list(per_lang))) next
+    rows[[length(rows) + 1L]] <- list(
+      label = tools::toTitleCase(attr_name),
+      texts = stats::setNames(as.list(per_lang), langs),
+      size = theme$size_meta,
+      color = theme$color_muted,
+      italic = TRUE
+    )
+  }
+  rows
+}
+
+#' Legacy: render attributes as small italic lines (kept for backward
+#' compatibility, no longer called from the main render path).
 #' @keywords internal
 #' @noRd
 lss_render_attrs <- function(doc, q, langs, theme, show_attrs) {
-  if (length(show_attrs) == 0L || is.null(q$attributes)) return(doc)
-  attrs <- q$attributes
-  keep <- attrs$attribute %in% show_attrs &
-    !is.na(attrs$value) & nzchar(trimws(attrs$value))
-  if (!any(keep)) return(doc)
-  attrs <- attrs[keep, , drop = FALSE]
-  for (i in seq_len(nrow(attrs))) {
-    lang_suffix <- if (nzchar(attrs$language[i])) {
-      sprintf(" [%s]", attrs$language[i])
-    } else {
-      ""
-    }
+  for (row in lss_attr_rows(q, langs, theme, show_attrs)) {
+    val <- paste(unlist(row$texts), collapse = " | ")
     doc <- officer::body_add_fpar(
       doc,
       officer::fpar(officer::ftext(
-        sprintf("%s%s: %s", attrs$attribute[i], lang_suffix, attrs$value[i]),
+        sprintf("%s: %s", row$label, val),
         prop = officer::fp_text(
           font.family = theme$font_body, font.size = theme$size_meta,
           color = theme$color_muted, italic = TRUE
