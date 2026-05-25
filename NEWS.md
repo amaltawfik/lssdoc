@@ -1,5 +1,24 @@
 # lssdoc 0.0.0.9000
 
+* The table of contents is now a **manual list** of group names with
+  sequential numbering, rather than a Word `TOC` field. The previous
+  field-based implementation had two practical limitations: Word's
+  auto-refresh of `PAGEREF` entries can fire before pagination is
+  complete, producing page numbers of `1` everywhere; and LibreOffice
+  does not refresh field values on open or during headless PDF
+  conversion. The manual list is always visible immediately in every
+  viewer (Word, LibreOffice, PDF) with no refresh interaction. Trade-
+  off: no page numbers in the TOC.
+* The page footer's `X / Y` page counter now inherits the same muted
+  Calibri 8pt gray as the title on its left; `officer::run_word_field`
+  needs an explicit `prop` argument to override the paragraph default.
+* The field-dirty marker injection now patches `word/footer*.xml` and
+  `word/header*.xml` in addition to `word/document.xml`, so Word
+  refreshes PAGE/NUMPAGES fields wherever they appear.
+* `zip` declared in `Suggests` (used by `lss_inject_update_fields()`
+  to repack the .docx after modifying its parts). The helper now
+  guards behind `requireNamespace("zip")` and silently no-ops if the
+  package is unavailable.
 * Generated `.docx` files now embed the `<w:updateFields w:val="true"/>`
   setting, so Word refreshes the table-of-contents and page-number
   fields automatically when the document is opened -- no F9 needed.

@@ -156,7 +156,7 @@ render_lss_docx <- function(
   )
   doc <- officer::body_add_break(doc)
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
-    doc <- lss_render_toc(doc, theme)
+    doc <- lss_render_toc(doc, model, theme)
     doc <- officer::body_add_break(doc)
   }
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
@@ -233,18 +233,21 @@ lss_inject_update_fields <- function(docx_path) {
     writeBin(charToRaw(content), settings_file, useBytes = TRUE)
   }
 
-  # Step 2: document.xml -- mark every field as 'dirty', the per-field
-  # OOXML flag that tells Word the cached value is stale and the field
-  # must be refreshed on next open. This is what reliably forces the
-  # TOC to update across Word versions; the settings.xml flag alone
-  # is not always honored.
-  doc_file <- file.path(tmp, "word", "document.xml")
-  if (file.exists(doc_file)) {
-    raw_in <- readBin(doc_file, what = "raw",
-                      n = file.info(doc_file)$size)
+  # Step 2: mark every field 'dirty' so Word refreshes them on open.
+  # Fields live in document.xml (the TOC) but ALSO in footerN.xml /
+  # headerN.xml (the PAGE and NUMPAGES fields), so we patch every XML
+  # part that might contain a fldChar.
+  word_dir <- file.path(tmp, "word")
+  field_files <- list.files(
+    word_dir,
+    pattern = "^(document|footer[0-9]*|header[0-9]*)\\.xml$",
+    full.names = TRUE
+  )
+  for (f in field_files) {
+    raw_in <- readBin(f, what = "raw", n = file.info(f)$size)
     content <- rawToChar(raw_in)
-    # Strip any existing w:dirty attribute on begin fldChars so the
-    # subsequent add does not duplicate.
+    # Strip any existing w:dirty on begin fldChars so the subsequent add
+    # does not duplicate.
     content <- gsub(
       '(<w:fldChar [^/>]*?w:fldCharType="begin"[^/>]*?)\\s+w:dirty="[^"]*"([^/>]*?)/>',
       '\\1\\2/>',
@@ -256,7 +259,7 @@ lss_inject_update_fields <- function(docx_path) {
       '\\1 w:dirty="1"/>',
       content, perl = TRUE
     )
-    writeBin(charToRaw(content), doc_file, useBytes = TRUE)
+    writeBin(charToRaw(content), f, useBytes = TRUE)
   }
 
   # Repack: switch to the temp dir so the relative paths returned by
@@ -743,17 +746,21 @@ lss_render_cover <- function(doc, lss, model, theme,
   doc
 }
 
-#' Insert a Word table-of-contents field
+#' Render a static, always-populated table of contents
 #'
-#' The TOC is rendered as a Word field that lists Heading 1 paragraphs
-#' (groups). `render_lss_docx()` injects `<w:updateFields w:val="true"/>`
-#' into the resulting .docx so Word and LibreOffice both refresh the
-#' TOC automatically on open -- no F9 needed by the reader, and the
-#' field is populated when the document is converted to PDF.
+#' Lists the survey groups, one per line, with their sequential index.
+#' We render a manual list instead of a Word TOC field for three reasons:
+#' (1) Word's TOC field auto-refresh produces page numbers `1` everywhere
+#' when refresh runs before pagination -- a well-known quirk; (2)
+#' LibreOffice does not refresh field values on open or during headless
+#' PDF conversion, so a TOC field would always look empty there; (3) a
+#' static text list is always visible in every viewer without any
+#' interaction. No page numbers (we cannot predict them without a real
+#' Word render pass).
 #'
 #' @keywords internal
 #' @noRd
-lss_render_toc <- function(doc, theme) {
+lss_render_toc <- function(doc, model, theme) {
   doc <- officer::body_add_fpar(
     doc,
     officer::fpar(
@@ -766,7 +773,32 @@ lss_render_toc <- function(doc, theme) {
       )
     )
   )
-  doc <- officer::body_add_toc(doc, level = 1)
+  if (length(model$groups) == 0L) {
+    return(doc)
+  }
+  primary <- model$languages[1]
+  entry_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_text
+  )
+  for (i in seq_along(model$groups)) {
+    group <- model$groups[[i]]
+    gname <- if (!is.null(group$names[[primary]])) group$names[[primary]] else NA
+    if (is.null(gname) || is.na(gname) || !nzchar(gname)) {
+      gname <- paste0("Group ", group$gid)
+    }
+    gname <- lss_strip_group_number_prefix(gname)
+    entry_text <- sprintf("%d.  %s", i, gname)
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(entry_text, prop = entry_props),
+        fp_p = officer::fp_par(
+          padding.left = 12, padding.top = 2, padding.bottom = 2
+        )
+      )
+    )
+  }
   doc
 }
 
