@@ -1980,14 +1980,18 @@ lss_render_question_meta_table <- function(doc, theme,
     relevance
   }
   filter_plain <- lss_humanize_relevance(filter_raw)
-  type_full <- paste0(type, " - ", type_label)
+  # The legacy type code (L, M, F, ...) is implicit in the variable's
+  # data and meaningful only to LimeSurvey insiders. The descriptive
+  # label is what reviewers read; drop the code prefix to avoid the
+  # redundant "L - List (radio)" form.
+  type_full <- type_label
   no_value <- if (is.null(item_no) || is.na(item_no)) "" else as.character(item_no)
 
   df <- data.frame(
     No = no_value,
     Variable = variable,
     Type = type_full,
-    `Mand.` = lss_yes_no(mandatory),
+    Mandatory = lss_yes_no(mandatory),
     Filter = "",
     check.names = FALSE,
     stringsAsFactors = FALSE
@@ -2018,6 +2022,14 @@ lss_render_question_meta_table <- function(doc, theme,
 
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
   ft <- flextable::fontsize(ft, size = theme$size_meta, part = "all")
+  # No and Variable get a larger font so the start of a new question
+  # stands out at scroll time, and Variable is bold so the variable
+  # code reads as the question's anchor.
+  ft <- flextable::fontsize(
+    ft, j = c("No", "Variable"),
+    size = theme$size_heading2, part = "body"
+  )
+  ft <- flextable::bold(ft, j = "Variable", part = "body")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
@@ -2027,11 +2039,11 @@ lss_render_question_meta_table <- function(doc, theme,
   ft <- flextable::vline(ft, border = thin, part = "all")
   ft <- flextable::valign(ft, valign = "top", part = "all")
   ft <- flextable::padding(ft, padding = 2, part = "all")
-  ft <- flextable::align(ft, align = "center", j = c("No", "Mand."), part = "all")
+  ft <- flextable::align(ft, align = "center", j = c("No", "Mandatory"), part = "all")
   ft <- flextable::width(ft, j = "No", width = 0.4, unit = "in")
-  ft <- flextable::width(ft, j = "Variable", width = 1.3, unit = "in")
-  ft <- flextable::width(ft, j = "Type", width = 1.7, unit = "in")
-  ft <- flextable::width(ft, j = "Mand.", width = 0.7, unit = "in")
-  ft <- flextable::width(ft, j = "Filter", width = 2.3, unit = "in")
+  ft <- flextable::width(ft, j = "Variable", width = 1.5, unit = "in")
+  ft <- flextable::width(ft, j = "Type", width = 1.5, unit = "in")
+  ft <- flextable::width(ft, j = "Mandatory", width = 1.0, unit = "in")
+  ft <- flextable::width(ft, j = "Filter", width = 2.0, unit = "in")
   flextable::body_add_flextable(doc, ft, align = "left")
 }
