@@ -205,35 +205,66 @@ render_lss_docx <- function(
 #' @noRd
 lss_inject_update_fields <- function(docx_path) {
   if (!file.exists(docx_path)) return(invisible(docx_path))
+  # Silently no-op when `zip` is missing; the .docx is still valid, just
+  # without auto-refresh. (In practice `zip` is always available when
+  # `officer` is, because officer imports it.)
+  if (!requireNamespace("zip", quietly = TRUE)) {
+    return(invisible(docx_path))
+  }
   docx_path <- normalizePath(docx_path, mustWork = TRUE)
   tmp <- tempfile()
   dir.create(tmp)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
   utils::unzip(docx_path, exdir = tmp)
-  settings_file <- file.path(tmp, "word", "settings.xml")
-  if (!file.exists(settings_file)) return(invisible(docx_path))
 
-  # Read settings.xml as raw bytes, modify, write back as raw bytes.
-  raw_in <- readBin(settings_file, what = "raw",
-                    n = file.info(settings_file)$size)
-  content <- rawToChar(raw_in)
-  content <- gsub("<w:updateFields\\b[^/]*/>", "", content, perl = TRUE)
-  content <- sub(
-    "</w:settings>",
-    "<w:updateFields w:val=\"true\"/></w:settings>",
-    content, fixed = TRUE
-  )
-  writeBin(charToRaw(content), settings_file, useBytes = TRUE)
+  # Step 1: settings.xml -- tell Word to update fields on open.
+  settings_file <- file.path(tmp, "word", "settings.xml")
+  if (file.exists(settings_file)) {
+    raw_in <- readBin(settings_file, what = "raw",
+                      n = file.info(settings_file)$size)
+    content <- rawToChar(raw_in)
+    content <- gsub("<w:updateFields\\b[^/]*/>", "", content, perl = TRUE)
+    content <- sub(
+      "</w:settings>",
+      "<w:updateFields w:val=\"true\"/></w:settings>",
+      content, fixed = TRUE
+    )
+    writeBin(charToRaw(content), settings_file, useBytes = TRUE)
+  }
+
+  # Step 2: document.xml -- mark every field as 'dirty', the per-field
+  # OOXML flag that tells Word the cached value is stale and the field
+  # must be refreshed on next open. This is what reliably forces the
+  # TOC to update across Word versions; the settings.xml flag alone
+  # is not always honored.
+  doc_file <- file.path(tmp, "word", "document.xml")
+  if (file.exists(doc_file)) {
+    raw_in <- readBin(doc_file, what = "raw",
+                      n = file.info(doc_file)$size)
+    content <- rawToChar(raw_in)
+    # Strip any existing w:dirty attribute on begin fldChars so the
+    # subsequent add does not duplicate.
+    content <- gsub(
+      '(<w:fldChar [^/>]*?w:fldCharType="begin"[^/>]*?)\\s+w:dirty="[^"]*"([^/>]*?)/>',
+      '\\1\\2/>',
+      content, perl = TRUE
+    )
+    # Add w:dirty="1" to every begin fldChar.
+    content <- gsub(
+      '(<w:fldChar [^/>]*?w:fldCharType="begin"[^/>]*?)/>',
+      '\\1 w:dirty="1"/>',
+      content, perl = TRUE
+    )
+    writeBin(charToRaw(content), doc_file, useBytes = TRUE)
+  }
 
   # Repack: switch to the temp dir so the relative paths returned by
   # list.files are stored as-is inside the .docx zip
   # ('word/settings.xml', etc.), matching the layout Word and LibreOffice
-  # expect.
+  # expect. `all.files = TRUE` is critical: a .docx contains hidden
+  # entries like `_rels/.rels` whose basename starts with a dot.
   if (file.exists(docx_path)) file.remove(docx_path)
-  # `all.files = TRUE` is critical: a .docx contains hidden entries like
-  # `_rels/.rels` whose basename starts with a dot, which list.files
-  # otherwise omits.
   files <- list.files(tmp, recursive = TRUE, all.files = TRUE,
                       no.. = TRUE)
   old_wd <- getwd()
@@ -411,9 +442,9 @@ lss_build_footer <- function(theme, footer_title = "", tab_pos = 7) {
     officer::fpar(
       officer::ftext(footer_title, prop = muted),
       officer::run_tab(),
-      officer::run_word_field("PAGE"),
+      officer::run_word_field("PAGE", prop = muted),
       officer::ftext(" / ", prop = muted),
-      officer::run_word_field("NUMPAGES"),
+      officer::run_word_field("NUMPAGES", prop = muted),
       fp_p = officer::fp_par(
         tabs = officer::fp_tabs(officer::fp_tab(pos = tab_pos, style = "right"))
       )
