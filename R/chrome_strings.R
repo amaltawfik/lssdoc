@@ -75,6 +75,7 @@ lss_chrome_strings <- function(lang = "en") {
     item_exclusive        = "Exclusive",
     # ---- Codebook table row labels ----
     item_group            = "Group",
+    item_field            = "Field",
     # ---- Mandatory values ----
     # Sentence case to match the row label style used everywhere else
     # in the document ("Question", "Value", "Help", ...). The previous
@@ -170,6 +171,7 @@ lss_chrome_strings <- function(lang = "en") {
     item_value_scale_fmt  = "Valeur (\u00E9chelle %d)",
     item_exclusive        = "Exclusif",
     item_group            = "Groupe",
+    item_field            = "Champ",
     mandatory_yes         = "Oui",
     mandatory_no          = "Non",
     # "Souple" rather than "Doux": LimeSurvey "soft mandatory" is the
@@ -258,6 +260,7 @@ lss_chrome_strings <- function(lang = "en") {
     item_value_scale_fmt  = "Wert (Skala %d)",
     item_exclusive        = "Exklusiv",
     item_group            = "Gruppe",
+    item_field            = "Feld",
     mandatory_yes         = "Ja",
     mandatory_no          = "Nein",
     mandatory_soft        = "Weich",
@@ -345,6 +348,7 @@ lss_chrome_strings <- function(lang = "en") {
     item_value_scale_fmt  = "Valor (escala %d)",
     item_exclusive        = "Exclusivo",
     item_group            = "Grupo",
+    item_field            = "Campo",
     mandatory_yes         = "S\u00ED",
     mandatory_no          = "No",
     mandatory_soft        = "Suave",
@@ -430,6 +434,7 @@ lss_chrome_strings <- function(lang = "en") {
     item_value_scale_fmt  = "Valore (scala %d)",
     item_exclusive        = "Esclusiva",
     item_group            = "Gruppo",
+    item_field            = "Campo",
     mandatory_yes         = "S\u00EC",
     mandatory_no          = "No",
     mandatory_soft        = "Morbido",

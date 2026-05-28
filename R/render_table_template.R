@@ -70,7 +70,7 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   ft <- flextable::set_header_labels(
     ft, values = stats::setNames(
       as.list(c(
-        "",  # Field column header stays empty; the cell content speaks for itself.
+        chrome$item_field,
         chrome$meta_no, chrome$meta_variable, chrome$meta_type,
         chrome$meta_mandatory, chrome$meta_filter, chrome$item_value,
         lss_language_label(langs)
@@ -732,14 +732,16 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
     ft <- flextable::bg(ft, i = sh, bg = theme$color_zebra, part = "body")
     ft <- flextable::bold(ft, i = sh, j = "Value", part = "body")
   }
-  # Group rows: medium tint + 1.5 pt primary top filet (drawn as
+  # Group rows: medium tint + 1.0 pt primary top filet (drawn as
   # the bottom border of the row above) to signal "new section
   # starts here" without dominating the page like the old dark
-  # petrol banner did. When the group is the very first body row
+  # petrol banner did. Width harmonized with the cards template
+  # group filet (1 pt) so the two layouts feel like the same
+  # document family. When the group is the very first body row
   # the filet is dropped -- the table's natural top border already
   # marks the document opening.
   primary_filet <- officer::fp_border(color = theme$color_primary,
-                                      width = 1.5)
+                                      width = 1)
   for (gi in group_idx) {
     ft <- flextable::bg(ft, i = gi, bg = theme$color_band, part = "body")
     if (gi > 1L) {
