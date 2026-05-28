@@ -173,6 +173,23 @@
 #'      affiliation = "UNIL"))`. The `name` field is required; the
 #'     `affiliation` and `orcid` fields are optional.
 #'
+#' @section "LimeSurvey last save" date on the cover:
+#' The cover metadata table carries a row labelled
+#' *"LimeSurvey last save"* (or its localized equivalent). It is read
+#' verbatim from the `surveys.lastmodified` column of the `.lss`,
+#' which is the only timestamp LimeSurvey writes into the export --
+#' no other table (`questions`, `question_l10ns`, `answer_l10ns`,
+#' `groups`, etc.) carries a per-row modification date. The row is
+#' named "last save" rather than "last modified" because LimeSurvey
+#' only bumps that field reliably when the user clicks **Save** on a
+#' survey-level form (Settings tab); editing a question text, an
+#' answer label, or a translation through the Question Editor does
+#' **not** consistently update it across LimeSurvey versions. If the
+#' date looks stale relative to your most recent edits, the
+#' workaround is to open *Survey settings* in LimeSurvey, click
+#' **Save** (no other change needed), then re-export the `.lss`. The
+#' next render will show the bumped timestamp.
+#'
 #' @section Field-update prompt in Word:
 #' Opening the rendered `.docx` in Microsoft Word may surface a
 #' security-style prompt: *"This document contains fields that may

@@ -244,6 +244,25 @@ cover page, an optional table of contents, and an optional audit summary
 tie the document together. Rendering uses the suggested packages
 \pkg{officer} and \pkg{flextable}; both must be installed.
 }
+\section{"LimeSurvey last save" date on the cover}{
+
+The cover metadata table carries a row labelled
+\emph{"LimeSurvey last save"} (or its localized equivalent). It is read
+verbatim from the \code{surveys.lastmodified} column of the \code{.lss},
+which is the only timestamp LimeSurvey writes into the export --
+no other table (\code{questions}, \code{question_l10ns}, \code{answer_l10ns},
+\code{groups}, etc.) carries a per-row modification date. The row is
+named "last save" rather than "last modified" because LimeSurvey
+only bumps that field reliably when the user clicks \strong{Save} on a
+survey-level form (Settings tab); editing a question text, an
+answer label, or a translation through the Question Editor does
+\strong{not} consistently update it across LimeSurvey versions. If the
+date looks stale relative to your most recent edits, the
+workaround is to open \emph{Survey settings} in LimeSurvey, click
+\strong{Save} (no other change needed), then re-export the \code{.lss}. The
+next render will show the bumped timestamp.
+}
+
 \section{Field-update prompt in Word}{
 
 Opening the rendered \code{.docx} in Microsoft Word may surface a

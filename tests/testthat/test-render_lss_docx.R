@@ -55,7 +55,7 @@ test_that("render_lss_docx with show_audit = FALSE drops the audit section", {
   expect_false(any(grepl("Audit findings", txt)))
 })
 
-test_that("the cover page carries the Survey ID and Last modified fields", {
+test_that("the cover page carries the Survey ID and LimeSurvey last-save fields", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
@@ -69,7 +69,7 @@ test_that("the cover page carries the Survey ID and Last modified fields", {
   s <- officer::docx_summary(officer::read_docx(out))
   txt <- paste(s$text[!is.na(s$text)], collapse = " | ")
   expect_true(grepl("Survey ID", txt))
-  expect_true(grepl("Last modified", txt))
+  expect_true(grepl("LimeSurvey last save", txt))
   expect_true(grepl("971193", txt))
 })
 
