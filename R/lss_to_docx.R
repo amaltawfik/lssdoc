@@ -7,7 +7,7 @@
 #'
 #' @param input Path to a `.lss` file.
 #' @param output Path to the `.docx` file to create.
-#' @param ... Additional arguments forwarded to [render_lss_docx()].
+#' @inheritDotParams render_lss_docx -lss -output
 #'
 #' @return The `output` path, invisibly.
 #'
@@ -31,7 +31,7 @@ lss_to_docx <- function(input, output, ...) {
 #'
 #' @param input Path to a `.lss` file.
 #' @param output Path to the `.pdf` file to create.
-#' @param ... Additional arguments forwarded to [render_lss_docx()].
+#' @inheritDotParams render_lss_docx -lss -output
 #'
 #' @return The `output` path, invisibly.
 #'
@@ -57,7 +57,7 @@ lss_to_pdf <- function(input, output, ...) {
 #' the audit findings. Use this for QA follow-up.
 #'
 #' @inheritParams lss_to_docx
-#' @param ... Additional arguments forwarded to [render_lss_audit_docx()].
+#' @inheritDotParams render_lss_audit_docx -lss -output
 #'
 #' @return The `output` path, invisibly.
 #'
@@ -79,7 +79,7 @@ lss_audit_to_docx <- function(input, output, ...) {
 #' via [lss_docx_to_pdf()].
 #'
 #' @inheritParams lss_to_docx
-#' @param ... Additional arguments forwarded to [render_lss_audit_docx()].
+#' @inheritDotParams render_lss_audit_docx -lss -output
 #'
 #' @return The `output` path, invisibly.
 #'

@@ -11,7 +11,28 @@ lss_audit_to_pdf(input, output, ...)
 
 \item{output}{Path to the \code{.docx} file to create.}
 
-\item{...}{Additional arguments forwarded to \code{\link[=render_lss_audit_docx]{render_lss_audit_docx()}}.}
+\item{...}{
+  Arguments passed on to \code{\link{render_lss_audit_docx}}
+  \describe{
+    \item{\code{languages}}{Character vector of language codes for the cover page.
+Defaults to all languages of the survey.}
+    \item{\code{logo}}{Optional path to a PNG or JPEG image to display at the top
+of the cover page. \code{NULL} (default) keeps the cover logo-free.}
+    \item{\code{logo_width,logo_height}}{Image dimensions in inches. Defaults
+tuned to a 2:1 logo (1.5 x 0.75 inches).}
+    \item{\code{font}}{Body font name. \code{NULL} (default) keeps Calibri. See
+\code{\link[=render_lss_docx]{render_lss_docx()}} for guidance on overrides.}
+    \item{\code{font_code}}{Monospace font used for code-like content
+(variable codes, raw expressions). \code{NULL} (default) keeps Consolas.}
+    \item{\code{colors}}{Optional named list of hex color overrides. Same
+shape and accepted names as in \code{\link[=render_lss_docx]{render_lss_docx()}}.}
+    \item{\code{authors,description}}{Optional cover-page credit block and
+free-form note. Same shapes as in \code{\link[=render_lss_docx]{render_lss_docx()}}.}
+    \item{\code{chrome_lang}}{Language used for the document chrome (column
+headers, row labels, audit section). Supported: \code{"en"}, \code{"fr"},
+\code{"de"}, \code{"es"}, \code{"it"}. \code{NULL} (default) follows \code{languages[1]}
+when supported, otherwise \code{"en"}.}
+  }}
 }
 \value{
 The \code{output} path, invisibly.
