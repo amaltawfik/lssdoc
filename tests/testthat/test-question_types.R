@@ -52,3 +52,44 @@ test_that("every question type in the bundled fixtures is recognized", {
     expect_false(any(grepl("Unknown", labels)), info = file)
   }
 })
+
+test_that("lss_methodological_label collapses the LimeSurvey taxonomy", {
+  # Single-choice family: radios, dropdowns, predefined Y/N, gender,
+  # 5-point and array all read as "Single choice" -- the response
+  # domain (Y/N, M/F, 1..5, custom codes) lives in the Value section,
+  # not in the Type cell.
+  for (code in c("L", "!", "Y", "G", "5", "F", "1")) {
+    expect_identical(
+      lss_methodological_label(code), "Single choice",
+      info = sprintf("type %s should collapse to 'Single choice'", code)
+    )
+  }
+  expect_identical(lss_methodological_label("O"), "Single choice with comment")
+  expect_identical(lss_methodological_label("M"), "Multiple choice")
+  expect_identical(lss_methodological_label("P"), "Multiple choice with comment")
+  expect_identical(lss_methodological_label("N"), "Number")
+  expect_identical(lss_methodological_label("K"), "Number")
+  expect_identical(lss_methodological_label("S"), "Text (short)")
+  expect_identical(lss_methodological_label("T"), "Text")
+  expect_identical(lss_methodological_label("U"), "Text (long)")
+  expect_identical(lss_methodological_label("D"), "Date")
+  expect_identical(lss_methodological_label("R"), "Ranking")
+  expect_identical(lss_methodological_label("|"), "File upload")
+  expect_identical(lss_methodological_label("*"), "Computed")
+  expect_identical(lss_methodological_label("X"), "Display")
+})
+
+test_that("lss_methodological_label is vectorized and falls back for unknowns", {
+  out <- lss_methodological_label(c("L", "M", "N", "T"))
+  expect_identical(out, c("Single choice", "Multiple choice", "Number", "Text"))
+  # Unknown legacy code falls back to the theme name via the legacy
+  # label function -- never drops the question silently.
+  expect_identical(
+    lss_methodological_label(NA, "ranking"),
+    "Ranking"
+  )
+  expect_identical(
+    lss_methodological_label("Z", "plugin_fancy"),
+    "Unknown type (Z / plugin_fancy)"
+  )
+})

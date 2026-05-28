@@ -177,6 +177,82 @@ lss_question_label <- function(type, theme_name = NULL) {
   out
 }
 
+#' Methodological label for a question type (MOSAiCH-style)
+#'
+#' Maps the LimeSurvey type to one of the high-level response categories
+#' used in survey-methodology publications (ESS, MOSAiCH, panel surveys,
+#' OECD): Single choice, Multiple choice, Text, Number, Date, Ranking,
+#' File upload, Computed, Display. The aim is a label a reviewer can
+#' read without knowing LimeSurvey:
+#'
+#' * The UI distinction "List (radio)" vs "List (dropdown)" disappears
+#'   into "Single choice" -- the response semantics are identical and
+#'   the UI control is an implementation detail.
+#' * Predefined types (Yes/No, Gender, 5-point) collapse into "Single
+#'   choice"; the actual value codes (Y/N, M/F, 1..5) appear in the
+#'   Value section of the item table, which is the right place for
+#'   the response domain.
+#' * Structural fan-out ("Multiple numerical input" -> several Number
+#'   subquestions, "Array" -> several Single choice subquestions) is
+#'   conveyed by the `parent_subq` variable code and the per-subq
+#'   blocks, not by a parenthetical on the Type cell.
+#'
+#' Vectorized over `type`. Falls back to the legacy label when the type
+#' is unknown so a question is never dropped silently.
+#'
+#' @param type Character vector of LimeSurvey legacy type codes.
+#' @param theme_name Character vector of `question_theme_name` values
+#'   (same length as `type`, or `NULL`). Used as a fallback when the
+#'   legacy code is unknown.
+#' @return Character vector of methodological labels.
+#' @keywords internal
+#' @noRd
+lss_methodological_label <- function(type, theme_name = NULL) {
+  if (is.null(theme_name)) {
+    theme_name <- rep(NA_character_, length(type))
+  }
+  map <- function(code) {
+    switch(
+      as.character(code),
+      # Single-choice family (all collapse to one category; the response
+      # domain -- Y/N, M/F, 1-5, enumerated codes -- is in the Value
+      # section).
+      "L" = "Single choice", "!" = "Single choice", "Y" = "Single choice",
+      "G" = "Single choice", "5" = "Single choice",
+      "F" = "Single choice", "1" = "Single choice",
+      "A" = "Single choice", "B" = "Single choice",
+      "C" = "Single choice", "E" = "Single choice",
+      "H" = "Single choice", ":" = "Single choice",
+      "O" = "Single choice with comment",
+      # Multiple-choice family.
+      "M" = "Multiple choice", "P" = "Multiple choice with comment",
+      # Text variants -- length flag kept because it can hint at the
+      # expected answer length, useful for cognitive testing.
+      "S" = "Text (short)", "T" = "Text", "U" = "Text (long)",
+      "Q" = "Text",
+      # Numeric (single or multi -- both yield numeric variables).
+      "N" = "Number", "K" = "Number",
+      ";" = "Text",
+      # Special-purpose types.
+      "D" = "Date",
+      "R" = "Ranking",
+      "|" = "File upload",
+      "*" = "Computed",
+      "X" = "Display",
+      "I" = "Display",
+      NA_character_
+    )
+  }
+  out <- vapply(type, map, character(1L), USE.NAMES = FALSE)
+  # Fall back to the legacy/theme label when the code is unknown so a
+  # plugin question type still gets a sensible name.
+  unknown <- is.na(out)
+  if (any(unknown)) {
+    out[unknown] <- lss_question_label(type[unknown], theme_name[unknown])
+  }
+  out
+}
+
 #' Return the taxonomy row for a single type code, or a default row
 #'
 #' @param code A length-one type code.

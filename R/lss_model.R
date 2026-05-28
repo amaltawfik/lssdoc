@@ -123,7 +123,7 @@ lss_question_model <- function(lss, qrow, langs) {
     qid = qid,
     code = qrow$title,
     type = qrow$type,
-    type_label = lss_question_label(qrow$type, qrow$question_theme_name),
+    type_label = lss_methodological_label(qrow$type, qrow$question_theme_name),
     theme = qrow$question_theme_name,
     mandatory = qrow$mandatory,
     relevance = qrow$relevance,
