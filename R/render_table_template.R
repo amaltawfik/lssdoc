@@ -39,10 +39,13 @@ lss_render_table_template <- function(doc, rows, langs, theme,
 
   for (i in seq_along(rows)) {
     r <- rows[[i]]
-    if (identical(r$kind, "section")) {
-      # Section text in the first column so merge_at() below keeps
-      # it visible after the row span collapses into one cell.
-      df$Field[i] <- r$text
+    if (identical(r$kind, "welcome")) {
+      df$Field[i] <- chrome$welcome_text_title
+    } else if (identical(r$kind, "endtext")) {
+      df$Field[i] <- chrome$end_text_title
+    } else if (identical(r$kind, "group")) {
+      df$Field[i] <- chrome$item_group
+      # Group name composed below per language via flextable::compose.
     } else if (identical(r$kind, "scale_header")) {
       # Dual-scale separator: announce "Value (scale N)" on the
       # Value column. Lang cells stay empty.
@@ -102,12 +105,51 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     color = theme$color_muted
   )
 
+  plain_lang_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_text
+  )
+  group_name_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_heading2,
+    color = theme$color_primary, bold = TRUE
+  )
+
   for (i in seq_along(rows)) {
     r <- rows[[i]]
     kind <- r$kind
-    if (identical(kind, "section") || identical(kind, "scale_header")) {
-      # Section is merged & styled in the polish step. Scale header
-      # carries text already in df$Value -- no rich composition.
+    if (identical(kind, "scale_header")) {
+      # Scale header carries text already in df$Value -- no rich
+      # composition. Polish will tint the row.
+      next
+    }
+
+    if (identical(kind, "welcome") || identical(kind, "endtext")) {
+      # Welcome / End text: full HTML content composed per language
+      # via the same lss_compose() helper the cards template uses
+      # for the side-by-side block, so paragraphs and formatting
+      # are preserved.
+      for (lg in langs) {
+        ft <- flextable::compose(
+          ft, i = i, j = paste0("Q_", lg),
+          value = lss_compose(r$text_by_lang[[lg]], theme,
+                              size = theme$size_question)
+        )
+      }
+      next
+    }
+
+    if (identical(kind, "group")) {
+      # Group row: localized name in bold primary per language.
+      for (lg in langs) {
+        name <- r$name_by_lang[[lg]]
+        if (is.null(name) || is.na(name) || !nzchar(name)) name <- ""
+        ft <- flextable::compose(
+          ft, i = i, j = paste0("Q_", lg),
+          value = flextable::as_paragraph(flextable::as_chunk(
+            name, props = group_name_props
+          ))
+        )
+      }
       next
     }
 
@@ -175,6 +217,29 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   doc
 }
 
+#' Build the Welcome / End text row for the codebook table, when
+#' the survey has non-empty content in at least one displayed
+#' language. Returns `NULL` if all languages are empty.
+#'
+#' `field` is the `survey_language_settings` column (typically
+#' `surveyls_welcometext` or `surveyls_endtext`); `kind` is the row
+#' marker ("welcome" / "endtext") used by the rendering loop.
+#' @keywords internal
+#' @noRd
+lss_table_text_row <- function(lss, langs, field, kind) {
+  ls <- lss$survey_language_settings
+  if (is.null(ls) || nrow(ls) == 0L) return(NULL)
+  vals <- vapply(langs, function(lg) {
+    v <- ls[[field]][ls$surveyls_language == lg]
+    if (length(v) == 0L) NA_character_ else v[1]
+  }, character(1))
+  if (!any(!is.na(vals) & nzchar(trimws(vals)))) return(NULL)
+  list(
+    kind = kind,
+    text_by_lang = stats::setNames(as.list(vals), langs)
+  )
+}
+
 #' Walk the model and produce the flat list of rows that will become
 #' the codebook table -- alternating "section" markers (group
 #' banners) and "item" rows (one per variable).
@@ -199,13 +264,22 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
                                               show_help, state) {
   chrome <- theme$chrome
   rows <- list()
-  gname <- lss_first_label(g$names, langs)
-  if (is.na(gname)) gname <- paste0("Group ", g$gid)
-  gname <- lss_strip_group_number_prefix(gname)
+  # Group row: Field = "Group" label, language columns hold the
+  # localized name prefixed by the running group index.
   state$group_index <- state$group_index + 1L
+  group_names <- stats::setNames(
+    lapply(langs, function(lg) {
+      raw <- if (!is.null(g$names[[lg]])) g$names[[lg]] else NA_character_
+      if (is.null(raw) || is.na(raw) || !nzchar(raw)) {
+        raw <- paste0("Group ", g$gid)
+      }
+      sprintf("%d. %s", state$group_index, lss_strip_group_number_prefix(raw))
+    }),
+    langs
+  )
   rows[[length(rows) + 1L]] <- list(
-    kind = "section",
-    text = sprintf("%d. %s", state$group_index, gname)
+    kind = "group",
+    name_by_lang = group_names
   )
 
   # Build one Question row per variable (carrying the meta and the
@@ -627,48 +701,61 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
     ft <- flextable::width(ft, j = 7L + idx, width = lang_w, unit = "in")
   }
 
-  # Row-type indices for selective styling.
+  # Row-type indices for selective styling. The hierarchy is
+  # group (most saturated) > question (zebra) > value (white);
+  # welcome / endtext sit outside the data flow with accent borders.
   kinds <- vapply(rows, function(r) as.character(r$kind), character(1L))
-  section_idx <- which(kinds == "section")
-  question_idx <- which(kinds %in% c("leaf", "subq", "other"))
+  group_idx        <- which(kinds == "group")
+  question_idx     <- which(kinds %in% c("leaf", "subq", "other"))
   scale_header_idx <- which(kinds == "scale_header")
+  welcome_idx      <- which(kinds %in% c("welcome", "endtext"))
 
-  # Question rows: tinted band so the eye finds the next variable
-  # at a glance. The tint sits between the white value rows and the
-  # dark petrol section banners, keeping the visual hierarchy
-  # section > question > value.
+  # Question rows: lighter zebra tint so the eye reads them as
+  # "secondary" relative to group banners but still distinct from
+  # the white value rows.
   for (qi in question_idx) {
-    ft <- flextable::bg(ft, i = qi, bg = theme$color_band, part = "body")
+    ft <- flextable::bg(ft, i = qi, bg = theme$color_zebra, part = "body")
   }
-  # Scale-header rows (dual-scale arrays only) get the lighter
-  # zebra tint so they read as "subsection within the values".
+  # Scale-header rows (dual-scale arrays only) reuse the zebra tint
+  # but bold the Value cell so they read as "subsection within the
+  # values".
   for (sh in scale_header_idx) {
     ft <- flextable::bg(ft, i = sh, bg = theme$color_zebra, part = "body")
     ft <- flextable::bold(ft, i = sh, j = "Value", part = "body")
   }
-
-  # Section rows: merge every column into one span so the petrol band
-  # reads as a banner that physically separates the variable groups.
-  total_cols <- flextable::ncol_keys(ft)
-  for (si in section_idx) {
-    ft <- flextable::merge_at(ft, i = si, j = seq_len(total_cols),
-                              part = "body")
-    ft <- flextable::bg(ft, i = si, bg = theme$color_primary, part = "body")
-    ft <- flextable::color(ft, i = si, color = theme$color_white, part = "body")
-    ft <- flextable::bold(ft, i = si, part = "body")
-    ft <- flextable::fontsize(ft, i = si, size = theme$size_heading2,
-                              part = "body")
-    ft <- flextable::align(ft, i = si, align = "left", part = "body")
-    ft <- flextable::padding(ft, i = si, padding.top = 6, padding.bottom = 6,
-                             padding.left = 8, padding.right = 8,
+  # Group rows: medium tint + 1.5 pt primary top filet (drawn as
+  # the bottom border of the row above) to signal "new section
+  # starts here" without dominating the page like the old dark
+  # petrol banner did. When the group is the very first body row
+  # the filet is dropped -- the table's natural top border already
+  # marks the document opening.
+  primary_filet <- officer::fp_border(color = theme$color_primary,
+                                      width = 1.5)
+  for (gi in group_idx) {
+    ft <- flextable::bg(ft, i = gi, bg = theme$color_band, part = "body")
+    if (gi > 1L) {
+      ft <- flextable::hline(ft, i = gi - 1L, border = primary_filet,
                              part = "body")
-    # Override the mono/primary that the body-wide rules set on the
-    # Field / Variable / Value columns so the banner text reads as
-    # a heading (white on petrol).
-    ft <- flextable::font(ft, i = si, fontname = theme$font_body,
-                          part = "body")
-    ft <- flextable::color(ft, i = si, color = theme$color_white,
+    }
+    ft <- flextable::padding(ft, i = gi, padding.top = 6, padding.bottom = 6,
+                             padding.left = 4, padding.right = 4,
+                             part = "body")
+  }
+  # Welcome / End text rows: white background framed by 1 pt accent
+  # borders so they read as "preface" / "epilogue" content sitting
+  # outside the codebook's data flow. Same row-1 guard as for the
+  # group filet.
+  accent_border <- officer::fp_border(color = theme$color_accent, width = 1)
+  for (wi in welcome_idx) {
+    if (wi > 1L) {
+      ft <- flextable::hline(ft, i = wi - 1L, border = accent_border,
+                             part = "body")
+    }
+    ft <- flextable::hline(ft, i = wi, border = accent_border,
                            part = "body")
+    ft <- flextable::padding(ft, i = wi, padding.top = 8, padding.bottom = 8,
+                             padding.left = 4, padding.right = 4,
+                             part = "body")
   }
 
   ft

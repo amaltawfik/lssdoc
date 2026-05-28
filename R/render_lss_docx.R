@@ -311,14 +311,20 @@ render_lss_docx <- function(
     doc <- officer::body_add_break(doc)
     doc <- lss_render_audit_section(doc, audit_idx, theme)
   }
-  doc <- lss_render_welcome(doc, lss, langs, theme)
 
   if (identical(template, "table")) {
-    # Dense codebook layout: collect the rows group-by-group here so
-    # cli_progress_update fires in the same environment that owns the
-    # progress bar, then hand the assembled rows to the renderer for
-    # a single flextable build.
+    # Dense codebook layout: welcome / group / question / value /
+    # endtext all become rows of one big flextable. We do NOT call
+    # `lss_render_welcome()` separately for this template; the
+    # welcome content lives inside the table as a labelled row so
+    # the codebook reads as a single artifact.
     table_rows <- list()
+    welcome_row <- lss_table_text_row(
+      lss, langs, "surveyls_welcometext", "welcome"
+    )
+    if (!is.null(welcome_row)) {
+      table_rows[[length(table_rows) + 1L]] <- welcome_row
+    }
     for (i in seq_along(model$groups)) {
       cli::cli_progress_update(
         set = 2L + i - 1L,
@@ -332,6 +338,12 @@ render_lss_docx <- function(
         )
       )
     }
+    endtext_row <- lss_table_text_row(
+      lss, langs, "surveyls_endtext", "endtext"
+    )
+    if (!is.null(endtext_row)) {
+      table_rows[[length(table_rows) + 1L]] <- endtext_row
+    }
     doc <- lss_render_table_template(
       doc, table_rows, langs, theme,
       show_help = show_help,
@@ -339,6 +351,7 @@ render_lss_docx <- function(
       state = state
     )
   } else {
+    doc <- lss_render_welcome(doc, lss, langs, theme)
     for (i in seq_along(model$groups)) {
       cli::cli_progress_update(
         set = 2L + i - 1L,
@@ -354,7 +367,12 @@ render_lss_docx <- function(
       )
     }
   }
-  doc <- lss_render_endtext(doc, lss, langs, theme)
+  # End text already rendered as a row inside the codebook table
+  # when template == "table"; only the cards layout needs the
+  # separate body-level paragraph here.
+  if (!identical(template, "table")) {
+    doc <- lss_render_endtext(doc, lss, langs, theme)
+  }
   if (isTRUE(show_index) && length(state$index_entries) > 0L) {
     doc <- lss_render_index(doc, state$index_entries, theme)
   }
