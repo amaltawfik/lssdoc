@@ -1,0 +1,104 @@
+/* lssdoc website touches.
+   The package renders multilingual codebook documents in a petrol
+   blue palette (primary #133B52, accent #3A7C8C, very-light blue
+   #E9F2F6 for header bands). The website mirrors that palette so
+   the visual identity is consistent between the .docx output and
+   the documentation site. */
+
+body,
+.navbar,
+.dropdown-menu,
+table,
+.table {
+  font-feature-settings: "zero" 1;
+}
+
+code,
+pre,
+kbd,
+samp,
+.sourceCode {
+  font-feature-settings: "zero" 1, "tnum" 1;
+}
+
+/* pkgdown / downlit render R output lines (the ones starting with
+   #>) inside <span class="co"> because they share the "comment"
+   highlight class. Override the dark-mode italic so console
+   output stays upright in both light and dark themes. */
+.sourceCode .co,
+pre .co,
+code .co {
+  font-style: normal !important;
+}
+
+/* IBM Plex Sans has a lower x-height than IBM Plex Mono. Bump
+   body to 17 px and line-height to 1.6 so prose and code read at
+   the same visual scale, with a fallback chain for the brief swap
+   moment when the web font is loading. */
+:root {
+  --bs-body-font-size: 1.0625rem;
+  --bs-body-line-height: 1.6;
+  --bs-body-font-family:
+    "IBM Plex Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    sans-serif;
+}
+
+/* Cap article column width so long-form prose stays within a
+   comfortable reading length on wide screens. Tables and code
+   blocks remain free to overflow on their own. */
+@media (min-width: 992px) {
+  .template-article main {
+    max-width: 78ch;
+  }
+}
+
+/* Soft background on inline code so it pops off the prose without
+   competing with block-code (already styled by the highlighter). */
+:not(pre) > code {
+  background-color: rgba(19, 59, 82, 0.08);  /* petrol with low alpha */
+  padding: 0.125em 0.35em;
+  border-radius: 0.25rem;
+}
+[data-bs-theme="dark"] :not(pre) > code {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Section-break breathing room for long-form articles. */
+.template-article h2 { margin-top: 2.5rem; }
+.template-article h3 { margin-top: 2rem; }
+.template-article h4 { margin-top: 1.5rem; }
+
+/* Knitr-rendered Markdown tables ship without gt/tinytable
+   classes; loosen their cell padding to match the styled engines. */
+.template-article table th,
+.template-article table td {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Subtle petrol accent on H2 underline -- echoes the 1 pt primary
+   filet that sits below each group title in the rendered .docx. */
+.template-article h2 {
+  border-bottom: 1px solid rgba(19, 59, 82, 0.18);
+  padding-bottom: 0.35rem;
+}
+[data-bs-theme="dark"] .template-article h2 {
+  border-bottom-color: rgba(58, 124, 140, 0.35);
+}
+
+/* Respect users with vestibular sensitivity who request reduced
+   motion via OS / browser settings. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

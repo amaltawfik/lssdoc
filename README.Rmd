@@ -2,7 +2,7 @@
 output: github_document
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- README.md is generated from README.Rmd. Please edit that file. -->
 
 ```{r, include = FALSE}
 Sys.setenv(LANGUAGE = "en")
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# lssdoc: Word review documents from LimeSurvey `.lss` files
+# lssdoc: Word codebook documents from LimeSurvey `.lss` files
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
@@ -24,51 +24,198 @@ knitr::opts_chunk$set(
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
 
-The goal of **lssdoc** is to generate a professional Word (`.docx`) review
-document from a LimeSurvey `.lss` export, displaying up to four languages
-side by side. It is built for the human review of multilingual
-questionnaires by ethics committees, translators, and methodologists: it
-reproduces the questionnaire content faithfully and flags automatically
-detectable anomalies that do not require any AI.
+**lssdoc** turns a LimeSurvey `.lss` export into a polished Word
+(`.docx`) codebook document for ethics committees, survey
+methodologists, and translators. It renders the questionnaire content
+side by side in up to four languages, runs an automated integrity
+audit, and produces a layout that reads as a published codebook --
+not a developer dump.
 
-Processing is fully local. No questionnaire is uploaded to any third-party
-service.
+Two output templates:
+
+- **`"cards"`** -- one detached block per item (meta table + question
+  table), stacked vertically. Closest to the printed questionnaire a
+  respondent would see.
+- **`"table"`** -- one dense codebook table covering the whole
+  document: every variable is one tinted *Question* row carrying its
+  metadata, followed by one or more white *Value* rows holding the
+  answer codes and their labels per language. Group banners,
+  welcome text, description and end text become labelled rows of
+  the same table so the codebook reads as a single artifact.
+
+Other things lssdoc takes care of for you:
+
+- **Multilingual chrome.** Column headers, row labels, type labels
+  (Single choice / Multiple choice / Text / Number ...), Value
+  descriptors, the audit section -- everything outside the survey
+  content -- is translated to English, French, German, Spanish or
+  Italian. Independent from the survey's content languages, so you
+  can keep your FR/DE questionnaire and switch the document
+  scaffolding to English (or vice versa) with a single argument.
+- **Variable-centric compound rendering.** Array, multiple-choice,
+  multiple-numerical and dual-scale array questions are documented
+  per subquestion, with the real variable code (`parent_subq`) on
+  the meta row -- not the parent code which never appears in the
+  data export.
+- **Methodological type labels.** UI distinctions like "List (radio)"
+  vs "List (dropdown)" collapse into "Single choice", because the
+  response semantics are identical and the actual codes appear in
+  the Value section. The Type cell reads in the methodologist's
+  vocabulary, not LimeSurvey's.
+- **Automated audit.** Missing translations, unreachable filter
+  expressions, dangling references, structural inconsistencies
+  -- all flagged inline on the rendered item and, when you ask
+  for it, in a dedicated section. No AI; rule-based and
+  reviewable.
+- **Local-only processing.** No network calls, no third-party
+  services. The questionnaire content never leaves the machine
+  where R runs.
 
 ## Installation
 
-You can install the development version of lssdoc from
-[GitHub](https://github.com/amaltawfik/lssdoc) with:
+The development version, from GitHub, with **pak** (recommended):
 
 ```r
 # install.packages("pak")
 pak::pak("amaltawfik/lssdoc")
-
-# or, with remotes:
-# install.packages("remotes")
-# remotes::install_github("amaltawfik/lssdoc")
 ```
 
-## Usage
+Or with **remotes**:
+
+```r
+# install.packages("remotes")
+remotes::install_github("amaltawfik/lssdoc")
+```
+
+The package depends on **officer** and **flextable** (declared as
+`Suggests` -- the parse and audit paths work without them).
+
+## Quick tour
+
+### A one-line pipeline
 
 ```r
 library(lssdoc)
 
-# Simple pipeline: .lss -> .docx
-lss_to_docx("monquestionnaire.lss", "rapport.docx")
+# Parse the .lss and render the Word document in a single call.
+lss_to_docx("survey.lss", "review.docx")
+```
 
-# With finer control
-lss <- parse_lss("monquestionnaire.lss")
+The output uses the `"cards"` template by default, with the chrome
+language matching the survey's primary content language. Open
+`review.docx` in Word, click **Yes** when prompted to update fields
+(page numbers and the table of contents).
+
+### Codebook layout with French chrome
+
+```r
+lss_to_docx(
+  "survey.lss",
+  "codebook.docx",
+  languages   = c("fr", "de"),
+  template    = "table",
+  chrome_lang = "fr"
+)
+```
+
+`languages` controls which content columns appear and in which
+order. `chrome_lang` is independent: pass `"en"` to keep an
+English-labeled scaffolding with French and German content side by
+side.
+
+### Ethics committee submission
+
+```r
+lss_to_docx(
+  "survey.lss",
+  "ethics_review.docx",
+  languages              = c("fr", "de"),
+  template               = "table",
+  chrome_lang            = "fr",
+  show_privacy_settings  = TRUE,   # anonymized / save partial / IP / referrer / timestamp
+  show_admin_settings    = TRUE,   # alias / end URL / active
+  authors = list(
+    list(name        = "Amal Tawfik",
+         affiliation = "HES-SO Valais-Wallis",
+         orcid       = "0009-0006-2422-1555")
+  ),
+  description = paste0(
+    "Validated as part of the SNSF project XYZ. ",
+    "Reference: https://doi.org/10.5281/zenodo.123456"
+  )
+)
+```
+
+The cover page picks up the authors block (with clickable ORCID
+hyperlinks), the description (with URLs auto-detected and made
+clickable), and the privacy / admin settings rows in the metadata
+table.
+
+### Minimal codebook -- just the variables
+
+```r
+lss_to_docx(
+  "survey.lss",
+  "minimal.docx",
+  template         = "table",
+  show_welcome     = FALSE,
+  show_endtext     = FALSE,
+  show_description = FALSE,
+  show_groups      = FALSE,
+  show_toc         = FALSE,
+  show_audit       = FALSE,
+  show_index       = FALSE
+)
+```
+
+Pure data: one row per variable header, one row per value code,
+nothing else.
+
+### Lower-level workflow
+
+```r
+# Parse once, audit and render separately.
+lss <- parse_lss("survey.lss")
+
 audit <- audit_lss(lss)
-print(audit) # show detected anomalies
+print(audit)  # console summary of flagged anomalies
 
 render_lss_docx(
   lss,
-  output     = "rapport.docx",
-  languages  = c("fr", "de", "en", "it"),
-  layout     = "auto",
+  output     = "review.docx",
+  languages  = c("fr", "de"),
+  template   = "table",
   show_audit = TRUE
 )
 ```
 
-> **Note**: the package is at an early scaffolding stage. The API above is
-> defined and documented; the implementations are in progress.
+### PDF output
+
+```r
+# Same arguments as lss_to_docx() -- writes the .docx then converts
+# it to .pdf locally via LibreOffice (must be installed and on PATH).
+lss_to_pdf("survey.lss", "review.pdf", template = "table")
+```
+
+## Templates and palette
+
+The rendered `.docx` uses an editorial petrol-blue palette tuned for
+publication-grade output (`#133B52` primary, `#3A7C8C` accent,
+`#E9F2F6` and `#F4F8FA` for tinted bands, `#D3DCE2` for the soft
+grid). Calibri body / Consolas monospace by default; the `font` and
+`font_code` arguments accept any string to override.
+
+## Citation
+
+Use `citation("lssdoc")` once the package is on CRAN, or cite the
+GitHub repository in the meantime:
+
+```
+Tawfik A. (2026). lssdoc: Word codebook documents from LimeSurvey
+.lss files. R package version 0.0.0.9000.
+https://github.com/amaltawfik/lssdoc
+```
+
+## License
+
+MIT. See [`LICENSE`](LICENSE) for the full notice.
