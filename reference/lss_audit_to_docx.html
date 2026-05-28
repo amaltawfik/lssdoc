@@ -75,7 +75,42 @@ the audit findings. Use this for QA follow-up.</p>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments forwarded to <code><a href="render_lss_audit_docx.html">render_lss_audit_docx()</a></code>.</p></dd>
+<dd><p>Arguments passed on to <code><a href="render_lss_audit_docx.html">render_lss_audit_docx</a></code></p><dl><dt><code>languages</code></dt>
+<dd><p>Character vector of language codes for the cover page.
+Defaults to all languages of the survey.</p></dd>
+
+    <dt><code>logo</code></dt>
+<dd><p>Optional path to a PNG or JPEG image to display at the top
+of the cover page. <code>NULL</code> (default) keeps the cover logo-free.</p></dd>
+
+    <dt><code>logo_width,logo_height</code></dt>
+<dd><p>Image dimensions in inches. Defaults
+tuned to a 2:1 logo (1.5 x 0.75 inches).</p></dd>
+
+    <dt><code>font</code></dt>
+<dd><p>Body font name. <code>NULL</code> (default) keeps Calibri. See
+<code><a href="render_lss_docx.html">render_lss_docx()</a></code> for guidance on overrides.</p></dd>
+
+    <dt><code>font_code</code></dt>
+<dd><p>Monospace font used for code-like content
+(variable codes, raw expressions). <code>NULL</code> (default) keeps Consolas.</p></dd>
+
+    <dt><code>colors</code></dt>
+<dd><p>Optional named list of hex color overrides. Same
+shape and accepted names as in <code><a href="render_lss_docx.html">render_lss_docx()</a></code>.</p></dd>
+
+    <dt><code>authors,description</code></dt>
+<dd><p>Optional cover-page credit block and
+free-form note. Same shapes as in <code><a href="render_lss_docx.html">render_lss_docx()</a></code>.</p></dd>
+
+    <dt><code>chrome_lang</code></dt>
+<dd><p>Language used for the document chrome (column
+headers, row labels, audit section). Supported: <code>"en"</code>, <code>"fr"</code>,
+<code>"de"</code>, <code>"es"</code>, <code>"it"</code>. <code>NULL</code> (default) follows <code>languages[1]</code>
+when supported, otherwise <code>"en"</code>.</p></dd>
+
+
+</dl></dd>
 
 </dl></div>
     <div class="section level2">
