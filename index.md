@@ -13,8 +13,10 @@ Two output templates:
   table), stacked vertically. Closest to the printed questionnaire a
   respondent would see.
 
-  ![Cards layout: meta table then item table per question, French/German
-  side by side](reference/figures/template_cards.png)
+  ![Cards layout: multiple-choice subquestions with the Exclusive row
+  appearing only on the named subquestion, plus an Other free-text item,
+  all side by side in French and
+  German](reference/figures/template_cards.png)
 
 - **`"table"`** – one dense codebook table covering the whole document:
   every variable is one tinted *Question* row carrying its metadata,
@@ -23,9 +25,11 @@ Two output templates:
   description and end text become labelled rows of the same table so the
   codebook reads as a single artifact.
 
-  ![Codebook layout: Field column on the left, meta columns, Value
-  column, then language columns; one Question row per variable followed
-  by Value rows](reference/figures/template_table.png)
+  ![Codebook layout mid-document: a Single choice variable with five
+  Value rows (5-point scale), followed by a Number variable carrying the
+  \[num\] descriptor in its Value cell; the column header repeats
+  automatically at the top of each new
+  page](reference/figures/template_table.png)
 
 Other things lssdoc takes care of for you:
 
