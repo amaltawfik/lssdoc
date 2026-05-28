@@ -27,12 +27,17 @@ Two output templates:
 - **`"cards"`** – one detached block per item (meta table + question
   table), stacked vertically. Closest to the printed questionnaire a
   respondent would see.
+
+  <img src="man/figures/template_cards.png" alt="Cards layout: meta table then item table per question, French/German side by side" width="100%" />
+
 - **`"table"`** – one dense codebook table covering the whole document:
   every variable is one tinted *Question* row carrying its metadata,
   followed by one or more white *Value* rows holding the answer codes
   and their labels per language. Group banners, welcome text,
   description and end text become labelled rows of the same table so the
   codebook reads as a single artifact.
+
+  <img src="man/figures/template_table.png" alt="Codebook layout: Field column on the left, meta columns, Value column, then language columns; one Question row per variable followed by Value rows" width="100%" />
 
 Other things lssdoc takes care of for you:
 
