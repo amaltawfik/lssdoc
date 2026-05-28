@@ -54,7 +54,7 @@ audit <- audit_lss(lss)
 print(audit)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmphEng2K/temp_libpath1a1510460977/lssdoc/extdata/hesav_2026.lss
+#> File: /tmp/RtmpOBTYVU/temp_libpath1a0f59f5ec2f/lssdoc/extdata/hesav_2026.lss
 #> Languages: "de" and "fr"
 #> ✔ No anomalies detected.
 ```
