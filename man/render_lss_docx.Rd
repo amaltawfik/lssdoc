@@ -22,6 +22,12 @@ render_lss_docx(
   show_source = TRUE,
   show_item_heading = FALSE,
   show_raw_filter = TRUE,
+  show_groups = TRUE,
+  show_welcome = TRUE,
+  show_endtext = TRUE,
+  show_description = TRUE,
+  show_privacy_settings = FALSE,
+  show_admin_settings = FALSE,
   title = NULL,
   logo = NULL,
   logo_width = 1.5,
@@ -116,6 +122,42 @@ cell of each meta table shows the human-readable form on top and the
 raw LimeSurvey relevance expression in smaller italic gray underneath.
 Set to \code{FALSE} for a cleaner cell that shows only the plain form (the
 raw expression is still shown when it could not be simplified).}
+
+\item{show_groups}{Logical; show the group banners (cards layout) or
+group rows (table layout). Default \code{TRUE}. Surveys sometimes use
+groups only as internal organization tools without showing them
+to respondents; pass \code{FALSE} to flatten the document into a
+single sequence of items with no section breaks.}
+
+\item{show_welcome}{Logical; include the survey's welcome text
+(\code{surveyls_welcometext}) in the document. Default \code{TRUE}. The
+welcome text is multilingual and appears as a side-by-side block
+in the cards layout or as an embedded row in the codebook table.}
+
+\item{show_endtext}{Logical; include the survey's end text
+(\code{surveyls_endtext}). Default \code{TRUE}. Same multilingual treatment
+as \code{show_welcome}.}
+
+\item{show_description}{Logical; include the survey's description
+(\code{surveyls_description}). Default \code{TRUE}. The description is the
+short "what this survey is about" multilingual intro that
+LimeSurvey shows above the welcome text on the landing page; it
+appears here before the welcome block in the cards layout and as
+a Description row in the codebook table.}
+
+\item{show_privacy_settings}{Logical; surface the survey-level
+privacy / tracking settings (\code{anonymized}, \code{save} partial,
+\code{datestamp}, \code{ipaddr}, \code{refurl}) as additional rows on the cover
+metadata table. Default \code{FALSE} because most reviewers do not
+need them; set to \code{TRUE} for an ethics committee submission
+where these flags are part of the methodological assessment.}
+
+\item{show_admin_settings}{Logical; surface the survey-level
+administrative settings (\code{alias}, end URL and its description,
+\code{active} flag) as additional rows on the cover metadata table.
+Default \code{FALSE}. The end URL is where the respondent is
+redirected after submission; reviewers may want to check it for
+third-party redirects.}
 
 \item{title}{Optional override of the survey title shown on the cover
 page and the top-right header. \code{NULL} (default) uses the per-

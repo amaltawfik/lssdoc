@@ -77,6 +77,36 @@
 #'   raw LimeSurvey relevance expression in smaller italic gray underneath.
 #'   Set to `FALSE` for a cleaner cell that shows only the plain form (the
 #'   raw expression is still shown when it could not be simplified).
+#' @param show_groups Logical; show the group banners (cards layout) or
+#'   group rows (table layout). Default `TRUE`. Surveys sometimes use
+#'   groups only as internal organization tools without showing them
+#'   to respondents; pass `FALSE` to flatten the document into a
+#'   single sequence of items with no section breaks.
+#' @param show_welcome Logical; include the survey's welcome text
+#'   (`surveyls_welcometext`) in the document. Default `TRUE`. The
+#'   welcome text is multilingual and appears as a side-by-side block
+#'   in the cards layout or as an embedded row in the codebook table.
+#' @param show_endtext Logical; include the survey's end text
+#'   (`surveyls_endtext`). Default `TRUE`. Same multilingual treatment
+#'   as `show_welcome`.
+#' @param show_description Logical; include the survey's description
+#'   (`surveyls_description`). Default `TRUE`. The description is the
+#'   short "what this survey is about" multilingual intro that
+#'   LimeSurvey shows above the welcome text on the landing page; it
+#'   appears here before the welcome block in the cards layout and as
+#'   a Description row in the codebook table.
+#' @param show_privacy_settings Logical; surface the survey-level
+#'   privacy / tracking settings (`anonymized`, `save` partial,
+#'   `datestamp`, `ipaddr`, `refurl`) as additional rows on the cover
+#'   metadata table. Default `FALSE` because most reviewers do not
+#'   need them; set to `TRUE` for an ethics committee submission
+#'   where these flags are part of the methodological assessment.
+#' @param show_admin_settings Logical; surface the survey-level
+#'   administrative settings (`alias`, end URL and its description,
+#'   `active` flag) as additional rows on the cover metadata table.
+#'   Default `FALSE`. The end URL is where the respondent is
+#'   redirected after submission; reviewers may want to check it for
+#'   third-party redirects.
 #' @param title Optional override of the survey title shown on the cover
 #'   page and the top-right header. `NULL` (default) uses the per-
 #'   language titles from the `.lss` survey settings. Pass a single
@@ -186,6 +216,12 @@ render_lss_docx <- function(
   show_source = TRUE,
   show_item_heading = FALSE,
   show_raw_filter = TRUE,
+  show_groups = TRUE,
+  show_welcome = TRUE,
+  show_endtext = TRUE,
+  show_description = TRUE,
+  show_privacy_settings = FALSE,
+  show_admin_settings = FALSE,
   title = NULL,
   logo = NULL,
   logo_width = 1.5,
@@ -298,6 +334,8 @@ render_lss_docx <- function(
     doc, lss, model, theme,
     logo = logo, logo_width = logo_width, logo_height = logo_height,
     show_source = isTRUE(show_source),
+    show_privacy_settings = isTRUE(show_privacy_settings),
+    show_admin_settings = isTRUE(show_admin_settings),
     titles = resolved_titles,
     authors = authors,
     description = description
@@ -313,17 +351,26 @@ render_lss_docx <- function(
   }
 
   if (identical(template, "table")) {
-    # Dense codebook layout: welcome / group / question / value /
-    # endtext all become rows of one big flextable. We do NOT call
-    # `lss_render_welcome()` separately for this template; the
-    # welcome content lives inside the table as a labelled row so
-    # the codebook reads as a single artifact.
+    # Dense codebook layout: description / welcome / group / question /
+    # value / endtext all become rows of one big flextable when their
+    # respective `show_*` flag is on. Skipped rows simply drop out of
+    # the row list.
     table_rows <- list()
-    welcome_row <- lss_table_text_row(
-      lss, langs, "surveyls_welcometext", "welcome"
-    )
-    if (!is.null(welcome_row)) {
-      table_rows[[length(table_rows) + 1L]] <- welcome_row
+    if (isTRUE(show_description)) {
+      desc_row <- lss_table_text_row(
+        lss, langs, "surveyls_description", "description"
+      )
+      if (!is.null(desc_row)) {
+        table_rows[[length(table_rows) + 1L]] <- desc_row
+      }
+    }
+    if (isTRUE(show_welcome)) {
+      welcome_row <- lss_table_text_row(
+        lss, langs, "surveyls_welcometext", "welcome"
+      )
+      if (!is.null(welcome_row)) {
+        table_rows[[length(table_rows) + 1L]] <- welcome_row
+      }
     }
     for (i in seq_along(model$groups)) {
       cli::cli_progress_update(
@@ -334,15 +381,17 @@ render_lss_docx <- function(
         table_rows,
         lss_table_template_rows_for_group(
           model$groups[[i]], langs, theme,
-          show_help = show_help, state = state
+          show_help = show_help, show_groups = show_groups, state = state
         )
       )
     }
-    endtext_row <- lss_table_text_row(
-      lss, langs, "surveyls_endtext", "endtext"
-    )
-    if (!is.null(endtext_row)) {
-      table_rows[[length(table_rows) + 1L]] <- endtext_row
+    if (isTRUE(show_endtext)) {
+      endtext_row <- lss_table_text_row(
+        lss, langs, "surveyls_endtext", "endtext"
+      )
+      if (!is.null(endtext_row)) {
+        table_rows[[length(table_rows) + 1L]] <- endtext_row
+      }
     }
     doc <- lss_render_table_template(
       doc, table_rows, langs, theme,
@@ -351,7 +400,12 @@ render_lss_docx <- function(
       state = state
     )
   } else {
-    doc <- lss_render_welcome(doc, lss, langs, theme)
+    if (isTRUE(show_description)) {
+      doc <- lss_render_description(doc, lss, langs, theme)
+    }
+    if (isTRUE(show_welcome)) {
+      doc <- lss_render_welcome(doc, lss, langs, theme)
+    }
     for (i in seq_along(model$groups)) {
       cli::cli_progress_update(
         set = 2L + i - 1L,
@@ -362,6 +416,7 @@ render_lss_docx <- function(
         show_help = show_help,
         show_attrs = show_attrs,
         show_technical_attrs = show_technical_attrs,
+        show_groups = show_groups,
         audit_idx = audit_idx,
         state = state
       )
@@ -369,8 +424,9 @@ render_lss_docx <- function(
   }
   # End text already rendered as a row inside the codebook table
   # when template == "table"; only the cards layout needs the
-  # separate body-level paragraph here.
-  if (!identical(template, "table")) {
+  # separate body-level paragraph here, and only when the caller
+  # has not opted out via `show_endtext = FALSE`.
+  if (!identical(template, "table") && isTRUE(show_endtext)) {
     doc <- lss_render_endtext(doc, lss, langs, theme)
   }
   if (isTRUE(show_index) && length(state$index_entries) > 0L) {
@@ -1060,6 +1116,8 @@ lss_render_cover <- function(doc, lss, model, theme,
                              logo_width = 1.5,
                              logo_height = 0.75,
                              show_source = TRUE,
+                             show_privacy_settings = FALSE,
+                             show_admin_settings = FALSE,
                              titles = NULL,
                              authors = NULL,
                              description = NULL) {
@@ -1154,6 +1212,67 @@ lss_render_cover <- function(doc, lss, model, theme,
   field_pairs[[chrome$cover_answer_options]] <- as.character(n_ans)
   field_pairs[[chrome$cover_last_modified]]  <- if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod
   field_pairs[[chrome$cover_generated]]      <- format(Sys.time(), "%Y-%m-%d %H:%M")
+
+  # Optional administrative settings (alias, end URL, active flag).
+  # `surveyls_alias`, `surveyls_url`, `surveyls_urldescription` live on
+  # `survey_language_settings`; `active` lives on `surveys`. Each row
+  # is emitted only when the underlying value is non-empty so the
+  # block stays compact for surveys that do not configure them.
+  if (isTRUE(show_admin_settings)) {
+    primary <- langs[1L]
+    ls_primary <- if (!is.null(ls_settings) && nrow(ls_settings) > 0L) {
+      ls_settings[ls_settings$surveyls_language == primary, , drop = FALSE]
+    } else NULL
+    pull_ls <- function(col) {
+      if (is.null(ls_primary) || nrow(ls_primary) == 0L) return("")
+      v <- ls_primary[[col]]
+      if (is.null(v) || length(v) == 0L || is.na(v[1])) return("")
+      v[1]
+    }
+    pull_survey <- function(col) {
+      if (is.null(lss$surveys) || !(col %in% names(lss$surveys))) return("")
+      v <- lss$surveys[[col]][1L]
+      if (is.null(v) || is.na(v)) return("") else v
+    }
+    alias <- pull_ls("surveyls_alias")
+    if (nzchar(trimws(alias))) {
+      field_pairs[[chrome$cover_alias]] <- alias
+    }
+    end_url <- pull_ls("surveyls_url")
+    if (nzchar(trimws(end_url))) {
+      field_pairs[[chrome$cover_end_url]] <- end_url
+    }
+    end_url_desc <- pull_ls("surveyls_urldescription")
+    if (nzchar(trimws(end_url_desc))) {
+      field_pairs[[chrome$cover_end_url_description]] <- end_url_desc
+    }
+    active <- pull_survey("active")
+    if (nzchar(trimws(active))) {
+      field_pairs[[chrome$cover_active]] <- lss_yes_no(active, theme)
+    }
+  }
+
+  # Optional privacy / tracking settings (anonymized, save partial,
+  # datestamp, IP, referrer). LimeSurvey stores them on the
+  # `surveys` table as Y/N flags. Each row uses the localized yes/no
+  # token so the block reads in the chrome language.
+  if (isTRUE(show_privacy_settings)) {
+    pull_survey <- function(col) {
+      if (is.null(lss$surveys) || !(col %in% names(lss$surveys))) return("")
+      v <- lss$surveys[[col]][1L]
+      if (is.null(v) || is.na(v)) return("") else v
+    }
+    yn_row <- function(label, col) {
+      raw <- pull_survey(col)
+      if (!nzchar(trimws(raw))) return()
+      field_pairs[[label]] <<- lss_yes_no(raw, theme)
+    }
+    yn_row(chrome$cover_anonymized,        "anonymized")
+    yn_row(chrome$cover_save_partial,      "save")
+    yn_row(chrome$cover_timestamp,         "datestamp")
+    yn_row(chrome$cover_ip_recorded,       "ipaddr")
+    yn_row(chrome$cover_referrer_recorded, "refurl")
+  }
 
   meta <- data.frame(
     Field = names(field_pairs),
@@ -1413,6 +1532,19 @@ lss_render_welcome <- function(doc, lss, langs, theme) {
   )
 }
 
+#' Side-by-side localized survey description (the short multilingual
+#' "what this survey is about" intro that LimeSurvey shows above the
+#' welcome text on the landing page). Same rendering shape as
+#' [lss_render_welcome()], just keyed on `surveyls_description`.
+#' @keywords internal
+#' @noRd
+lss_render_description <- function(doc, lss, langs, theme) {
+  lss_render_localized_block(
+    doc, lss, langs, theme,
+    field = "surveyls_description", title = theme$chrome$description_title
+  )
+}
+
 #' Side-by-side localized end text
 #' @keywords internal
 #' @noRd
@@ -1482,14 +1614,11 @@ lss_render_localized_block <- function(doc, lss, langs, theme, field, title) {
 #' @noRd
 lss_render_group <- function(doc, group, langs, theme,
                              show_help, show_attrs, show_technical_attrs,
-                             audit_idx, state) {
-  gname <- lss_first_label(group$names, langs)
-  if (is.na(gname)) gname <- paste0("Group ", group$gid)
-  # Strip a leading numeric prefix written by the LimeSurvey author so we
-  # do not get a doubled "1. 1. Vos etudes".
-  gname <- lss_strip_group_number_prefix(gname)
+                             audit_idx, state,
+                             show_groups = TRUE) {
+  # The group index must still advance even when the banner itself is
+  # hidden -- bookmarks, audit references and the TOC depend on it.
   state$group_index <- state$group_index + 1L
-  heading_text <- sprintf("%d. %s", state$group_index, gname)
   # Render as a styled paragraph (no Heading 1 style) so Word does NOT
   # add its own list number on top of ours -- the auto-number Word
   # injects via the linked numbering definition uses a different font
@@ -1504,27 +1633,35 @@ lss_render_group <- function(doc, group, langs, theme,
   # without enclosing the title in a box -- thinner than the previous
   # 1.5 pt so it does not visually compete with the dark meta-table
   # header bands of the items below it.
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(
-      officer::ftext(
-        heading_text,
-        prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_heading1,
-          bold = TRUE, color = theme$color_primary
-        )
-      ),
-      fp_p = officer::fp_par(
-        padding.top = 24, padding.bottom = 8,
-        border.bottom = officer::fp_border(
-          color = theme$color_primary, width = 1
+  if (isTRUE(show_groups)) {
+    gname <- lss_first_label(group$names, langs)
+    if (is.na(gname)) gname <- paste0("Group ", group$gid)
+    # Strip a leading numeric prefix written by the LimeSurvey author so
+    # we do not get a doubled "1. 1. Vos etudes".
+    gname <- lss_strip_group_number_prefix(gname)
+    heading_text <- sprintf("%d. %s", state$group_index, gname)
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(
+          heading_text,
+          prop = officer::fp_text(
+            font.family = theme$font_body, font.size = theme$size_heading1,
+            bold = TRUE, color = theme$color_primary
+          )
+        ),
+        fp_p = officer::fp_par(
+          padding.top = 24, padding.bottom = 8,
+          border.bottom = officer::fp_border(
+            color = theme$color_primary, width = 1
+          )
         )
       )
     )
-  )
-  # Anchor the group heading with a bookmark so the manual TOC entries
-  # can hyperlink to it.
-  doc <- officer::body_bookmark(doc, lss_group_bookmark(state$group_index))
+    # Anchor the group heading with a bookmark so the manual TOC entries
+    # can hyperlink to it.
+    doc <- officer::body_bookmark(doc, lss_group_bookmark(state$group_index))
+  }
   any_desc <- any(vapply(
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
     logical(1)

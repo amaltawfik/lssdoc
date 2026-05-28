@@ -39,7 +39,9 @@ lss_render_table_template <- function(doc, rows, langs, theme,
 
   for (i in seq_along(rows)) {
     r <- rows[[i]]
-    if (identical(r$kind, "welcome")) {
+    if (identical(r$kind, "description")) {
+      df$Field[i] <- chrome$description_title
+    } else if (identical(r$kind, "welcome")) {
       df$Field[i] <- chrome$welcome_text_title
     } else if (identical(r$kind, "endtext")) {
       df$Field[i] <- chrome$end_text_title
@@ -123,7 +125,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       next
     }
 
-    if (identical(kind, "welcome") || identical(kind, "endtext")) {
+    if (identical(kind, "welcome") || identical(kind, "endtext") ||
+        identical(kind, "description")) {
       # Welcome / End text: full HTML content composed per language
       # via the same lss_compose() helper the cards template uses
       # for the side-by-side block, so paragraphs and formatting
@@ -261,26 +264,32 @@ lss_table_text_row <- function(lss, langs, field, kind) {
 #' @keywords internal
 #' @noRd
 lss_table_template_rows_for_group <- function(g, langs, theme,
-                                              show_help, state) {
+                                              show_help, state,
+                                              show_groups = TRUE) {
   chrome <- theme$chrome
   rows <- list()
-  # Group row: Field = "Group" label, language columns hold the
-  # localized name prefixed by the running group index.
+  # The group index must still advance even when the row itself is
+  # hidden -- the variable index and audit references depend on it.
   state$group_index <- state$group_index + 1L
-  group_names <- stats::setNames(
-    lapply(langs, function(lg) {
-      raw <- if (!is.null(g$names[[lg]])) g$names[[lg]] else NA_character_
-      if (is.null(raw) || is.na(raw) || !nzchar(raw)) {
-        raw <- paste0("Group ", g$gid)
-      }
-      sprintf("%d. %s", state$group_index, lss_strip_group_number_prefix(raw))
-    }),
-    langs
-  )
-  rows[[length(rows) + 1L]] <- list(
-    kind = "group",
-    name_by_lang = group_names
-  )
+  if (isTRUE(show_groups)) {
+    # Group row: Field = "Group" label, language columns hold the
+    # localized name prefixed by the running group index.
+    group_names <- stats::setNames(
+      lapply(langs, function(lg) {
+        raw <- if (!is.null(g$names[[lg]])) g$names[[lg]] else NA_character_
+        if (is.null(raw) || is.na(raw) || !nzchar(raw)) {
+          raw <- paste0("Group ", g$gid)
+        }
+        sprintf("%d. %s", state$group_index,
+                lss_strip_group_number_prefix(raw))
+      }),
+      langs
+    )
+    rows[[length(rows) + 1L]] <- list(
+      kind = "group",
+      name_by_lang = group_names
+    )
+  }
 
   # Build one Question row per variable (carrying the meta and the
   # question/subq/help text) followed by N Value rows (one per
@@ -708,7 +717,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   group_idx        <- which(kinds == "group")
   question_idx     <- which(kinds %in% c("leaf", "subq", "other"))
   scale_header_idx <- which(kinds == "scale_header")
-  welcome_idx      <- which(kinds %in% c("welcome", "endtext"))
+  welcome_idx      <- which(kinds %in% c("welcome", "endtext", "description"))
 
   # Question rows: lighter zebra tint so the eye reads them as
   # "secondary" relative to group banners but still distinct from
