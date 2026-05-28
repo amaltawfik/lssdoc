@@ -12,6 +12,7 @@ Description: Build a professional Word ('.docx') review document from a
     questionnaire is uploaded to any third-party service.
 License: MIT + file LICENSE
 Encoding: UTF-8
+Language: en-US
 Roxygen: list(markdown = TRUE)
 Depends:
     R (>= 4.1)
