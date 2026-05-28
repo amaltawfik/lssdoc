@@ -2,6 +2,35 @@
 
 ## lssdoc 0.0.0.9000
 
+- **Public API simplified to four functions.** The package now exposes
+  only
+  [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md),
+  [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md),
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md),
+  and
+  [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md).
+  The previous nine-function surface (`parse_lss()`,
+  `render_lss_docx()`, `render_lss_audit_docx()`, `lss_to_docx()`,
+  `lss_to_pdf()`, `lss_audit_to_docx()`, `lss_audit_to_pdf()`,
+  `lss_docx_to_pdf()`) has been collapsed:
+  - `parse_lss()` -\>
+    [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
+    (readr-style verb).
+  - [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
+    now accepts either a `.lss` path or an `lss` object, so a one-line
+    audit is `audit_lss("survey.lss")`.
+  - `render_questionnaire(input, output, ...)` replaces
+    `render_lss_docx()`, `lss_to_docx()`, and `lss_to_pdf()`. The output
+    format is inferred from the extension of `output` (`.docx` or
+    `.pdf`). `input` accepts a path or a pre-parsed `lss` object.
+  - `render_audit(input, output, ...)` replaces
+    `render_lss_audit_docx()`, `lss_audit_to_docx()`, and
+    `lss_audit_to_pdf()` with the same polymorphism and format
+    detection.
+  - `lss_docx_to_pdf()` is now an internal helper invoked automatically
+    by the `.pdf` branch of the renderers. Pre-release breaking change
+    (the package was at `0.0.0.9000`), no deprecation shims are
+    provided.
 - The survey title now appears at the **top-right header** of every page
   (one line per displayed language, truncated to 80 characters with a
   trailing ellipsis when longer), replacing the previous footer-left
@@ -9,7 +38,7 @@
   spaces) right-aligned. Controlled by the renamed `show_header_title`
   argument (was `show_footer_title`).
 - New `title` argument to
-  [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md).
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md).
   Pass a single string to override every language with the same title,
   or a named character vector like
   `c(fr = "Mon titre", de = "Mein Titel")` for per-language overrides.
@@ -62,7 +91,7 @@
   TOC has been removed, and the marketing line “Processed locally with
   lssdoc. Nothing is uploaded.” has been dropped from the cover page.
   (LibreOffice headless PDF conversion still does not refresh fields, so
-  [`lss_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_to_pdf.md)
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   produces a PDF with an empty TOC; open the .docx in Word and save as
   PDF to obtain a populated TOC.)
 - New `show_source` argument (default `TRUE`). When `FALSE`, the
@@ -159,9 +188,9 @@
   variable code as a stable cross-reference anchor. The `languages`
   argument is documented as both a selector and an ordering: the first
   language is treated as the primary language for headings and the TOC.
-- [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md)
+- [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   and
-  [`render_lss_audit_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_audit_docx.md)
+  [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
   accept an optional `logo` argument (path to a PNG or JPEG) that places
   an image at the top of the cover page; `logo_width` and `logo_height`
   control its size. The default keeps the cover logo-free, matching the
@@ -169,27 +198,27 @@
 - The cover page now shows the LimeSurvey **Survey ID** and **Last
   modified** timestamp from the `.lss`, giving reviewers stable
   traceability for the source questionnaire.
-- [`lss_audit_to_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_audit_to_docx.md)
+- [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
   and
-  [`lss_audit_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_audit_to_pdf.md)
+  [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
   pipeline wrappers run the audit and produce a focused report in one
   call.
-- [`lss_docx_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_docx_to_pdf.md)
-  converts a generated `.docx` to PDF locally via LibreOffice (or Word)
-  in headless mode. Nothing leaves the user’s machine.
-  [`lss_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_to_pdf.md)
+- `.docx_to_pdf()` converts a generated `.docx` to PDF locally via
+  LibreOffice (or Word) in headless mode. Nothing leaves the user’s
+  machine.
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   ties the full pipeline together.
-- [`lss_to_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_to_docx.md)
+- [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   runs the full pipeline
-  ([`parse_lss()`](https://amaltawfik.github.io/lssdoc/reference/parse_lss.md)
+  ([`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
   then
-  [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md))
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md))
   in one call.
-- [`render_lss_audit_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_audit_docx.md)
+- [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
   produces a focused audit-only Word document: the same cover page, then
   one section per severity (errors, warnings, notes) with a table of
   findings. Use it for QA follow-up, separate from the full review.
-- [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md)
+- [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   produces a professional Word review document from a parsed `lss`
   object: cover page with the survey title in every language and a
   metadata table, table of contents, optional audit section near the top
@@ -205,15 +234,15 @@
   answer codes, types missing their required options or subquestions,
   and orphan references) as a classed `lss_audit` object with a print
   method.
-- [`parse_lss()`](https://amaltawfik.github.io/lssdoc/reference/parse_lss.md)
+- [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
   reads a LimeSurvey `.lss` file into a structured `lss` object,
   preserving all user text verbatim.
 - Initial package scaffolding: the user-facing API
-  ([`parse_lss()`](https://amaltawfik.github.io/lssdoc/reference/parse_lss.md),
+  ([`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md),
   [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md),
-  [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md),
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md),
   and the
-  [`lss_to_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_to_docx.md)
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   wrapper) is defined and documented, with
-  [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md)
+  [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
   still to come.

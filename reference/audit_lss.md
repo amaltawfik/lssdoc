@@ -1,21 +1,24 @@
-# Audit a parsed LimeSurvey structure for reviewable anomalies
+# Audit a LimeSurvey survey for reviewable anomalies
 
-Inspect an `lss` object and flag anomalies that can be detected without
-any AI. The audit is meant to guide a human reviewer, not to silently
-correct anything: every finding names a precise location and a severity.
+Inspect a LimeSurvey survey and flag anomalies that can be detected
+without any AI. The audit guides a human reviewer; it does not silently
+correct anything. Every finding names a precise location and a severity.
 
 ## Usage
 
 ``` r
-audit_lss(lss)
+audit_lss(input)
 ```
 
 ## Arguments
 
-- lss:
+- input:
 
-  An `lss` object returned by
-  [`parse_lss()`](https://amaltawfik.github.io/lssdoc/reference/parse_lss.md).
+  Either a path to a `.lss` file (character string) or a pre-parsed
+  `lss` object returned by
+  [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md).
+  Passing a path parses it on the fly; passing an `lss` object avoids
+  re-parsing when the same survey is also rendered in the same session.
 
 ## Value
 
@@ -30,10 +33,10 @@ counts, and a `findings` data frame (`severity`, `check`, `location`,
 Checks performed:
 
 - **Missing translations** – a question, help, answer, or subquestion
-  text that exists in at least one language but is empty in another.
+  text present in at least one language but empty in another.
 
-- **Empty in all languages** – a translatable text that is empty in
-  every language.
+- **Empty in all languages** – a translatable text empty in every
+  language.
 
 - **Duplicate codes** – a question variable code repeated in the survey,
   or an answer/subquestion code repeated within one question.
@@ -41,20 +44,23 @@ Checks performed:
 - **Missing options for the type** – a question whose type requires
   answer options or subquestions but has none (per the type taxonomy).
 
-- **Orphan references** – a subquestion or answer that points to a
-  question that does not exist.
+- **Orphan references** – a subquestion or answer pointing to a question
+  that does not exist.
+
+## See also
+
+[`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
+to write the same findings to a Word or PDF document.
 
 ## Examples
 
 ``` r
-lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
-  package = "lssdoc"
-))
-audit <- audit_lss(lss)
+audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
+                               package = "lssdoc"))
 print(audit)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpOBTYVU/temp_libpath1a0f59f5ec2f/lssdoc/extdata/hesav_2026.lss
+#> File: /tmp/RtmpRwaSdy/temp_libpath1a134fc83124/lssdoc/extdata/hesav_2026.lss
 #> Languages: "de" and "fr"
 #> ✔ No anomalies detected.
 ```

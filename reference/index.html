@@ -46,9 +46,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="one-shot-pipeline">One-shot pipeline<a class="anchor" aria-label="anchor" href="#one-shot-pipeline"></a></h2>
+      <h2 id="render">Render<a class="anchor" aria-label="anchor" href="#render"></a></h2>
 
-      <div class="section-desc"><p>Parse a <code>.lss</code> file and render the review document in a single call. The most common entry points for everyday use.</p></div>
+      <div class="section-desc"><p>Render a LimeSurvey survey to a Word or PDF document. The output format is inferred from the extension of <code>output</code> (<code>.docx</code> or <code>.pdf</code>). Each function accepts either a path to a <code>.lss</code> file or a pre-parsed <code>lss</code> object returned by <code><a href="../reference/read_lss.html">read_lss()</a></code>.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -57,35 +57,21 @@
 
       <dl><dt>
 
-          <code><a href="lss_to_docx.html">lss_to_docx()</a></code>
+          <code><a href="render_questionnaire.html">render_questionnaire()</a></code>
 
         </dt>
-        <dd>Convert a <code>.lss</code> file to a Word review document</dd>
+        <dd>Render a LimeSurvey questionnaire to a Word or PDF document</dd>
 
         <dt>
 
-          <code><a href="lss_to_pdf.html">lss_to_pdf()</a></code>
+          <code><a href="render_audit.html">render_audit()</a></code>
 
         </dt>
-        <dd>Convert a <code>.lss</code> file to a PDF review document</dd>
-
-        <dt>
-
-          <code><a href="lss_audit_to_docx.html">lss_audit_to_docx()</a></code>
-
-        </dt>
-        <dd>Convert a <code>.lss</code> file to a Word audit-only document</dd>
-
-        <dt>
-
-          <code><a href="lss_audit_to_pdf.html">lss_audit_to_pdf()</a></code>
-
-        </dt>
-        <dd>Convert a <code>.lss</code> file to a PDF audit-only document</dd>
+        <dd>Render the audit as a focused Word or PDF document</dd>
       </dl></div><div class="section level2">
-      <h2 id="parse">Parse<a class="anchor" aria-label="anchor" href="#parse"></a></h2>
+      <h2 id="read-and-audit">Read and audit<a class="anchor" aria-label="anchor" href="#read-and-audit"></a></h2>
 
-      <div class="section-desc"><p>Read a LimeSurvey <code>.lss</code> (XML) export into a structured R object.</p></div>
+      <div class="section-desc"><p>Parse a <code>.lss</code> file into a structured object, and audit a survey for reviewable anomalies (missing translations, dangling references, structural issues). Useful for inspecting a survey before rendering, or for rendering several variants from a single parse.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -94,56 +80,17 @@
 
       <dl><dt>
 
-          <code><a href="parse_lss.html">parse_lss()</a></code>
+          <code><a href="read_lss.html">read_lss()</a></code>
 
         </dt>
-        <dd>Parse a LimeSurvey <code>.lss</code> file</dd>
-      </dl></div><div class="section level2">
-      <h2 id="audit">Audit<a class="anchor" aria-label="anchor" href="#audit"></a></h2>
+        <dd>Read a LimeSurvey <code>.lss</code> file</dd>
 
-      <div class="section-desc"><p>Inspect the parsed survey for integrity issues a reviewer would otherwise miss – missing translations, dangling references, malformed relevance expressions, structural inconsistencies.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="audit_lss.html">audit_lss()</a></code>
 
         </dt>
-        <dd>Audit a parsed LimeSurvey structure for reviewable anomalies</dd>
-      </dl></div><div class="section level2">
-      <h2 id="render">Render<a class="anchor" aria-label="anchor" href="#render"></a></h2>
-
-      <div class="section-desc"><p>Lower-level entry points if you want to control parsing and rendering separately, or render the audit alone.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="render_lss_docx.html">render_lss_docx()</a></code>
-
-        </dt>
-        <dd>Render a parsed LimeSurvey structure to a Word document</dd>
-
-        <dt>
-
-          <code><a href="render_lss_audit_docx.html">render_lss_audit_docx()</a></code>
-
-        </dt>
-        <dd>Render the audit alone as a focused Word document</dd>
-
-        <dt>
-
-          <code><a href="lss_docx_to_pdf.html">lss_docx_to_pdf()</a></code>
-
-        </dt>
-        <dd>Convert a <code>.docx</code> to <code>.pdf</code> locally</dd>
+        <dd>Audit a LimeSurvey survey for reviewable anomalies</dd>
       </dl></div><div class="section level2">
       <h2 id="package-overview">Package overview<a class="anchor" aria-label="anchor" href="#package-overview"></a></h2>
 

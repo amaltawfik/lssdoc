@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>lssdoc: Word codebook documents from LimeSurvey '.lss' files • lssdoc</title>
+<title>lssdoc: Word and PDF questionnaire documents from LimeSurvey '.lss' files • lssdoc</title>
 <!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
   window.MathJax = {
     chtml: {
@@ -19,10 +19,10 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
-<meta property="og:title" content="lssdoc: Word codebook documents from LimeSurvey '.lss' files">
-<meta name="description" content="Build publication-quality Word ('.docx') codebook documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single codebook). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
+<meta property="og:title" content="lssdoc: Word and PDF questionnaire documents from LimeSurvey '.lss' files">
+<meta name="description" content="Build publication-quality Word ('.docx') or PDF questionnaire documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single questionnaire table). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
 ">
-<meta property="og:description" content="Build publication-quality Word ('.docx') codebook documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single codebook). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
+<meta property="og:description" content="Build publication-quality Word ('.docx') or PDF questionnaire documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single questionnaire table). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
 ">
 </head>
 <body>
@@ -68,11 +68,11 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="lssdoc-word-codebook-documents-from-limesurvey-lss-files">lssdoc: Word codebook documents from LimeSurvey <code>.lss</code> files<a class="anchor" aria-label="anchor" href="#lssdoc-word-codebook-documents-from-limesurvey-lss-files"></a>
+<div class="page-header"><h1 id="lssdoc-word-and-pdf-questionnaire-documents-from-limesurvey-lss-files">lssdoc: Word and PDF questionnaire documents from LimeSurvey <code>.lss</code> files<a class="anchor" aria-label="anchor" href="#lssdoc-word-and-pdf-questionnaire-documents-from-limesurvey-lss-files"></a>
 </h1></div>
 <!-- badges: start -->
 
-<p><strong>lssdoc</strong> turns a LimeSurvey <code>.lss</code> export into a polished Word (<code>.docx</code>) codebook document for ethics committees, survey methodologists, and translators. It renders the questionnaire content side by side in up to four languages, runs an automated integrity audit, and produces a layout that reads as a published codebook – not a developer dump.</p>
+<p><strong>lssdoc</strong> turns a LimeSurvey <code>.lss</code> export into a polished Word (<code>.docx</code>) or PDF questionnaire document for ethics committees, survey methodologists, and translators. It renders the questionnaire content side by side in up to four languages, runs an automated integrity audit, and produces a layout that reads as a published instrument – not a developer dump.</p>
 <p>Two output templates:</p>
 <ul>
 <li>
@@ -113,6 +113,36 @@
 <div class="section level2">
 <h2 id="quick-tour">Quick tour<a class="anchor" aria-label="anchor" href="#quick-tour"></a>
 </h2>
+<p>The public API is four functions:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="66%">
+</colgroup>
+<thead><tr>
+<th>Function</th>
+<th>Role</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>read_lss(file)</code></td>
+<td>Parse a <code>.lss</code> into a structured <code>lss</code> object.</td>
+</tr>
+<tr>
+<td><code>audit_lss(input)</code></td>
+<td>Inspect a survey for anomalies; returns an <code>lss_audit</code> object with a <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> method.</td>
+</tr>
+<tr>
+<td><code>render_questionnaire(input, output, ...)</code></td>
+<td>Render the full questionnaire to a Word or PDF document.</td>
+</tr>
+<tr>
+<td><code>render_audit(input, output, ...)</code></td>
+<td>Render the audit findings alone to a Word or PDF document.</td>
+</tr>
+</tbody>
+</table>
+<p><code><a href="reference/audit_lss.html">audit_lss()</a></code>, <code><a href="reference/render_questionnaire.html">render_questionnaire()</a></code> and <code><a href="reference/render_audit.html">render_audit()</a></code> accept <code>input</code> as either a path to a <code>.lss</code> file or a pre-parsed <code>lss</code> object. The output format for the two renderers is inferred from the extension of <code>output</code> (<code>.docx</code> or <code>.pdf</code>).</p>
 <div class="section level3">
 <h3 id="a-one-line-pipeline">A one-line pipeline<a class="anchor" aria-label="anchor" href="#a-one-line-pipeline"></a>
 </h3>
@@ -120,32 +150,32 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://amaltawfik.github.io/lssdoc/">lssdoc</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Parse the .lss and render the Word document in a single call.</span></span>
-<span><span class="fu"><a href="reference/lss_to_docx.html">lss_to_docx</a></span><span class="op">(</span><span class="st">"survey.lss"</span>, <span class="st">"review.docx"</span><span class="op">)</span></span></code></pre></div>
-<p>The output uses the <code>"cards"</code> template by default, with the chrome language matching the survey’s primary content language. Open <code>review.docx</code> in Word, click <strong>Yes</strong> when prompted to update fields (page numbers and the table of contents).</p>
+<span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span><span class="st">"survey.lss"</span>, <span class="st">"review.docx"</span><span class="op">)</span></span></code></pre></div>
+<p>The output uses the <code>"cards"</code> template by default, with <code>chrome_lang</code> following the survey’s primary content language. Open <code>review.docx</code> in Word, click <strong>Yes</strong> when prompted to update fields (page numbers and the table of contents).</p>
 </div>
 <div class="section level3">
-<h3 id="codebook-layout-with-french-chrome">Codebook layout with French chrome<a class="anchor" aria-label="anchor" href="#codebook-layout-with-french-chrome"></a>
+<h3 id="table-layout">Table layout<a class="anchor" aria-label="anchor" href="#table-layout"></a>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/lss_to_docx.html">lss_to_docx</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span></span>
 <span>  <span class="st">"survey.lss"</span>,</span>
-<span>  <span class="st">"codebook.docx"</span>,</span>
-<span>  languages   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fr"</span>, <span class="st">"de"</span><span class="op">)</span>,</span>
+<span>  <span class="st">"review.docx"</span>,</span>
+<span>  languages   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"en"</span>, <span class="st">"fr"</span><span class="op">)</span>,</span>
 <span>  template    <span class="op">=</span> <span class="st">"table"</span>,</span>
-<span>  chrome_lang <span class="op">=</span> <span class="st">"fr"</span></span>
+<span>  chrome_lang <span class="op">=</span> <span class="st">"en"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><code>languages</code> controls which content columns appear and in which order. <code>chrome_lang</code> is independent: pass <code>"en"</code> to keep an English-labeled scaffolding with French and German content side by side.</p>
+<p><code>languages</code> controls which content columns appear and in which order; the first one is the primary language used for the table of contents and group headings. <code>chrome_lang</code> is independent of <code>languages</code>: keep <code>chrome_lang = "en"</code> to get English column headers and row labels even if your survey content runs in French and German – pass <code>chrome_lang = "fr"</code> (or <code>"de"</code> / <code>"es"</code> / <code>"it"</code>) when you want the scaffolding to follow the content.</p>
 </div>
 <div class="section level3">
 <h3 id="ethics-committee-submission">Ethics committee submission<a class="anchor" aria-label="anchor" href="#ethics-committee-submission"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/lss_to_docx.html">lss_to_docx</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span></span>
 <span>  <span class="st">"survey.lss"</span>,</span>
 <span>  <span class="st">"ethics_review.docx"</span>,</span>
-<span>  languages              <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fr"</span>, <span class="st">"de"</span><span class="op">)</span>,</span>
+<span>  languages              <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"en"</span>, <span class="st">"fr"</span><span class="op">)</span>,</span>
 <span>  template               <span class="op">=</span> <span class="st">"table"</span>,</span>
-<span>  chrome_lang            <span class="op">=</span> <span class="st">"fr"</span>,</span>
+<span>  chrome_lang            <span class="op">=</span> <span class="st">"en"</span>,</span>
 <span>  show_privacy_settings  <span class="op">=</span> <span class="cn">TRUE</span>,   <span class="co"># anonymized / save partial / IP / referrer / timestamp</span></span>
 <span>  show_admin_settings    <span class="op">=</span> <span class="cn">TRUE</span>,   <span class="co"># alias / end URL / active</span></span>
 <span>  authors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -161,10 +191,10 @@
 <p>The cover page picks up the authors block (with clickable ORCID hyperlinks), the description (with URLs auto-detected and made clickable), and the privacy / admin settings rows in the metadata table.</p>
 </div>
 <div class="section level3">
-<h3 id="minimal-codebook--just-the-variables">Minimal codebook – just the variables<a class="anchor" aria-label="anchor" href="#minimal-codebook--just-the-variables"></a>
+<h3 id="minimal-questionnaire--just-the-variables">Minimal questionnaire – just the variables<a class="anchor" aria-label="anchor" href="#minimal-questionnaire--just-the-variables"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/lss_to_docx.html">lss_to_docx</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span></span>
 <span>  <span class="st">"survey.lss"</span>,</span>
 <span>  <span class="st">"minimal.docx"</span>,</span>
 <span>  template         <span class="op">=</span> <span class="st">"table"</span>,</span>
@@ -179,30 +209,28 @@
 <p>Pure data: one row per variable header, one row per value code, nothing else.</p>
 </div>
 <div class="section level3">
-<h3 id="lower-level-workflow">Lower-level workflow<a class="anchor" aria-label="anchor" href="#lower-level-workflow"></a>
+<h3 id="parse-once-render-many">Parse once, render many<a class="anchor" aria-label="anchor" href="#parse-once-render-many"></a>
 </h3>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Parse once, audit and render separately.</span></span>
-<span><span class="va">lss</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/parse_lss.html">parse_lss</a></span><span class="op">(</span><span class="st">"survey.lss"</span><span class="op">)</span></span>
-<span></span>
+<code class="sourceCode R"><span><span class="co"># Parse a single time, then audit and render different variants</span></span>
+<span><span class="co"># without re-reading the .lss.</span></span>
+<span><span class="va">lss</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_lss.html">read_lss</a></span><span class="op">(</span><span class="st">"survey.lss"</span><span class="op">)</span></span>
 <span><span class="va">audit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="va">lss</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">audit</span><span class="op">)</span>  <span class="co"># console summary of flagged anomalies</span></span>
 <span></span>
-<span><span class="fu"><a href="reference/render_lss_docx.html">render_lss_docx</a></span><span class="op">(</span></span>
-<span>  <span class="va">lss</span>,</span>
-<span>  output     <span class="op">=</span> <span class="st">"review.docx"</span>,</span>
-<span>  languages  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fr"</span>, <span class="st">"de"</span><span class="op">)</span>,</span>
-<span>  template   <span class="op">=</span> <span class="st">"table"</span>,</span>
-<span>  show_audit <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span><span class="va">lss</span>, <span class="st">"review_en.docx"</span>, languages <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span><span class="va">lss</span>, <span class="st">"review_fr.docx"</span>, languages <span class="op">=</span> <span class="st">"fr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/render_audit.html">render_audit</a></span><span class="op">(</span><span class="va">lss</span>, <span class="st">"qa_followup.docx"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pdf-output">PDF output<a class="anchor" aria-label="anchor" href="#pdf-output"></a>
 </h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Same arguments as lss_to_docx() -- writes the .docx then converts</span></span>
-<span><span class="co"># it to .pdf locally via LibreOffice (must be installed and on PATH).</span></span>
-<span><span class="fu"><a href="reference/lss_to_pdf.html">lss_to_pdf</a></span><span class="op">(</span><span class="st">"survey.lss"</span>, <span class="st">"review.pdf"</span>, template <span class="op">=</span> <span class="st">"table"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Same call, just pass a .pdf path. The package writes the .docx</span></span>
+<span><span class="co"># into a temp file and converts it locally via LibreOffice</span></span>
+<span><span class="co"># (must be installed and on PATH).</span></span>
+<span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span><span class="st">"survey.lss"</span>, <span class="st">"review.pdf"</span>, template <span class="op">=</span> <span class="st">"table"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/render_audit.html">render_audit</a></span><span class="op">(</span><span class="st">"survey.lss"</span>, <span class="st">"qa.pdf"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

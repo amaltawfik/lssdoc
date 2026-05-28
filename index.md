@@ -1,10 +1,10 @@
-# lssdoc: Word codebook documents from LimeSurvey `.lss` files
+# lssdoc: Word and PDF questionnaire documents from LimeSurvey `.lss` files
 
 **lssdoc** turns a LimeSurvey `.lss` export into a polished Word
-(`.docx`) codebook document for ethics committees, survey
+(`.docx`) or PDF questionnaire document for ethics committees, survey
 methodologists, and translators. It renders the questionnaire content
 side by side in up to four languages, runs an automated integrity audit,
-and produces a layout that reads as a published codebook – not a
+and produces a layout that reads as a published instrument – not a
 developer dump.
 
 Two output templates:
@@ -79,6 +79,23 @@ The package depends on **officer** and **flextable** (declared as
 
 ## Quick tour
 
+The public API is four functions:
+
+| Function | Role |
+|----|----|
+| `read_lss(file)` | Parse a `.lss` into a structured `lss` object. |
+| `audit_lss(input)` | Inspect a survey for anomalies; returns an `lss_audit` object with a [`print()`](https://rdrr.io/r/base/print.html) method. |
+| `render_questionnaire(input, output, ...)` | Render the full questionnaire to a Word or PDF document. |
+| `render_audit(input, output, ...)` | Render the audit findings alone to a Word or PDF document. |
+
+[`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md),
+[`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
+and
+[`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
+accept `input` as either a path to a `.lss` file or a pre-parsed `lss`
+object. The output format for the two renderers is inferred from the
+extension of `output` (`.docx` or `.pdf`).
+
 ### A one-line pipeline
 
 ``` r
@@ -86,41 +103,45 @@ The package depends on **officer** and **flextable** (declared as
 library(lssdoc)
 
 # Parse the .lss and render the Word document in a single call.
-lss_to_docx("survey.lss", "review.docx")
+render_questionnaire("survey.lss", "review.docx")
 ```
 
-The output uses the `"cards"` template by default, with the chrome
-language matching the survey’s primary content language. Open
-`review.docx` in Word, click **Yes** when prompted to update fields
-(page numbers and the table of contents).
+The output uses the `"cards"` template by default, with `chrome_lang`
+following the survey’s primary content language. Open `review.docx` in
+Word, click **Yes** when prompted to update fields (page numbers and the
+table of contents).
 
-### Codebook layout with French chrome
+### Table layout
 
 ``` r
 
-lss_to_docx(
+render_questionnaire(
   "survey.lss",
-  "codebook.docx",
-  languages   = c("fr", "de"),
+  "review.docx",
+  languages   = c("en", "fr"),
   template    = "table",
-  chrome_lang = "fr"
+  chrome_lang = "en"
 )
 ```
 
-`languages` controls which content columns appear and in which order.
-`chrome_lang` is independent: pass `"en"` to keep an English-labeled
-scaffolding with French and German content side by side.
+`languages` controls which content columns appear and in which order;
+the first one is the primary language used for the table of contents and
+group headings. `chrome_lang` is independent of `languages`: keep
+`chrome_lang = "en"` to get English column headers and row labels even
+if your survey content runs in French and German – pass
+`chrome_lang = "fr"` (or `"de"` / `"es"` / `"it"`) when you want the
+scaffolding to follow the content.
 
 ### Ethics committee submission
 
 ``` r
 
-lss_to_docx(
+render_questionnaire(
   "survey.lss",
   "ethics_review.docx",
-  languages              = c("fr", "de"),
+  languages              = c("en", "fr"),
   template               = "table",
-  chrome_lang            = "fr",
+  chrome_lang            = "en",
   show_privacy_settings  = TRUE,   # anonymized / save partial / IP / referrer / timestamp
   show_admin_settings    = TRUE,   # alias / end URL / active
   authors = list(
@@ -139,11 +160,11 @@ The cover page picks up the authors block (with clickable ORCID
 hyperlinks), the description (with URLs auto-detected and made
 clickable), and the privacy / admin settings rows in the metadata table.
 
-### Minimal codebook – just the variables
+### Minimal questionnaire – just the variables
 
 ``` r
 
-lss_to_docx(
+render_questionnaire(
   "survey.lss",
   "minimal.docx",
   template         = "table",
@@ -160,32 +181,30 @@ lss_to_docx(
 Pure data: one row per variable header, one row per value code, nothing
 else.
 
-### Lower-level workflow
+### Parse once, render many
 
 ``` r
 
-# Parse once, audit and render separately.
-lss <- parse_lss("survey.lss")
-
+# Parse a single time, then audit and render different variants
+# without re-reading the .lss.
+lss   <- read_lss("survey.lss")
 audit <- audit_lss(lss)
 print(audit)  # console summary of flagged anomalies
 
-render_lss_docx(
-  lss,
-  output     = "review.docx",
-  languages  = c("fr", "de"),
-  template   = "table",
-  show_audit = TRUE
-)
+render_questionnaire(lss, "review_en.docx", languages = "en")
+render_questionnaire(lss, "review_fr.docx", languages = "fr")
+render_audit(lss, "qa_followup.docx")
 ```
 
 ### PDF output
 
 ``` r
 
-# Same arguments as lss_to_docx() -- writes the .docx then converts
-# it to .pdf locally via LibreOffice (must be installed and on PATH).
-lss_to_pdf("survey.lss", "review.pdf", template = "table")
+# Same call, just pass a .pdf path. The package writes the .docx
+# into a temp file and converts it locally via LibreOffice
+# (must be installed and on PATH).
+render_questionnaire("survey.lss", "review.pdf", template = "table")
+render_audit("survey.lss", "qa.pdf")
 ```
 
 ## Templates and palette

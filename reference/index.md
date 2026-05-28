@@ -1,63 +1,32 @@
 # Package index
 
-## One-shot pipeline
-
-Parse a `.lss` file and render the review document in a single call. The
-most common entry points for everyday use.
-
-- [`lss_to_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_to_docx.md)
-  :
-
-  Convert a `.lss` file to a Word review document
-
-- [`lss_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_to_pdf.md)
-  :
-
-  Convert a `.lss` file to a PDF review document
-
-- [`lss_audit_to_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_audit_to_docx.md)
-  :
-
-  Convert a `.lss` file to a Word audit-only document
-
-- [`lss_audit_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_audit_to_pdf.md)
-  :
-
-  Convert a `.lss` file to a PDF audit-only document
-
-## Parse
-
-Read a LimeSurvey `.lss` (XML) export into a structured R object.
-
-- [`parse_lss()`](https://amaltawfik.github.io/lssdoc/reference/parse_lss.md)
-  :
-
-  Parse a LimeSurvey `.lss` file
-
-## Audit
-
-Inspect the parsed survey for integrity issues a reviewer would
-otherwise miss – missing translations, dangling references, malformed
-relevance expressions, structural inconsistencies.
-
-- [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
-  : Audit a parsed LimeSurvey structure for reviewable anomalies
-
 ## Render
 
-Lower-level entry points if you want to control parsing and rendering
-separately, or render the audit alone.
+Render a LimeSurvey survey to a Word or PDF document. The output format
+is inferred from the extension of `output` (`.docx` or `.pdf`). Each
+function accepts either a path to a `.lss` file or a pre-parsed `lss`
+object returned by
+[`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md).
 
-- [`render_lss_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_docx.md)
-  : Render a parsed LimeSurvey structure to a Word document
+- [`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
+  : Render a LimeSurvey questionnaire to a Word or PDF document
+- [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
+  : Render the audit as a focused Word or PDF document
 
-- [`render_lss_audit_docx()`](https://amaltawfik.github.io/lssdoc/reference/render_lss_audit_docx.md)
-  : Render the audit alone as a focused Word document
+## Read and audit
 
-- [`lss_docx_to_pdf()`](https://amaltawfik.github.io/lssdoc/reference/lss_docx_to_pdf.md)
+Parse a `.lss` file into a structured object, and audit a survey for
+reviewable anomalies (missing translations, dangling references,
+structural issues). Useful for inspecting a survey before rendering, or
+for rendering several variants from a single parse.
+
+- [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
   :
 
-  Convert a `.docx` to `.pdf` locally
+  Read a LimeSurvey `.lss` file
+
+- [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
+  : Audit a LimeSurvey survey for reviewable anomalies
 
 ## Package overview
 
