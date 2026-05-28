@@ -19,14 +19,14 @@ ligne, aucun upload de questionnaire vers un serveur tiers.
 library(lssdoc)
 
 # Pipeline simple : .lss -> .docx
-lss_to_docx("monquestionnaire.lss", "rapport.docx")
+render_questionnaire("monquestionnaire.lss", "rapport.docx")
 
 # Avec contrôle fin
-lss <- parse_lss("monquestionnaire.lss")
+lss <- read_lss("monquestionnaire.lss")
 audit <- audit_lss(lss)
 print(audit)  # affiche les anomalies détectées
 
-render_lss_docx(
+render_questionnaire(
   lss,
   output      = "rapport.docx",
   languages   = c("fr", "de", "en", "it"),  # défaut : toutes celles du .lss

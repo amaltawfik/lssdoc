@@ -1,35 +1,13 @@
-#' Convert a `.docx` to `.pdf` locally
+#' Convert a `.docx` to `.pdf` locally (internal)
 #'
-#' Use LibreOffice (or Word, on Windows) in headless mode to convert a
-#' generated `.docx` to a PDF. Conversion stays on the user's machine: no
-#' upload, no network call. LibreOffice (the `soffice` executable) must be
-#' available; the function reports an actionable error if it is not.
+#' Internal `.docx` -> `.pdf` converter used by the `.pdf` branch of
+#' [render_questionnaire()] and [render_audit()]. Calls LibreOffice
+#' headless (or Word, on Windows). All processing stays on the user's
+#' machine: no upload, no network call.
 #'
-#' @param docx Path to the source `.docx` file.
-#' @param pdf  Path to the `.pdf` file to produce.
-#'
-#' @return The `pdf` path, invisibly.
-#'
-#' @details
-#' LibreOffice headless does not refresh Word field values (TOC, page
-#' counts) during conversion, even when the document is flagged to
-#' update fields on open. As a result, the table-of-contents field
-#' produced by [render_lss_docx()] appears empty in the converted PDF.
-#' To obtain a PDF with a populated TOC, open the generated `.docx` in
-#' Word -- the TOC refreshes automatically -- and use `File > Save As >
-#' PDF`. Working directly from the `.docx` is the simplest path.
-#'
-#' @examples
-#' \dontrun{
-#' lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
-#'   package = "lssdoc"
-#' ))
-#' tmp_docx <- tempfile(fileext = ".docx")
-#' render_lss_docx(lss, tmp_docx)
-#' lss_docx_to_pdf(tmp_docx, "rapport.pdf")
-#' }
-#' @export
-lss_docx_to_pdf <- function(docx, pdf) {
+#' @keywords internal
+#' @noRd
+.docx_to_pdf <- function(docx, pdf) {
   if (!is.character(docx) || length(docx) != 1L || is.na(docx) || !file.exists(docx)) {
     lssdoc_abort(
       "{.arg docx} must point to an existing {.file .docx} file.",

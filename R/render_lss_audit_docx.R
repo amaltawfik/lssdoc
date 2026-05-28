@@ -1,44 +1,12 @@
-#' Render the audit alone as a focused Word document
+#' Render the audit as a focused Word document (internal)
 #'
-#' Build a short, action-oriented `.docx` that contains only the audit
-#' findings: the same cover page as the full review document, the summary
-#' counts, then one table per severity (errors, warnings, notes) listing
-#' every finding with its location and message. Use this for QA follow-up
-#' or to share the issues with a colleague without distributing the full
-#' questionnaire.
+#' Internal Word-document renderer used by [render_audit()] for the `.docx`
+#' branch. The user-facing API and argument documentation live on
+#' [render_audit()].
 #'
-#' @param lss An `lss` object returned by [parse_lss()].
-#' @param output Path to the `.docx` file to create.
-#' @param languages Character vector of language codes for the cover page.
-#'   Defaults to all languages of the survey.
-#' @param logo Optional path to a PNG or JPEG image to display at the top
-#'   of the cover page. `NULL` (default) keeps the cover logo-free.
-#' @param logo_width,logo_height Image dimensions in inches. Defaults
-#'   tuned to a 2:1 logo (1.5 x 0.75 inches).
-#' @param font Body font name. `NULL` (default) keeps Calibri. See
-#'   [render_lss_docx()] for guidance on overrides.
-#' @param font_code Monospace font used for code-like content
-#'   (variable codes, raw expressions). `NULL` (default) keeps Consolas.
-#' @param colors Optional named list of hex color overrides. Same
-#'   shape and accepted names as in [render_lss_docx()].
-#' @param authors,description Optional cover-page credit block and
-#'   free-form note. Same shapes as in [render_lss_docx()].
-#' @param chrome_lang Language used for the document chrome (column
-#'   headers, row labels, audit section). Supported: `"en"`, `"fr"`,
-#'   `"de"`, `"es"`, `"it"`. `NULL` (default) follows `languages[1]`
-#'   when supported, otherwise `"en"`.
-#'
-#' @return The `output` path, invisibly.
-#'
-#' @examples
-#' \dontrun{
-#' lss <- parse_lss(system.file("extdata", "limesurvey_survey_751689.lss",
-#'   package = "lssdoc"
-#' ))
-#' render_lss_audit_docx(lss, tempfile(fileext = ".docx"))
-#' }
-#' @export
-render_lss_audit_docx <- function(lss, output, languages = NULL,
+#' @keywords internal
+#' @noRd
+.render_audit_docx <- function(lss, output, languages = NULL,
                                   logo = NULL,
                                   logo_width = 1.5,
                                   logo_height = 0.75,
@@ -50,7 +18,7 @@ render_lss_audit_docx <- function(lss, output, languages = NULL,
                                   chrome_lang = NULL) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
-      "{.arg lss} must be an {.cls lss} object from {.fn parse_lss}.",
+      "{.arg lss} must be an {.cls lss} object from {.fn read_lss}.",
       class = "lssdoc_bad_lss"
     )
   }

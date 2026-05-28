@@ -57,10 +57,10 @@ Rscript -e "devtools::load_all(); code"
 Rscript -e "devtools::test()"
 
 # To run tests matching a function or file prefix
-Rscript -e "devtools::test(filter = '^parse_lss')"
+Rscript -e "devtools::test(filter = '^read_lss')"
 
 # To run a single test file
-Rscript -e "testthat::test_file('tests/testthat/test-parse_lss.R')"
+Rscript -e "testthat::test_file('tests/testthat/test-read_lss.R')"
 
 # To redocument the package
 Rscript -e "devtools::document()"

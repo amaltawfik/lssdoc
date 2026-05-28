@@ -1,19 +1,20 @@
 url: https://amaltawfik.github.io/lssdoc/
 
 home:
-  title: "lssdoc: Word codebook documents from LimeSurvey '.lss' files"
+  title: "lssdoc: Word and PDF questionnaire documents from LimeSurvey '.lss' files"
   description: >
-    Build publication-quality Word ('.docx') codebook documents
-    from a LimeSurvey '.lss' export, aimed at ethics committees,
-    methodologists and translators reviewing multilingual
-    questionnaires. Two layouts ("cards" -- one block per item, or
-    "table" -- a dense single codebook). Side-by-side rendering of
-    up to four content languages. Chrome (column headers, row
-    labels, type labels, audit section) localized in English,
-    French, German, Spanish and Italian. Automated audit flags
-    integrity anomalies (missing translations, dangling references,
-    structural issues) without any AI. Processing is fully local --
-    nothing is ever uploaded to a third-party service.
+    Build publication-quality Word ('.docx') or PDF questionnaire
+    documents from a LimeSurvey '.lss' export, aimed at ethics
+    committees, methodologists and translators reviewing
+    multilingual questionnaires. Two layouts ("cards" -- one block
+    per item, or "table" -- a dense single questionnaire table).
+    Side-by-side rendering of up to four content languages. Chrome
+    (column headers, row labels, type labels, audit section)
+    localized in English, French, German, Spanish and Italian.
+    Automated audit flags integrity anomalies (missing
+    translations, dangling references, structural issues) without
+    any AI. Processing is fully local -- nothing is ever uploaded
+    to a third-party service.
 
 template:
   bootstrap: 5
@@ -58,35 +59,26 @@ navbar:
       href: https://github.com/amaltawfik/lssdoc
 
 reference:
-  - title: One-shot pipeline
-    desc: >
-      Parse a `.lss` file and render the review document in a
-      single call. The most common entry points for everyday use.
-    contents:
-      - lss_to_docx
-      - lss_to_pdf
-      - lss_audit_to_docx
-      - lss_audit_to_pdf
-  - title: Parse
-    desc: Read a LimeSurvey `.lss` (XML) export into a structured R object.
-    contents:
-      - parse_lss
-  - title: Audit
-    desc: >
-      Inspect the parsed survey for integrity issues a reviewer
-      would otherwise miss -- missing translations, dangling
-      references, malformed relevance expressions, structural
-      inconsistencies.
-    contents:
-      - audit_lss
   - title: Render
     desc: >
-      Lower-level entry points if you want to control parsing and
-      rendering separately, or render the audit alone.
+      Render a LimeSurvey survey to a Word or PDF document. The
+      output format is inferred from the extension of `output`
+      (`.docx` or `.pdf`). Each function accepts either a path to
+      a `.lss` file or a pre-parsed `lss` object returned by
+      `read_lss()`.
     contents:
-      - render_lss_docx
-      - render_lss_audit_docx
-      - lss_docx_to_pdf
+      - render_questionnaire
+      - render_audit
+  - title: Read and audit
+    desc: >
+      Parse a `.lss` file into a structured object, and audit a
+      survey for reviewable anomalies (missing translations,
+      dangling references, structural issues). Useful for
+      inspecting a survey before rendering, or for rendering
+      several variants from a single parse.
+    contents:
+      - read_lss
+      - audit_lss
   - title: Package overview
     contents:
       - lssdoc-package

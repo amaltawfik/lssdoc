@@ -18,7 +18,7 @@ cat("Outputs dans:", out_dir, "\n\n")
 # -----------------------------------------------------------------
 # 2. Parsing
 # -----------------------------------------------------------------
-lss <- parse_lss(
+lss <- read_lss(
   system.file("extdata", "hesav_2026.lss", package = "lssdoc")
 )
 print(lss) # résumé compact
@@ -37,7 +37,7 @@ print(audit) # cli formaté
 head(as.data.frame(audit)) # tableau exploitable en R
 
 # Sur le second fichier (qui a 1 erreur boilerplate)
-lss2 <- parse_lss(
+lss2 <- read_lss(
   system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
 )
 print(audit_lss(lss2))
@@ -47,28 +47,28 @@ print(audit_lss(lss2))
 # 4. Rendu Word complet (avec audit incrusté par défaut)
 # -----------------------------------------------------------------
 review_docx <- file.path(out_dir, "review.docx")
-render_lss_docx(lss, review_docx)
+render_questionnaire(lss, review_docx)
 
 # Version finale propre (sans audit)
 final_docx <- file.path(out_dir, "final.docx")
-render_lss_docx(lss, final_docx, show_audit = FALSE)
+render_questionnaire(lss, final_docx, show_audit = FALSE)
 
 
 # -----------------------------------------------------------------
 # 5. Rendu audit-only
 # -----------------------------------------------------------------
 audit_docx <- file.path(out_dir, "audit.docx")
-render_lss_audit_docx(lss2, audit_docx) # le fichier qui a 1 finding
+render_audit(lss2, audit_docx) # le fichier qui a 1 finding
 
 
 # -----------------------------------------------------------------
 # 6. Pipelines en un appel (parse + render)
 # -----------------------------------------------------------------
-lss_to_docx(
+render_questionnaire(
   system.file("extdata", "hesav_2026.lss", package = "lssdoc"),
   file.path(out_dir, "pipe_review.docx")
 )
-lss_audit_to_docx(
+render_audit(
   system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc"),
   file.path(out_dir, "pipe_audit.docx")
 )
@@ -77,11 +77,11 @@ lss_audit_to_docx(
 # -----------------------------------------------------------------
 # 7. Sortie PDF (nécessite LibreOffice installé)
 # -----------------------------------------------------------------
-lss_to_pdf(
+render_questionnaire(
   system.file("extdata", "hesav_2026.lss", package = "lssdoc"),
   file.path(out_dir, "review.pdf")
 )
-lss_audit_to_pdf(
+render_audit(
   system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc"),
   file.path(out_dir, "audit.pdf")
 )
@@ -99,7 +99,7 @@ rect(0, 0, 1, 1, col = "#1F4E79", border = NA)
 text(0.5, 0.5, "MON LOGO", col = "white", cex = 4, font = 2)
 grDevices::dev.off()
 
-render_lss_docx(
+render_questionnaire(
   lss,
   file.path(out_dir, "review_with_logo.docx"),
   logo = logo_path
@@ -109,7 +109,7 @@ render_lss_docx(
 # -----------------------------------------------------------------
 # 9. Restriction à un sous-ensemble de langues
 # -----------------------------------------------------------------
-render_lss_docx(
+render_questionnaire(
   lss,
   file.path(out_dir, "review_fr_only.docx"),
   languages = "fr"
@@ -119,7 +119,7 @@ render_lss_docx(
 # -----------------------------------------------------------------
 # 10. Forcer un format de page (utile pour 3-4 langues)
 # -----------------------------------------------------------------
-render_lss_docx(
+render_questionnaire(
   lss,
   file.path(out_dir, "review_landscape.docx"),
   page_format = "A4-landscape"

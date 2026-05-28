@@ -2,12 +2,12 @@
 #'
 #' Join the structural and localized sections of a parsed `.lss` into a
 #' per-group, per-question model keyed by language. This is the backbone
-#' consumed by [audit_lss()] and [render_lss_docx()]: it resolves the
+#' consumed by [audit_lss()] and [render_questionnaire()]: it resolves the
 #' display order, attaches each question's localized texts, answer options,
 #' subquestions, and attributes, and labels the question type. Language
 #' identifiers and all user text are preserved verbatim.
 #'
-#' @param lss An `lss` object from [parse_lss()].
+#' @param lss An `lss` object from [read_lss()].
 #' @param languages Character vector of language codes to include, in order.
 #'   Defaults to all languages of the survey. Requesting a language absent
 #'   from the survey is an error.
@@ -24,7 +24,7 @@
 lss_model <- function(lss, languages = NULL) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
-      "{.arg lss} must be an {.cls lss} object from {.fn parse_lss}.",
+      "{.arg lss} must be an {.cls lss} object from {.fn read_lss}.",
       class = "lssdoc_bad_lss"
     )
   }

@@ -1,54 +1,58 @@
-#' Parse a LimeSurvey `.lss` file
+#' Read a LimeSurvey `.lss` file
 #'
 #' Read a LimeSurvey survey structure export (`.lss`, an XML file) and turn
-#' it into a structured `lss` object that the rest of the package can audit
-#' and render. Parsing is fully local: the file is never uploaded anywhere.
+#' it into a structured `lss` object that the rest of the package can
+#' audit ([audit_lss()]) and render ([render_questionnaire()],
+#' [render_audit()]). Parsing is fully local: the file is never uploaded
+#' anywhere.
 #'
-#' @param path Path to a `.lss` file.
+#' @param file Character. Path to a `.lss` file. Must be a single string
+#'   pointing to an existing file, otherwise a classed error is raised
+#'   (`lssdoc_bad_path`, `lssdoc_file_not_found`).
 #'
-#' @return An object of class `lss`: a list holding the survey languages and
-#'   metadata plus one data frame per `.lss` section. Structural sections
+#' @return An object of class `lss`: a list with the survey languages,
+#'   metadata, and one data frame per `.lss` section. Structural sections
 #'   (`surveys`, `groups`, `questions`, `subquestions`, `answers`,
-#'   `question_attributes`, `conditions`) are kept separate from the
+#'   `question_attributes`, `conditions`) stay separate from the
 #'   localized text sections (`survey_language_settings`, `group_l10ns`,
-#'   `question_l10ns`, `answer_l10ns`), which carry the per-language titles,
-#'   labels, and help texts. All values are read verbatim as character.
+#'   `question_l10ns`, `answer_l10ns`), which carry the per-language
+#'   titles, labels, and help texts. All values are read verbatim as
+#'   character.
 #'
 #' @details
-#' The `.lss` format is a LimeSurvey XML export. Since DBVersion 4xx/7xx the
-#' translatable text lives in dedicated localization sections
+#' The `.lss` format is a LimeSurvey XML export. Since DBVersion 4xx/7xx
+#' the translatable text lives in dedicated localization sections
 #' (`*_l10ns`), keyed by language, while the structural sections hold
-#' identifiers and settings. `parse_lss()` reads every section into a tidy
-#' data frame without mutating any user-facing identifier or text. A field
-#' that is present but empty (e.g. `<help/>`) is read as `""`; a field that
-#' is absent from a row is read as `NA`.
+#' identifiers and settings. `read_lss()` reads every section into a tidy
+#' data frame without mutating any user-facing identifier or text. A
+#' field that is present but empty (e.g. `<help/>`) is read as `""`; a
+#' field that is absent from a row is read as `NA`.
 #'
 #' @examples
-#' lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
-#'   package = "lssdoc"
-#' ))
+#' lss <- read_lss(system.file("extdata", "hesav_2026.lss",
+#'                             package = "lssdoc"))
 #' lss$languages
 #' @export
-parse_lss <- function(path) {
-  if (!is.character(path) || length(path) != 1L) {
+read_lss <- function(file) {
+  if (!is.character(file) || length(file) != 1L) {
     lssdoc_abort(
-      "{.arg path} must be a single file path.",
+      "{.arg file} must be a single file path.",
       class = "lssdoc_bad_path"
     )
   }
-  if (!file.exists(path)) {
+  if (!file.exists(file)) {
     lssdoc_abort(
-      "Cannot find a file at {.path {path}}.",
+      "Cannot find a file at {.path {file}}.",
       class = "lssdoc_file_not_found"
     )
   }
 
   doc <- tryCatch(
-    xml2::read_xml(path),
+    xml2::read_xml(file),
     error = function(e) {
       lssdoc_abort(
         c(
-          "{.path {path}} is not valid XML.",
+          "{.path {file}} is not valid XML.",
           "x" = conditionMessage(e)
         ),
         class = "lssdoc_invalid_xml"
@@ -60,7 +64,7 @@ parse_lss <- function(path) {
   if (is.na(doc_type) || doc_type != "Survey") {
     lssdoc_abort(
       c(
-        "{.path {path}} does not look like a LimeSurvey survey export.",
+        "{.path {file}} does not look like a LimeSurvey survey export.",
         "i" = "Expected {.field LimeSurveyDocType} {.val Survey}, but found
                {.val {doc_type}}."
       ),
@@ -80,7 +84,7 @@ parse_lss <- function(path) {
 
   structure(
     list(
-      file = path,
+      file = file,
       db_version = lss_scalar(doc, "DBVersion"),
       doc_type = doc_type,
       languages = languages,
@@ -98,6 +102,28 @@ parse_lss <- function(path) {
       conditions = lss_section(doc, "conditions")
     ),
     class = "lss"
+  )
+}
+
+#' Resolve a polymorphic input (path or `lss` object) to an `lss` object
+#'
+#' Shared validator used by every user-facing function that accepts both
+#' a `.lss` path and a pre-parsed `lss` object. Centralizes the dispatch
+#' and the error message.
+#'
+#' @keywords internal
+#' @noRd
+lss_resolve_input <- function(input, arg = "input") {
+  if (inherits(input, "lss")) return(input)
+  if (is.character(input) && length(input) == 1L && !is.na(input)) {
+    return(read_lss(input))
+  }
+  lssdoc_abort(
+    c(
+      "{.arg {arg}} must be a path to a {.file .lss} file or an {.cls lss} object from {.fn read_lss}.",
+      "x" = "Got {.cls {class(input)[1]}}."
+    ),
+    class = "lssdoc_bad_input"
   )
 }
 

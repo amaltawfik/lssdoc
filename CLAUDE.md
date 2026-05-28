@@ -10,14 +10,14 @@ The functional specification for the package lives in
 
 ## Package architecture
 
-- `R/parse_lss.R` - read a LimeSurvey `.lss` (XML) export into a
+- `R/read_lss.R` - read a LimeSurvey `.lss` (XML) export into a
   structured `lss` object (languages, groups, questions,
   subquestions, answers, attributes).
 - `R/audit_lss.R` - detect reviewable anomalies in an `lss` object
   and return an `lss_audit` object with a `print()` method.
-- `R/render_lss_docx.R` - render an `lss` object to a `.docx`
+- `R/render_questionnaire.R` - render an `lss` object to a `.docx`
   review document, up to four languages side by side.
-- `R/lss_to_docx.R` - convenience wrapper: parse then render.
+- `R/render_questionnaire.R` - convenience wrapper: parse then render.
 - `R/conditions.R` - classed error and warning helpers
   (`lssdoc_abort()`, `lssdoc_warn()`).
 - `R/lssdoc-package.R` - package-level documentation and imports.
@@ -54,10 +54,10 @@ Rscript -e "devtools::load_all(); code"
 Rscript -e "devtools::test()"
 
 # Run tests matching a filter
-Rscript -e "devtools::test(filter = '^parse_lss')"
+Rscript -e "devtools::test(filter = '^read_lss')"
 
 # Run a single test file
-Rscript -e "testthat::test_file('tests/testthat/test-parse_lss.R')"
+Rscript -e "testthat::test_file('tests/testthat/test-read_lss.R')"
 
 # Redocument the package
 Rscript -e "devtools::document()"

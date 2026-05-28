@@ -2,43 +2,49 @@
 % Please edit documentation in R/audit_lss.R
 \name{audit_lss}
 \alias{audit_lss}
-\title{Audit a parsed LimeSurvey structure for reviewable anomalies}
+\title{Audit a LimeSurvey survey for reviewable anomalies}
 \usage{
-audit_lss(lss)
+audit_lss(input)
 }
 \arguments{
-\item{lss}{An \code{lss} object returned by \code{\link[=parse_lss]{parse_lss()}}.}
+\item{input}{Either a path to a \code{.lss} file (character string) or a
+pre-parsed \code{lss} object returned by \code{\link[=read_lss]{read_lss()}}. Passing a path
+parses it on the fly; passing an \code{lss} object avoids re-parsing
+when the same survey is also rendered in the same session.}
 }
 \value{
-An object of class \code{lss_audit}: a list with \code{file}, \code{languages},
-summary counts, and a \code{findings} data frame (\code{severity}, \code{check},
-\code{location}, \code{language}, \code{message}). It has a \code{print()} method and an
-\code{as.data.frame()} method.
+An object of class \code{lss_audit}: a list with \code{file},
+\code{languages}, summary counts, and a \code{findings} data frame
+(\code{severity}, \code{check}, \code{location}, \code{language}, \code{message}). It has
+a \code{print()} method and an \code{as.data.frame()} method.
 }
 \description{
-Inspect an \code{lss} object and flag anomalies that can be detected without
-any AI. The audit is meant to guide a human reviewer, not to silently
-correct anything: every finding names a precise location and a severity.
+Inspect a LimeSurvey survey and flag anomalies that can be detected
+without any AI. The audit guides a human reviewer; it does not
+silently correct anything. Every finding names a precise location
+and a severity.
 }
 \details{
 Checks performed:
 \itemize{
 \item \strong{Missing translations} -- a question, help, answer, or subquestion
-text that exists in at least one language but is empty in another.
-\item \strong{Empty in all languages} -- a translatable text that is empty in every
+text present in at least one language but empty in another.
+\item \strong{Empty in all languages} -- a translatable text empty in every
 language.
-\item \strong{Duplicate codes} -- a question variable code repeated in the survey,
-or an answer/subquestion code repeated within one question.
+\item \strong{Duplicate codes} -- a question variable code repeated in the
+survey, or an answer/subquestion code repeated within one question.
 \item \strong{Missing options for the type} -- a question whose type requires
 answer options or subquestions but has none (per the type taxonomy).
-\item \strong{Orphan references} -- a subquestion or answer that points to a
+\item \strong{Orphan references} -- a subquestion or answer pointing to a
 question that does not exist.
 }
 }
 \examples{
-lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
-  package = "lssdoc"
-))
-audit <- audit_lss(lss)
+audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
+                               package = "lssdoc"))
 print(audit)
+}
+\seealso{
+\code{\link[=render_audit]{render_audit()}} to write the same findings to a Word or
+PDF document.
 }

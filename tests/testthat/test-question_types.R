@@ -44,7 +44,7 @@ test_that("every question type in the bundled fixtures is recognized", {
   for (file in c("hesav_2026.lss", "limesurvey_survey_751689.lss")) {
     path <- system.file("extdata", file, package = "lssdoc")
     skip_if_not(file.exists(path))
-    lss <- parse_lss(path)
+    lss <- read_lss(path)
     labels <- lss_question_label(
       lss$questions$type,
       lss$questions$question_theme_name

@@ -1,15 +1,15 @@
-test_that("render_lss_audit_docx rejects bad inputs", {
+test_that("render_audit rejects bad inputs", {
   expect_error(
-    render_lss_audit_docx(list(), tempfile(fileext = ".docx")),
-    class = "lssdoc_bad_lss"
+    render_audit(list(), tempfile(fileext = ".docx")),
+    class = "lssdoc_bad_input"
   )
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
-  expect_error(render_lss_audit_docx(lss, 123), class = "lssdoc_bad_output")
+  lss <- read_lss(path)
+  expect_error(render_audit(lss, 123), class = "lssdoc_bad_output")
 })
 
-test_that("render_lss_audit_docx writes a focused audit document", {
+test_that("render_audit writes a focused audit document", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
@@ -20,7 +20,7 @@ test_that("render_lss_audit_docx writes a focused audit document", {
   # Pin English chrome so the assertions can pattern-match the
   # canonical English headings; the default chrome_lang follows the
   # survey's primary content language and would translate the labels.
-  res <- render_lss_audit_docx(parse_lss(path), out, chrome_lang = "en")
+  res <- render_audit(read_lss(path), out, chrome_lang = "en")
   expect_identical(res, out)
   expect_true(file.exists(out))
 
@@ -42,14 +42,14 @@ test_that("render_lss_audit_docx writes a focused audit document", {
   expect_true(group_h1 >= 1)
 })
 
-test_that("render_lss_audit_docx on a clean survey says 'no anomalies'", {
+test_that("render_audit on a clean survey says 'no anomalies'", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_lss_audit_docx(parse_lss(path), out, chrome_lang = "en")
+  render_audit(read_lss(path), out, chrome_lang = "en")
   s <- officer::docx_summary(officer::read_docx(out))
   expect_true(any(grepl("No anomalies detected", s$text)))
 })

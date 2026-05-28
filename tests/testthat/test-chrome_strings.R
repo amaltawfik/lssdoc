@@ -99,11 +99,11 @@ test_that("the rendered document contains chrome strings in the requested langua
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
+  lss <- read_lss(path)
 
   out_fr <- tempfile(fileext = ".docx")
   on.exit(unlink(out_fr), add = TRUE)
-  render_lss_docx(lss, out_fr, languages = c("fr", "de"), chrome_lang = "fr")
+  render_questionnaire(lss, out_fr, languages = c("fr", "de"), chrome_lang = "fr")
   s_fr <- officer::docx_summary(officer::read_docx(out_fr))
   txt_fr <- paste(s_fr$text[!is.na(s_fr$text)], collapse = " | ")
   # A handful of FR-specific chrome strings should appear; we do not
@@ -122,11 +122,11 @@ test_that("chrome_lang = 'en' forces English chrome even with FR/DE content", {
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
+  lss <- read_lss(path)
 
   out_en <- tempfile(fileext = ".docx")
   on.exit(unlink(out_en), add = TRUE)
-  render_lss_docx(lss, out_en, languages = c("fr", "de"), chrome_lang = "en")
+  render_questionnaire(lss, out_en, languages = c("fr", "de"), chrome_lang = "en")
   s_en <- officer::docx_summary(officer::read_docx(out_en))
   txt_en <- paste(s_en$text[!is.na(s_en$text)], collapse = " | ")
   expect_true(grepl("Table of contents", txt_en))

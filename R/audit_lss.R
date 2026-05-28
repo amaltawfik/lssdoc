@@ -1,42 +1,42 @@
-#' Audit a parsed LimeSurvey structure for reviewable anomalies
+#' Audit a LimeSurvey survey for reviewable anomalies
 #'
-#' Inspect an `lss` object and flag anomalies that can be detected without
-#' any AI. The audit is meant to guide a human reviewer, not to silently
-#' correct anything: every finding names a precise location and a severity.
+#' Inspect a LimeSurvey survey and flag anomalies that can be detected
+#' without any AI. The audit guides a human reviewer; it does not
+#' silently correct anything. Every finding names a precise location
+#' and a severity.
 #'
 #' Checks performed:
 #' * **Missing translations** -- a question, help, answer, or subquestion
-#'   text that exists in at least one language but is empty in another.
-#' * **Empty in all languages** -- a translatable text that is empty in every
+#'   text present in at least one language but empty in another.
+#' * **Empty in all languages** -- a translatable text empty in every
 #'   language.
-#' * **Duplicate codes** -- a question variable code repeated in the survey,
-#'   or an answer/subquestion code repeated within one question.
+#' * **Duplicate codes** -- a question variable code repeated in the
+#'   survey, or an answer/subquestion code repeated within one question.
 #' * **Missing options for the type** -- a question whose type requires
 #'   answer options or subquestions but has none (per the type taxonomy).
-#' * **Orphan references** -- a subquestion or answer that points to a
+#' * **Orphan references** -- a subquestion or answer pointing to a
 #'   question that does not exist.
 #'
-#' @param lss An `lss` object returned by [parse_lss()].
+#' @param input Either a path to a `.lss` file (character string) or a
+#'   pre-parsed `lss` object returned by [read_lss()]. Passing a path
+#'   parses it on the fly; passing an `lss` object avoids re-parsing
+#'   when the same survey is also rendered in the same session.
 #'
-#' @return An object of class `lss_audit`: a list with `file`, `languages`,
-#'   summary counts, and a `findings` data frame (`severity`, `check`,
-#'   `location`, `language`, `message`). It has a `print()` method and an
-#'   `as.data.frame()` method.
+#' @return An object of class `lss_audit`: a list with `file`,
+#'   `languages`, summary counts, and a `findings` data frame
+#'   (`severity`, `check`, `location`, `language`, `message`). It has
+#'   a `print()` method and an `as.data.frame()` method.
+#'
+#' @seealso [render_audit()] to write the same findings to a Word or
+#'   PDF document.
 #'
 #' @examples
-#' lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
-#'   package = "lssdoc"
-#' ))
-#' audit <- audit_lss(lss)
+#' audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
+#'                                package = "lssdoc"))
 #' print(audit)
 #' @export
-audit_lss <- function(lss) {
-  if (!inherits(lss, "lss")) {
-    lssdoc_abort(
-      "{.arg lss} must be an {.cls lss} object from {.fn parse_lss}.",
-      class = "lssdoc_bad_lss"
-    )
-  }
+audit_lss <- function(input) {
+  lss <- lss_resolve_input(input)
 
   langs <- lss$languages
   model <- lss_model(lss, languages = langs)

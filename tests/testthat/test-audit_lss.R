@@ -1,11 +1,11 @@
 test_that("audit_lss rejects objects that are not lss", {
-  expect_error(audit_lss(list()), class = "lssdoc_bad_lss")
+  expect_error(audit_lss(list()), class = "lssdoc_bad_input")
 })
 
 test_that("a clean survey produces no findings", {
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  a <- audit_lss(parse_lss(path))
+  a <- audit_lss(read_lss(path))
   expect_s3_class(a, "lss_audit")
   expect_identical(a$n_findings, 0L)
   expect_s3_class(as.data.frame(a), "data.frame")
@@ -14,7 +14,7 @@ test_that("a clean survey produces no findings", {
 test_that("an empty boilerplate text is flagged as an error", {
   path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  a <- audit_lss(parse_lss(path))
+  a <- audit_lss(read_lss(path))
   empties <- a$findings[a$findings$check == "empty_in_all_languages", ]
   expect_true(nrow(empties) >= 1)
   expect_true(all(empties$severity == "error"))
@@ -23,7 +23,7 @@ test_that("an empty boilerplate text is flagged as an error", {
 test_that("a missing translation in one language is detected", {
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
+  lss <- read_lss(path)
 
   # Blank out the fr text of the first question that has one.
   l10n <- lss$question_l10ns
@@ -39,7 +39,7 @@ test_that("a missing translation in one language is detected", {
 test_that("duplicate question codes are flagged as errors", {
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
+  lss <- read_lss(path)
 
   # Force a duplicate variable code.
   lss$questions$title[2] <- lss$questions$title[1]
@@ -53,7 +53,7 @@ test_that("duplicate question codes are flagged as errors", {
 test_that("orphan subquestions are detected", {
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
+  lss <- read_lss(path)
   lss$subquestions$parent_qid[1] <- "999999999"
 
   a <- audit_lss(lss)
@@ -63,7 +63,7 @@ test_that("orphan subquestions are detected", {
 test_that("an empty equation text is a note, not an error", {
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- parse_lss(path)
+  lss <- read_lss(path)
 
   # Turn the first question into an empty equation in every language.
   lss$questions$type[1] <- "*"
