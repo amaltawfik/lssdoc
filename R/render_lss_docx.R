@@ -77,6 +77,72 @@
 #' @param logo_width,logo_height Image dimensions in inches. Defaults are
 #'   tuned to a 2:1 logo (1.5 x 0.75 inches). Resize or pre-crop your image
 #'   to fit if it has a different aspect ratio.
+#' @param font Body font name. `NULL` (default) keeps Calibri, which is
+#'   pre-installed on every recent Windows Office and metric-substituted
+#'   with Carlito (OFL) on Mac and Linux LibreOffice, so column widths
+#'   stay stable across platforms. Pass a string to override
+#'   (e.g. `"Source Sans 3"`, `"IBM Plex Sans"`, or a corporate brand
+#'   font). The string is passed through to Word; install the font on
+#'   the machine that opens the document, otherwise the reader's
+#'   application will substitute its own fallback face.
+#' @param font_code Monospace font used for code-like content: the
+#'   variable column in each meta table, the raw relevance expression
+#'   under each filter cell, and the variable index entries. `NULL`
+#'   (default) keeps Consolas; pass `"JetBrains Mono"` or `"IBM Plex
+#'   Mono"` for sharper code style if installed on the reader's
+#'   machine.
+#' @param chrome_lang Language used for the **chrome** of the document
+#'   (column headers, row labels, navigation titles, MOSAiCH-style
+#'   type labels, Value descriptors, audit section). Independent of
+#'   `languages`, which controls the survey's content columns.
+#'   Supported values: `"en"`, `"fr"`, `"de"`, `"es"`, `"it"`.
+#'   `NULL` (default) follows `languages[1]` when it is a supported
+#'   chrome language, otherwise falls back to `"en"`. Pass the value
+#'   explicitly to force a specific chrome language regardless of the
+#'   content -- e.g. `chrome_lang = "en"` with `languages = c("fr",
+#'   "de")` produces an English-labeled document with French and
+#'   German survey content. Spanish and Italian translations should
+#'   be reviewed by a native speaker before publishing an official
+#'   document.
+#' @param description Optional free-form text shown on the cover page
+#'   below the authors block. Useful for a citation hint, a funding
+#'   acknowledgement, a methodology note, or a link to a related
+#'   publication. Pass a single string; line breaks (`\n`) split the
+#'   block into separate centered lines. Any `http://` or `https://`
+#'   token is rendered as a clickable hyperlink, so DOI URLs or article
+#'   permalinks become navigable. Plain text otherwise.
+#' @param authors Optional credit block for the questionnaire's
+#'   designers, displayed on the cover page below the subtitle. Each
+#'   author is shown centered on its own line as `Name — Affiliation`;
+#'   when an ORCID iD is provided, a smaller monospace line below
+#'   shows `ORCID 0000-0000-0000-0000` as a hyperlink to
+#'   `https://orcid.org/<id>`. Accepts:
+#'   - `NULL` (default): no authorship block.
+#'   - An **unnamed character vector** (`c("Amal Tawfik", "John Doe")`):
+#'     each entry becomes a line with no affiliation.
+#'   - A **named character vector** (`c("Amal Tawfik" = "HES-SO Valais")`):
+#'     names are authors, values are affiliations. Use the empty
+#'     string `""` to render an author without affiliation.
+#'   - A **list of named lists** for the full form, e.g.
+#'     `list(list(name = "Amal Tawfik", affiliation = "HES-SO Valais",
+#'      orcid = "0009-0006-2422-1555"), list(name = "John Doe",
+#'      affiliation = "UNIL"))`. The `name` field is required; the
+#'     `affiliation` and `orcid` fields are optional.
+#'
+#' @section Field-update prompt in Word:
+#' Opening the rendered `.docx` in Microsoft Word may surface a
+#' security-style prompt: *"This document contains fields that may
+#' refer to other files. Do you want to update the fields in this
+#' document?"*. This is expected: the package marks the page-number
+#' and bookmark-reference fields as needing a refresh so the footer
+#' shows the correct page count and the table of contents links
+#' resolve to the right pages on first open (this is also what makes
+#' headless PDF conversion via LibreOffice produce correctly
+#' paginated output without a manual F9). Clicking **Yes** is safe --
+#' the document has no `INCLUDETEXT`, `INCLUDEPICTURE`-linked, or DDE
+#' fields; the only external links are the ORCID and DOI URLs in the
+#' cover credits, which are static `HYPERLINK` targets and not fetched
+#' on update.
 #'
 #' @return The `output` path, invisibly.
 #'
@@ -108,7 +174,12 @@ render_lss_docx <- function(
   title = NULL,
   logo = NULL,
   logo_width = 1.5,
-  logo_height = 0.75
+  logo_height = 0.75,
+  font = NULL,
+  font_code = NULL,
+  authors = NULL,
+  description = NULL,
+  chrome_lang = NULL
 ) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
@@ -125,6 +196,10 @@ render_lss_docx <- function(
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
   lss_validate_logo(logo)
+  lss_validate_font(font, "font")
+  lss_validate_font(font_code, "font_code")
+  authors <- lss_normalize_authors(authors)
+  description <- lss_normalize_description(description)
   for (pkg in c("officer", "flextable")) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
       lssdoc_abort(
@@ -137,9 +212,41 @@ render_lss_docx <- function(
     }
   }
 
+  # Build the model first so we know the group count and can budget the
+  # progress bar correctly. This step is fast (< 1 s).
   model <- lss_model(lss, languages = languages)
   langs <- model$languages
   theme <- lss_render_theme()
+  if (!is.null(font)) theme$font_body <- font
+  if (!is.null(font_code)) theme$font_code <- font_code
+  # Resolve the chrome language now that we know the content languages,
+  # then attach the localized chrome strings to the theme so every
+  # renderer helper can pick them up via `theme$chrome$<key>` without
+  # plumbing an extra argument.
+  chrome_lang <- lss_resolve_chrome_lang(chrome_lang, langs)
+  theme$chrome <- lss_chrome_strings(chrome_lang)
+  theme$chrome_lang <- chrome_lang
+  n_groups <- length(model$groups)
+
+  # Single progress bar covering the entire render. The total is
+  # `n_groups + 3` ticks: one for audit, one for the cover/TOC/welcome
+  # block, n_groups for each group's items, and one for the file write.
+  # The status text changes per phase, so the user sees both a smoothly
+  # filling bar AND a label for what is happening right now -- without
+  # the multi-line "step ... done" cascade that the previous design
+  # produced. cli detects non-interactive sessions automatically and
+  # downgrades to plain messages; suppressMessages() silences entirely.
+  total <- n_groups + 3L
+  cli::cli_progress_bar(
+    name = "Rendering questionnaire",
+    total = total,
+    clear = TRUE
+  )
+
+  cli::cli_progress_update(
+    set = 0L,
+    status = if (isTRUE(show_audit)) "Running audit" else "Skipping audit"
+  )
   audit_idx <- if (isTRUE(show_audit)) {
     lss_audit_index(audit_lss(lss))
   } else {
@@ -160,12 +267,15 @@ render_lss_docx <- function(
     }
   )
 
+  cli::cli_progress_update(set = 1L, status = "Cover, TOC and welcome")
   doc <- officer::read_docx()
   doc <- lss_render_cover(
     doc, lss, model, theme,
     logo = logo, logo_width = logo_width, logo_height = logo_height,
     show_source = isTRUE(show_source),
-    titles = resolved_titles
+    titles = resolved_titles,
+    authors = authors,
+    description = description
   )
   doc <- officer::body_add_break(doc)
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
@@ -177,9 +287,14 @@ render_lss_docx <- function(
     doc <- lss_render_audit_section(doc, audit_idx, theme)
   }
   doc <- lss_render_welcome(doc, lss, langs, theme)
-  for (group in model$groups) {
+
+  for (i in seq_along(model$groups)) {
+    cli::cli_progress_update(
+      set = 2L + i - 1L,
+      status = sprintf("Group %d/%d", i, n_groups)
+    )
     doc <- lss_render_group(
-      doc, group, langs, theme,
+      doc, model$groups[[i]], langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
@@ -192,12 +307,27 @@ render_lss_docx <- function(
     doc <- lss_render_index(doc, state$index_entries, theme)
   }
 
+  cli::cli_progress_update(
+    set = 2L + n_groups,
+    status = sprintf("Writing %s", basename(output))
+  )
   doc <- officer::body_set_default_section(doc, section)
   print(doc, target = output)
   # Make Word and LibreOffice refresh fields (TOC, PAGE, NUMPAGES) when
   # the document is opened, so the reader does not need to press F9 and
   # so headless PDF conversion picks up the populated TOC.
   lss_inject_update_fields(output)
+  cli::cli_progress_update(set = total)
+  cli::cli_progress_done()
+
+  abs_path <- tryCatch(
+    normalizePath(output, winslash = "/", mustWork = TRUE),
+    error = function(e) output
+  )
+  size_kb <- round(file.size(output) / 1024)
+  cli::cli_alert_success(
+    "Saved {.file {abs_path}} ({size_kb} KB, {n_groups} group{?s})"
+  )
   invisible(output)
 }
 
@@ -365,10 +495,22 @@ lss_group_bookmark <- function(index) {
 #' @noRd
 lss_render_theme <- function() {
   list(
-    color_primary = "#1F4E79",
-    color_accent  = "#2E75B6",
-    color_band    = "#D9E2F3",
-    color_zebra   = "#F7F9FC",
+    # Editorial petrol-blue palette tuned for scientific questionnaire
+    # documentation. Replaces the earlier Office-blue family (#1F4E79 /
+    # #2E75B6) which read as "Microsoft default". The petrol primary +
+    # blue-green accent + soft blue-gray grid family follow the pattern
+    # used by Pew Research / OECD / ESS publications.
+    color_primary = "#133B52",
+    color_accent  = "#3A7C8C",
+    color_band    = "#E9F2F6",
+    # Dark table header tone (secondary of the petrol family). Reserved
+    # for the meta-table column headers so every item opens with a
+    # white-on-dark "new variable" banner. Distinct from color_primary
+    # so the group banners (1.5 pt #133B52 line + #133B52 title text)
+    # keep their visual dominance over per-item banners.
+    color_band_dark = "#1F4E5F",
+    color_zebra   = "#F4F8FA",
+    color_grid    = "#D3DCE2",
     color_text    = "#222222",
     color_muted   = "#6E6E6E",
     color_white   = "#FFFFFF",
@@ -376,7 +518,26 @@ lss_render_theme <- function() {
     color_error   = "#9E1B1B",
     color_note    = "#5B5B5B",
 
+    # Single source of truth for the printable body width. Page margins of
+    # 2.5 cm on A4 leave 6.30 in for content; the meta table, item table,
+    # welcome/end-text blocks, and shared-scale table all use this width so
+    # that group headings, the TOC, and every table land on the same left
+    # and right edges. Changing this value alone re-aligns the whole document.
+    content_width_in = 6.30,
+
+    # Body font: Calibri is pre-installed on Windows (and metric-substituted
+    # with Carlito on Mac/Linux LibreOffice), so column widths computed at
+    # render time match what the reader will see in every environment.
+    # Override at the call site via render_lss_docx(font = "...") when the
+    # reader's machine has a preferred face installed (Source Sans 3,
+    # IBM Plex Sans, a corporate brand font, ...).
     font_body = "Calibri",
+    # Monospace font used on code-like cells (the variable name column, the
+    # raw relevance expression, the variable index entries). Consolas is
+    # installed on every recent Windows; LibreOffice substitutes a similar
+    # mono face, and Word on macOS picks Menlo. Override via
+    # render_lss_docx(font_code = "JetBrains Mono") for sharper code style.
+    font_code = "Consolas",
     size_meta = 8,
     size_lang_header = 9,
     size_question = 10,
@@ -391,6 +552,96 @@ lss_render_theme <- function() {
 
     empty_marker = "\u2014"
   )
+}
+
+#' Validate and normalize the `authors` argument
+#'
+#' Accepts three input shapes and returns a single normalized form: a
+#' `list` (possibly empty) of `list(name, affiliation, orcid)`, each
+#' a single character string (`""` when the field was not supplied).
+#' Returning the same shape regardless of input means the renderer
+#' does not need to branch on the API form.
+#'
+#' Recognized shapes:
+#' - `NULL` -> `NULL` (renderer omits the block);
+#' - **character vector** (named or unnamed): each entry becomes one
+#'   author, with `affiliation = ""` if unnamed and `orcid = ""` always;
+#' - **list of named lists**: each element is treated as a structured
+#'   author with the fields `name` (required), `affiliation`, and
+#'   `orcid` (both optional).
+#'
+#' @keywords internal
+#' @noRd
+lss_normalize_authors <- function(authors) {
+  if (is.null(authors)) return(NULL)
+  fail <- function() {
+    lssdoc_abort(
+      c(
+        "{.arg authors} must be {.code NULL}, a character vector, or a list of named lists.",
+        "i" = "See {.fn render_lss_docx} for the accepted shapes."
+      ),
+      class = "lssdoc_bad_authors"
+    )
+  }
+  if (is.character(authors)) {
+    if (any(is.na(authors))) fail()
+    nm <- names(authors)
+    out <- lapply(seq_along(authors), function(i) {
+      name <- if (!is.null(nm) && nzchar(nm[i])) nm[i] else as.character(authors[i])
+      affil <- if (!is.null(nm) && nzchar(nm[i])) as.character(authors[i]) else ""
+      list(name = name, affiliation = affil, orcid = "")
+    })
+    return(out)
+  }
+  if (is.list(authors)) {
+    out <- lapply(authors, function(a) {
+      if (!is.list(a) || is.null(a$name) || !nzchar(trimws(as.character(a$name)))) fail()
+      list(
+        name = as.character(a$name),
+        affiliation = if (is.null(a$affiliation)) "" else as.character(a$affiliation),
+        orcid = if (is.null(a$orcid)) "" else as.character(a$orcid)
+      )
+    })
+    return(out)
+  }
+  fail()
+}
+
+#' Normalize the `description` argument: NULL or a single non-empty
+#' string. Returns NULL for missing/empty input so the renderer can
+#' simply skip the block.
+#'
+#' @keywords internal
+#' @noRd
+lss_normalize_description <- function(description) {
+  if (is.null(description)) return(NULL)
+  if (!is.character(description) || length(description) != 1L ||
+      is.na(description)) {
+    lssdoc_abort(
+      "{.arg description} must be {.code NULL} or a single string.",
+      class = "lssdoc_bad_description"
+    )
+  }
+  if (!nzchar(trimws(description))) return(NULL)
+  description
+}
+
+#' Validate the optional font arguments: NULL or a single non-empty string.
+#' We do not check that the font is installed (impossible to enumerate
+#' reliably across Word / LibreOffice / Pages); if the reader's machine is
+#' missing it, their application substitutes its own fallback face.
+#' @keywords internal
+#' @noRd
+lss_validate_font <- function(value, arg_name) {
+  if (is.null(value)) return(invisible())
+  if (!is.character(value) || length(value) != 1L || is.na(value) ||
+      !nzchar(trimws(value))) {
+    lssdoc_abort(
+      "{.arg {arg_name}} must be {.code NULL} or a single non-empty string.",
+      class = "lssdoc_bad_font"
+    )
+  }
+  invisible()
 }
 
 #' Validate the optional logo argument: NULL or an existing image path
@@ -466,10 +717,22 @@ lss_render_section_props <- function(page_format, n_langs,
     "A4-landscape" = officer::page_size(width = 11.69, height = 8.27, orient = "landscape"),
     "A3"           = officer::page_size(width = 16.53, height = 11.69, orient = "landscape")
   )
-  margin <- 0.6
+  # 2.5 cm side margins on A4 portrait leave exactly theme$content_width_in
+  # (6.30 in) for body content, so the meta table, item table, welcome
+  # block, shared scale, and any other 6.30-in panel align flush with the
+  # left and right margins. Top and bottom margins are slightly larger
+  # (1.0 in) than the sides so the running header and body keep some air
+  # between them; otherwise the first line of body content lands right
+  # under the title strip.
+  margin_side <- 0.98
+  margin_vert <- 1.0
   officer::prop_section(
     page_size = size,
-    page_margins = officer::page_mar(top = 0.7, bottom = 0.7, left = margin, right = margin),
+    page_margins = officer::page_mar(
+      top = margin_vert, bottom = margin_vert,
+      left = margin_side, right = margin_side,
+      header = 0.4, footer = 0.4
+    ),
     header_default = lss_build_header(theme, header_titles),
     footer_default = lss_build_footer(theme)
   )
@@ -552,7 +815,7 @@ lss_render_index <- function(doc, entries, theme) {
   doc <- officer::body_add_fpar(
     doc,
     officer::fpar(officer::ftext(
-      "Variable index",
+      theme$chrome$variable_index_title,
       prop = officer::fp_text(
         font.family = theme$font_body, font.size = theme$size_heading1,
         bold = TRUE, color = theme$color_primary
@@ -570,13 +833,23 @@ lss_render_index <- function(doc, entries, theme) {
     check.names = FALSE
   )
   ft <- flextable::flextable(df)
+  ft <- flextable::set_header_labels(
+    ft,
+    Variable = theme$chrome$meta_variable,
+    No = theme$chrome$meta_no
+  )
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
+  # Variable codes are identifiers; rendering them in the monospace font
+  # disambiguates l/1/I, 0/O and makes underscores visible -- which
+  # matters in a variable index where the reader scans for an exact
+  # match.
+  ft <- flextable::font(ft, j = "Variable", fontname = theme$font_code, part = "body")
   ft <- flextable::fontsize(ft, size = theme$size_answer, part = "all")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
   ft <- flextable::border_remove(ft)
-  thin <- officer::fp_border(color = "#BFBFBF", width = 0.5)
+  thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
   ft <- flextable::valign(ft, valign = "top", part = "all")
   ft <- flextable::padding(ft, padding = 2, part = "all")
@@ -712,12 +985,15 @@ lss_compose_plain <- function(text, theme, size = theme$size_meta,
 #' @keywords internal
 #' @noRd
 lss_render_cover <- function(doc, lss, model, theme,
-                             subtitle = "LimeSurvey questionnaire review",
+                             subtitle = NULL,
                              logo = NULL,
                              logo_width = 1.5,
                              logo_height = 0.75,
                              show_source = TRUE,
-                             titles = NULL) {
+                             titles = NULL,
+                             authors = NULL,
+                             description = NULL) {
+  if (is.null(subtitle)) subtitle <- theme$chrome$cover_subtitle_review
   ls_settings <- lss$survey_language_settings
   langs <- model$languages
   if (is.null(titles)) {
@@ -775,6 +1051,9 @@ lss_render_cover <- function(doc, lss, model, theme,
     )
   )
 
+  doc <- lss_render_authors_block(doc, authors, theme)
+  doc <- lss_render_description_block(doc, description, theme)
+
   # Metadata table.
   n_groups <- length(model$groups)
   n_q <- sum(vapply(model$groups, function(g) length(g$questions), integer(1)))
@@ -792,18 +1071,19 @@ lss_render_cover <- function(doc, lss, model, theme,
   }
   none <- theme$empty_marker
 
+  chrome <- theme$chrome
   field_pairs <- list()
   if (isTRUE(show_source)) {
-    field_pairs[["Source file"]] <- basename(lss$file)
-    field_pairs[["Survey ID"]]   <- if (is.na(sid) || !nzchar(sid)) none else sid
+    field_pairs[[chrome$cover_source_file]] <- basename(lss$file)
+    field_pairs[[chrome$cover_survey_id]]   <- if (is.na(sid) || !nzchar(sid)) none else sid
   }
-  field_pairs[["Languages"]]      <- paste(langs, collapse = ", ")
-  field_pairs[["Groups"]]         <- as.character(n_groups)
-  field_pairs[["Questions"]]      <- as.character(n_q)
-  field_pairs[["Subquestions"]]   <- as.character(n_subq)
-  field_pairs[["Answer options"]] <- as.character(n_ans)
-  field_pairs[["Last modified"]]  <- if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod
-  field_pairs[["Generated"]]      <- format(Sys.time(), "%Y-%m-%d %H:%M")
+  field_pairs[[chrome$cover_languages]]      <- paste(langs, collapse = ", ")
+  field_pairs[[chrome$cover_groups]]         <- as.character(n_groups)
+  field_pairs[[chrome$cover_questions]]      <- as.character(n_q)
+  field_pairs[[chrome$cover_subquestions]]   <- as.character(n_subq)
+  field_pairs[[chrome$cover_answer_options]] <- as.character(n_ans)
+  field_pairs[[chrome$cover_last_modified]]  <- if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod
+  field_pairs[[chrome$cover_generated]]      <- format(Sys.time(), "%Y-%m-%d %H:%M")
 
   meta <- data.frame(
     Field = names(field_pairs),
@@ -831,6 +1111,166 @@ lss_render_cover <- function(doc, lss, model, theme,
   doc
 }
 
+#' Render the authors block on the cover page
+#'
+#' Each author becomes one centered line: `Name — Affiliation` (the
+#' em-dash is omitted when affiliation is empty). When an ORCID iD is
+#' supplied, a smaller monospace line below shows
+#' `ORCID 0000-0000-0000-0000` as a hyperlink to
+#' `https://orcid.org/<id>`. The whole block is muted gray so it
+#' supports the title typographically rather than competing with it.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_authors_block <- function(doc, authors, theme) {
+  if (is.null(authors) || length(authors) == 0L) return(doc)
+  name_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_cover_meta + 1L,
+    color = theme$color_text
+  )
+  affil_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_cover_meta,
+    color = theme$color_muted, italic = TRUE
+  )
+  orcid_label_props <- officer::fp_text(
+    font.family = theme$font_code, font.size = theme$size_cover_meta - 1L,
+    color = theme$color_muted
+  )
+  orcid_link_props <- officer::fp_text(
+    font.family = theme$font_code, font.size = theme$size_cover_meta - 1L,
+    color = theme$color_accent, underlined = TRUE
+  )
+  doc <- officer::body_add_par(doc, "", style = "Normal")
+  for (i in seq_along(authors)) {
+    a <- authors[[i]]
+    chunks <- list(officer::ftext(a$name, prop = name_props))
+    if (nzchar(trimws(a$affiliation))) {
+      chunks[[length(chunks) + 1L]] <- officer::ftext(
+        paste0("  —  ", a$affiliation), prop = affil_props
+      )
+    }
+    doc <- officer::body_add_fpar(
+      doc,
+      do.call(officer::fpar, c(chunks, list(
+        fp_p = officer::fp_par(
+          text.align = "center",
+          padding.top = if (i == 1L) 6 else 2,
+          padding.bottom = if (nzchar(trimws(a$orcid))) 0 else 2
+        )
+      )))
+    )
+    if (nzchar(trimws(a$orcid))) {
+      orcid_id <- trimws(a$orcid)
+      orcid_url <- paste0("https://orcid.org/", orcid_id)
+      doc <- officer::body_add_fpar(
+        doc,
+        officer::fpar(
+          officer::ftext(paste0(theme$chrome$orcid_label, " "), prop = orcid_label_props),
+          officer::hyperlink_ftext(
+            href = orcid_url, text = orcid_id, prop = orcid_link_props
+          ),
+          fp_p = officer::fp_par(text.align = "center", padding.bottom = 2)
+        )
+      )
+    }
+  }
+  doc
+}
+
+#' Render the optional free-form description block on the cover page
+#'
+#' Splits the input string on newlines (each becomes a centered line).
+#' Within each line, any `http://` or `https://` URL token is rendered
+#' as a clickable hyperlink (officer's `hyperlink_ftext`), so a DOI
+#' permalink or article URL becomes navigable. Trailing punctuation
+#' (`.,;:)`) attached to a URL is stripped from the link target and
+#' kept as plain text so the reader sees `(see https://example.org).`
+#' with the URL only spanning the actual address.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_description_block <- function(doc, description, theme) {
+  if (is.null(description) || !nzchar(trimws(description))) return(doc)
+  text_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_cover_meta,
+    color = theme$color_muted, italic = TRUE
+  )
+  link_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_cover_meta,
+    color = theme$color_accent, italic = TRUE
+  )
+  doc <- officer::body_add_par(doc, "", style = "Normal")
+  lines <- strsplit(description, "\n", fixed = TRUE)[[1L]]
+  for (li in seq_along(lines)) {
+    chunks <- lss_split_text_urls(lines[li], text_props, link_props)
+    if (length(chunks) == 0L) next
+    doc <- officer::body_add_fpar(
+      doc,
+      do.call(officer::fpar, c(chunks, list(
+        fp_p = officer::fp_par(
+          text.align = "center",
+          padding.top = if (li == 1L) 8 else 0,
+          padding.bottom = 2
+        )
+      )))
+    )
+  }
+  doc
+}
+
+#' Split a text fragment into alternating plain-text and hyperlink
+#' chunks based on detected `http(s)://...` URLs.
+#'
+#' Trailing punctuation common at sentence ends is moved out of the
+#' link so the URL target stays clean. Returns a list of
+#' `officer::ftext()` / `officer::hyperlink_ftext()` chunks suitable
+#' for splicing into `officer::fpar()`.
+#'
+#' @keywords internal
+#' @noRd
+lss_split_text_urls <- function(text, text_props, link_props) {
+  if (!nzchar(text)) return(list())
+  pattern <- "https?://[^\\s]+"
+  m <- gregexpr(pattern, text, perl = TRUE)[[1L]]
+  if (m[1L] == -1L) {
+    return(list(officer::ftext(text, prop = text_props)))
+  }
+  starts <- as.integer(m)
+  lens   <- attr(m, "match.length")
+  out <- list()
+  cursor <- 1L
+  for (k in seq_along(starts)) {
+    s <- starts[k]
+    e <- s + lens[k] - 1L
+    if (s > cursor) {
+      out[[length(out) + 1L]] <- officer::ftext(
+        substr(text, cursor, s - 1L), prop = text_props
+      )
+    }
+    url <- substr(text, s, e)
+    # Strip trailing sentence punctuation from the link target.
+    trail <- ""
+    while (nchar(url) > 0L &&
+           substr(url, nchar(url), nchar(url)) %in% c(".", ",", ";", ":", ")", "]", "}", "!", "?")) {
+      trail <- paste0(substr(url, nchar(url), nchar(url)), trail)
+      url <- substr(url, 1L, nchar(url) - 1L)
+    }
+    out[[length(out) + 1L]] <- officer::hyperlink_ftext(
+      href = url, text = url, prop = link_props
+    )
+    if (nzchar(trail)) {
+      out[[length(out) + 1L]] <- officer::ftext(trail, prop = text_props)
+    }
+    cursor <- e + 1L
+  }
+  if (cursor <= nchar(text)) {
+    out[[length(out) + 1L]] <- officer::ftext(
+      substr(text, cursor, nchar(text)), prop = text_props
+    )
+  }
+  out
+}
+
 #' Render a static, always-populated table of contents
 #'
 #' Lists the survey groups, one per line, with their sequential index.
@@ -850,7 +1290,7 @@ lss_render_toc <- function(doc, model, theme) {
     doc,
     officer::fpar(
       officer::ftext(
-        "Table of contents",
+        theme$chrome$toc_title,
         prop = officer::fp_text(
           font.family = theme$font_body, font.size = theme$size_heading1,
           bold = TRUE, color = theme$color_primary
@@ -899,7 +1339,7 @@ lss_render_toc <- function(doc, model, theme) {
 lss_render_welcome <- function(doc, lss, langs, theme) {
   lss_render_localized_block(
     doc, lss, langs, theme,
-    field = "surveyls_welcometext", title = "Welcome text"
+    field = "surveyls_welcometext", title = theme$chrome$welcome_text_title
   )
 }
 
@@ -909,7 +1349,7 @@ lss_render_welcome <- function(doc, lss, langs, theme) {
 lss_render_endtext <- function(doc, lss, langs, theme) {
   lss_render_localized_block(
     doc, lss, langs, theme,
-    field = "surveyls_endtext", title = "End text"
+    field = "surveyls_endtext", title = theme$chrome$end_text_title
   )
 }
 
@@ -980,22 +1420,37 @@ lss_render_group <- function(doc, group, langs, theme,
   gname <- lss_strip_group_number_prefix(gname)
   state$group_index <- state$group_index + 1L
   heading_text <- sprintf("%d. %s", state$group_index, gname)
-  doc <- officer::body_add_par(doc, "", style = "Normal")
   # Render as a styled paragraph (no Heading 1 style) so Word does NOT
   # add its own list number on top of ours -- the auto-number Word
   # injects via the linked numbering definition uses a different font
   # face/size than our heading text, which looks inconsistent. Doing
   # the numbering manually keeps the whole heading typographically
   # uniform.
+  #
+  # The asymmetric padding (24 pt above, 8 pt below) signals "section
+  # break" at the right strength: the air above is roughly three times
+  # the air below, so the eye reads the title as bound to the questions
+  # that follow it. The under-line at 1 pt gives a clean banner finish
+  # without enclosing the title in a box -- thinner than the previous
+  # 1.5 pt so it does not visually compete with the dark meta-table
+  # header bands of the items below it.
   doc <- officer::body_add_fpar(
     doc,
-    officer::fpar(officer::ftext(
-      heading_text,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
+    officer::fpar(
+      officer::ftext(
+        heading_text,
+        prop = officer::fp_text(
+          font.family = theme$font_body, font.size = theme$size_heading1,
+          bold = TRUE, color = theme$color_primary
+        )
+      ),
+      fp_p = officer::fp_par(
+        padding.top = 24, padding.bottom = 8,
+        border.bottom = officer::fp_border(
+          color = theme$color_primary, width = 1
+        )
       )
-    ))
+    )
   )
   # Anchor the group heading with a bookmark so the manual TOC entries
   # can hyperlink to it.
@@ -1066,12 +1521,19 @@ lss_render_question_block <- function(doc, q, langs, theme,
   doc
 }
 
-#' Render a compound question (a parent with subquestions, ESS/Mosaich style)
+#' Render a compound question (a parent with subquestions)
 #'
-#' Emits a parent stem banner, then the shared answer scale (when the type
-#' carries one in `q$answers`), then each subquestion as its own numbered
-#' item (Heading 1) with the full LimeSurvey response variable code
-#' (`parent_subqcode`).
+#' Variable-centric rendering: each subquestion becomes its own
+#' self-contained block (meta table + item table), with the parent stem
+#' shown as the "Question" row, the subquestion label as a "Subquestion"
+#' row, and the answer modalities (when any) repeated underneath. The
+#' parent code itself is not surfaced as a meta entry because LimeSurvey
+#' does not create a data variable named after the parent of an array,
+#' multiple-choice, or multi-numerical question -- only the
+#' `parent_subqcode` columns exist in the export. Repeating the stem and
+#' the scale per subquestion is intentionally redundant: every variable
+#' the reviewer can encounter in the dataset has all of its context in a
+#' single block.
 #'
 #' @keywords internal
 #' @noRd
@@ -1079,24 +1541,13 @@ lss_render_compound_question <- function(doc, q, langs, theme,
                                          show_help, show_attrs,
                                          show_technical_attrs, audit_idx,
                                          info, state) {
-  doc <- lss_render_parent_stem(doc, q, langs, theme,
-                                show_help = show_help,
-                                show_attrs = show_attrs,
-                                audit_idx = audit_idx,
-                                state = state)
-  if (isTRUE(info$has_answers) && length(q$answers) > 0L) {
-    doc <- lss_render_shared_scale(doc, q, langs, theme)
-  }
   for (sq in q$subquestions) {
     item_code <- paste0(q$code, "_", sq$code)
-    item_help <- lapply(langs, function(lg) sq$texts[[lg]]$help)
-    item_text <- lapply(langs, function(lg) sq$texts[[lg]]$question)
     doc <- lss_render_subq_item(
       doc, q, sq, langs, theme,
       item_code = item_code,
-      texts_by_lang = item_text,
-      help_by_lang = item_help,
       show_help = show_help,
+      show_attrs = show_attrs,
       audit_idx = audit_idx,
       state = state
     )
@@ -1121,7 +1572,7 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
     doc, theme,
     item_no = NA_integer_,
     variable = q$code,
-    type = q$type, type_label = q$type_label,
+    type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
@@ -1131,13 +1582,13 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
   help_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$help)
   rows <- list()
   rows[[length(rows) + 1L]] <- list(
-    label = "Question",
+    label = theme$chrome$item_question,
     texts = stats::setNames(texts_by_lang, langs),
     size = theme$size_question
   )
   if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
     rows[[length(rows) + 1L]] <- list(
-      label = "Help",
+      label = theme$chrome$item_help,
       texts = stats::setNames(help_by_lang, langs),
       size = theme$size_help,
       color = theme$color_muted,
@@ -1204,14 +1655,14 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
     doc, theme,
     item_no = state$item_no,
     variable = item_code,
-    type = "T", type_label = "Other - free text",
+    type = "T", type_label = theme$chrome$type_text_other,
     mandatory = "N",
     relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
   rows <- list(list(
-    label = "Question",
+    label = theme$chrome$item_question,
     texts = texts_by_lang,
     size = theme$size_question
   ))
@@ -1276,12 +1727,24 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
-#' Render a subquestion as a numbered item
+#' Render a subquestion as a fully self-contained numbered item
+#'
+#' Each subquestion of a compound question (array, multiple choice,
+#' multiple numerical, dual-scale array) is rendered as its own block
+#' with the same shape as a leaf item:
+#'
+#' - meta table keyed by `parent_subqcode` (the actual data variable),
+#' - item table whose first row ("Question") is the parent stem,
+#'   second row ("Subquestion") is the subquestion label, optional
+#'   "Help" row from the parent, then any subquestion-level attributes,
+#'   then -- for types that carry an enumerated scale -- the parent's
+#'   answer modalities repeated as a "Value" section + value rows.
+#'
 #' @keywords internal
 #' @noRd
 lss_render_subq_item <- function(doc, q, sq, langs, theme,
-                                 item_code, texts_by_lang, help_by_lang,
-                                 show_help, audit_idx, state) {
+                                 item_code, show_help, show_attrs,
+                                 audit_idx, state) {
   state$item_no <- state$item_no + 1L
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
@@ -1306,37 +1769,62 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
       )
     )
   }
-  # Each subquestion is documented as its own item: meta table with the
-  # composite variable code (parent_subq) and the type / mandatory /
-  # filter inherited from the parent (LimeSurvey subquestions do not
-  # carry their own).
   doc <- lss_render_question_meta_table(
     doc, theme,
     item_no = state$item_no,
     variable = item_code,
-    type = q$type, type_label = q$type_label,
+    type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
+
+  parent_text <- lapply(langs, function(lg) q$texts[[lg]]$question)
+  parent_help <- lapply(langs, function(lg) q$texts[[lg]]$help)
+  subq_text  <- lapply(langs, function(lg) sq$texts[[lg]]$question)
+
   rows <- list()
   rows[[length(rows) + 1L]] <- list(
-    label = "Question",
-    texts = stats::setNames(texts_by_lang, langs),
-    size = theme$size_subq
+    label = theme$chrome$item_question,
+    texts = stats::setNames(parent_text, langs),
+    size = theme$size_question
   )
-  if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
+  if (lss_any_present(subq_text)) {
     rows[[length(rows) + 1L]] <- list(
-      label = "Help",
-      texts = stats::setNames(help_by_lang, langs),
+      label = theme$chrome$item_subquestion,
+      texts = stats::setNames(subq_text, langs),
+      size = theme$size_subq
+    )
+  }
+  if (isTRUE(show_help) && lss_any_present(parent_help)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = theme$chrome$item_help,
+      texts = stats::setNames(parent_help, langs),
       size = theme$size_help,
       color = theme$color_muted,
       italic = TRUE
     )
   }
-  # Subquestion-level attributes (e.g. exclude_all_others on the subq
-  # marked exclusive in a multi-choice question) come from sq, not q.
-  rows <- c(rows, lss_attr_rows(sq, langs, theme, state$show_attrs))
+  # Subquestion-level attributes first, then parent-level (prefix,
+  # suffix, validation, ...). `exclude_all_others*` are deliberately
+  # filtered out of these generic loops: their meaning is "this single
+  # subquestion is the exclusive one" and surfacing them on every
+  # subquestion would lie about the rule. We emit one targeted row via
+  # `lss_exclusive_row()` instead, only when THIS subquestion is the
+  # named exclusive entry.
+  rows <- c(rows, lss_attr_rows(sq, langs, theme, show_attrs))
+  rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
+  exclusive <- lss_exclusive_row(q, sq, langs, theme)
+  if (!is.null(exclusive)) rows[[length(rows) + 1L]] <- exclusive
+  # Value section: enumerated codes (F, 1) or a single implicit-format
+  # row describing the response shape (M/P "Y selected", K "Numeric",
+  # ...).
+  if (length(q$answers) > 0L) {
+    rows <- c(rows, lss_answer_rows(q, langs, theme))
+  } else {
+    vrow <- lss_value_implicit_row(q, langs, theme)
+    if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+  }
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
 }
@@ -1378,7 +1866,7 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
     doc, theme,
     item_no = state$item_no,
     variable = q$code,
-    type = q$type, type_label = q$type_label,
+    type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
   )
@@ -1388,46 +1876,76 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   # row per answer option (for has_answers leaf types like L, !, O).
   rows <- list()
   rows[[length(rows) + 1L]] <- list(
-    label = "Question",
+    label = theme$chrome$item_question,
     texts = stats::setNames(texts_by_lang, langs),
     size = theme$size_question
   )
   if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
     rows[[length(rows) + 1L]] <- list(
-      label = "Help",
+      label = theme$chrome$item_help,
       texts = stats::setNames(help_by_lang, langs),
       size = theme$size_help,
       color = theme$color_muted,
       italic = TRUE
     )
   }
-  # For predefined leaf types (Y, 5, G) the response coding is implicit.
-  # Show it as a small italic row so reviewers see the value scheme.
-  coding <- lss_coding_row(q, langs, theme)
-  if (!is.null(coding)) rows[[length(rows) + 1L]] <- coding
   # Question attributes (prefix, suffix, validation, ...) as italic rows
   # inside the item table itself, between Help and the Value section.
   rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
+  # Value section: enumerated codes (L, !, F, 1) when q$answers is
+  # populated; otherwise a single implicit-format row describing the
+  # response shape (Y "Y = Yes, N = No", N "Numeric input", T "Free
+  # text", ...). Skips entirely for X (boilerplate).
   if (length(q$answers) > 0L) {
-    # "Value" is a section label spanning the language columns blank;
-    # the actual answer codes (1, 2, ...) follow below as their own
-    # labelled rows.
-    rows[[length(rows) + 1L]] <- list(
-      label = "Value",
+    rows <- c(rows, lss_answer_rows(q, langs, theme))
+  } else {
+    vrow <- lss_value_implicit_row(q, langs, theme)
+    if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+  }
+  doc <- lss_render_item_table(doc, theme, langs, rows)
+  doc
+}
+
+#' Build the rows that document the answer scale of a (sub)question
+#'
+#' Emits a "Value" section header followed by one row per answer option,
+#' code on the left, label per language on the right. Splits into
+#' "Value (scale 1)" / "Value (scale 2)" for dual-scale arrays (type 1).
+#' Returns an empty list when the question carries no enumerated answers
+#' (e.g. multiple-choice M, free numeric input K) -- in those cases the
+#' coding row already documents the response value mapping.
+#'
+#' @keywords internal
+#' @noRd
+lss_answer_rows <- function(q, langs, theme) {
+  if (length(q$answers) == 0L) return(list())
+  out <- list()
+  multi_scale <- !is.null(q$scales) && length(q$scales) > 1L
+  bundles <- if (multi_scale) q$scales else list(q$answers)
+  for (si in seq_along(bundles)) {
+    answers <- bundles[[si]]
+    if (length(answers) == 0L) next
+    header_label <- if (multi_scale) {
+      sprintf(theme$chrome$item_value_scale_fmt, si)
+    } else {
+      theme$chrome$item_value
+    }
+    out[[length(out) + 1L]] <- list(
+      label = header_label,
       texts = stats::setNames(as.list(rep("", length(langs))), langs),
       size = theme$size_meta,
       section_header = TRUE
     )
-    for (a in q$answers) {
-      rows[[length(rows) + 1L]] <- list(
+    for (a in answers) {
+      out[[length(out) + 1L]] <- list(
         label = a$code,
         texts = stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs),
-        size = theme$size_answer
+        size = theme$size_answer,
+        value_row = TRUE
       )
     }
   }
-  doc <- lss_render_item_table(doc, theme, langs, rows)
-  doc
+  out
 }
 
 #' Render a unified item table with a left "Label" column
@@ -1461,7 +1979,7 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   ft <- flextable::set_header_labels(
     ft,
     values = c(
-      list(Label = "Language"),
+      list(Label = theme$chrome$item_language),
       stats::setNames(as.list(lss_language_label(langs)), langs)
     )
   )
@@ -1470,8 +1988,9 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
     italic <- isTRUE(rows[[i]]$italic)
     color <- if (!is.null(rows[[i]]$color)) rows[[i]]$color else theme$color_text
     is_section <- isTRUE(rows[[i]]$section_header)
+    section_with_text <- isTRUE(rows[[i]]$section_with_text)
     for (lg in langs) {
-      if (is_section) {
+      if (is_section && !section_with_text) {
         # Section header row: language cells stay truly blank (no em-dash
         # placeholder), so the row reads as a category label.
         ft <- flextable::compose(
@@ -1491,12 +2010,19 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   ft <- flextable::bold(ft, j = "Label", part = "body")
   ft <- flextable::color(ft, j = "Label", color = theme$color_primary, part = "body")
   ft <- flextable::align(ft, j = "Label", align = "left", part = "body")
-  # Match the meta table total width (6.4 in) so the two tables align
-  # visually. Label takes the same width as the No + Variable + Type
-  # columns combined start (1.0 in), the remaining 5.4 in is split
-  # evenly across the language columns.
+  # Answer-code rows (label = "1", "2", ...) are centered to match the
+  # shared scale convention from earlier renders: the Value section header
+  # stays left, but each value code under it reads as a centered ticker.
+  for (i in seq_along(rows)) {
+    if (isTRUE(rows[[i]]$value_row)) {
+      ft <- flextable::align(ft, i = i, j = "Label", align = "center", part = "body")
+    }
+  }
+  # Match the meta table total width (theme$content_width_in) so the two
+  # tables align visually. The Label column takes 1.0 in (same as the meta
+  # table's Mandatory column) and the language columns split the rest.
   label_w <- 1.0
-  total_w <- 6.4
+  total_w <- theme$content_width_in
   lang_w <- (total_w - label_w) / length(langs)
   ft <- flextable::width(ft, j = "Label", width = label_w, unit = "in")
   for (lg in langs) {
@@ -1546,6 +2072,63 @@ lss_coding_row <- function(q, langs, theme) {
   )
 }
 
+#' Build a single-row "Value" section header carrying the response
+#' format descriptor for question types that have no enumerated answer
+#' table.
+#'
+#' Every variable in the dataset has a domain of valid responses; the
+#' Value section of the item table is where reviewers expect to find
+#' it. For enumerated types (L, !, F, 1) the rows come from
+#' [lss_answer_rows()]; for the rest we emit a single section-header
+#' row that holds the descriptor in the language columns (with the
+#' band tone background, matching the enumerated case visually).
+#' Returns `NULL` only for X (boilerplate/display-only), which stores
+#' no response.
+#'
+#' @keywords internal
+#' @noRd
+lss_value_implicit_row <- function(q, langs, theme) {
+  chrome <- theme$chrome
+  text <- switch(
+    q$type,
+    # Multi-choice subquestions: each subq is a binary Y/blank flag.
+    "M" = chrome$value_multi_y_blank,
+    "P" = chrome$value_multi_y_blank_with_comment,
+    # Pre-defined enumerated types with implicit (not stored) codes.
+    "Y" = chrome$value_yes_no,
+    "G" = chrome$value_gender,
+    "5" = chrome$value_5point,
+    # Numeric inputs. K shares N's descriptor; the multi-variable
+    # fan-out is conveyed by the `Type` cell and the `parent_subq`
+    # variable code, not by a parenthetical on Value.
+    "N" = chrome$value_numeric_input,
+    "K" = chrome$value_numeric_input,
+    # Free-text inputs of varying length.
+    "S" = chrome$value_free_text_short,
+    "T" = chrome$value_free_text,
+    "U" = chrome$value_free_text_long,
+    # Date / time picker.
+    "D" = chrome$value_date_input,
+    # Equation: server-computed value, not respondent-entered.
+    "*" = chrome$value_computed,
+    # Ranking: respondent orders the subquestions.
+    "R" = chrome$value_ranking,
+    # File upload.
+    "|" = chrome$value_file_upload,
+    # Anything else (including X = boilerplate / display-only) gets no
+    # Value section, since the variable carries no response in the data.
+    NULL
+  )
+  if (is.null(text)) return(NULL)
+  list(
+    label = chrome$item_value,
+    texts = stats::setNames(rep(list(text), length(langs)), langs),
+    size = theme$size_answer,
+    section_header = TRUE,
+    section_with_text = TRUE
+  )
+}
+
 #' Insert a small vertical spacer before each item so consecutive
 #' meta tables do not touch.
 #' @keywords internal
@@ -1558,7 +2141,7 @@ lss_render_item_spacer <- function(doc, theme) {
         font.family = theme$font_body,
         font.size = theme$size_meta
       )),
-      fp_p = officer::fp_par(padding.top = 6, padding.bottom = 0)
+      fp_p = officer::fp_par(padding.top = 14, padding.bottom = 0)
     )
   )
 }
@@ -1673,15 +2256,86 @@ lss_attr_rows <- function(q, langs, theme, show_attrs) {
       ""
     }, character(1))
     if (!lss_any_present(as.list(per_lang))) next
+
+    # Skip technical attributes when they hold their default/inactive
+    # value (so a reviewer never sees a noisy row like
+    # `Exclude_all_others_auto = 0` that documents the absence of a
+    # behavior). For attributes that ARE active, rewrite the value
+    # into a sentence a methodologist can act on.
+    fmt <- lss_format_attr(attr_name, per_lang, langs)
+    if (is.null(fmt)) next
+
     rows[[length(rows) + 1L]] <- list(
-      label = tools::toTitleCase(attr_name),
-      texts = stats::setNames(as.list(per_lang), langs),
+      label = fmt$label,
+      texts = fmt$texts,
       size = theme$size_meta,
       color = theme$color_muted,
       italic = TRUE
     )
   }
   rows
+}
+
+#' Format a question/subquestion attribute for display in the item table
+#'
+#' Returns a `list(label, texts)` ready to be wrapped into an
+#' attribute row, or `NULL` when the attribute should be hidden.
+#'
+#' `exclude_all_others` and `exclude_all_others_auto` are intentionally
+#' suppressed here. They live on the parent question of a compound
+#' multi-choice question, and surfacing them through the generic
+#' attribute loop repeats the same exclusion notice on every
+#' subquestion. They are handled specially in `lss_render_subq_item()`
+#' where the renderer knows the current subquestion code and can
+#' target the message at the right row only.
+#'
+#' All other attributes pass through with a Title-Case label and the
+#' raw per-language value.
+#'
+#' @keywords internal
+#' @noRd
+lss_format_attr <- function(attr_name, per_lang, langs) {
+  if (attr_name %in% c("exclude_all_others", "exclude_all_others_auto")) {
+    return(NULL)
+  }
+  list(
+    label = tools::toTitleCase(attr_name),
+    texts = stats::setNames(as.list(per_lang), langs)
+  )
+}
+
+#' If the parent question of a compound multi-choice question declares
+#' an `exclude_all_others` attribute, emit an "Exclusive" row only on
+#' the subquestion(s) whose code is named in the attribute value
+#'
+#' LimeSurvey stores `exclude_all_others` on the parent `qid` with the
+#' value being one (or several, comma-separated) subquestion titles
+#' that, when checked, clear every other selection. We use the
+#' subquestion code to decide whether THIS subquestion is the
+#' exclusive one, and only then render a single italic row that names
+#' the parent variable so a reviewer knows what gets cleared.
+#'
+#' Returns `NULL` (i.e. no row) when the attribute is absent or when
+#' the current subquestion is not in the exclusion list.
+#'
+#' @keywords internal
+#' @noRd
+lss_exclusive_row <- function(q, sq, langs, theme) {
+  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return(NULL)
+  hit <- q$attributes[q$attributes$attribute == "exclude_all_others", , drop = FALSE]
+  if (nrow(hit) == 0L) return(NULL)
+  raw <- trimws(as.character(hit$value[1L]))
+  if (!nzchar(raw)) return(NULL)
+  targets <- trimws(strsplit(raw, ",", fixed = TRUE)[[1L]])
+  if (!(sq$code %in% targets)) return(NULL)
+  text <- sprintf(theme$chrome$exclusive_text_fmt, q$code)
+  list(
+    label = theme$chrome$item_exclusive,
+    texts = stats::setNames(rep(list(text), length(langs)), langs),
+    size = theme$size_meta,
+    color = theme$color_muted,
+    italic = TRUE
+  )
 }
 
 #' Legacy: render attributes as small italic lines (kept for backward
@@ -1738,11 +2392,20 @@ lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
     ft <- flextable::align(ft, i = 1L, align = "left", part = "header")
   }
   ft <- flextable::border_remove(ft)
-  thin <- officer::fp_border(color = "#BFBFBF", width = 0.5)
+  thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
   ft <- flextable::vline(ft, border = thin, part = "all")
-  ft <- flextable::hline_top(ft, border = officer::fp_border(color = theme$color_primary, width = 1.2), part = "header")
-  ft <- flextable::hline_bottom(ft, border = officer::fp_border(color = theme$color_primary, width = 1.2), part = "body")
+  # Outer left/right borders close the table as a rectangle (otherwise
+  # flextable draws only the inner vlines and the table looks open on the
+  # sides, especially next to the cream meta-table body).
+  ft <- flextable::vline_left(ft, border = thin, part = "all")
+  ft <- flextable::vline_right(ft, border = thin, part = "all")
+  # Editorial line hierarchy: keep ALL item borders at 0.5 pt soft gray
+  # (theme$color_grid). The dark accent is reserved for group banners
+  # only -- per-item primary outlines would multiply on dense pages and
+  # produce visual noise. Pew/ESS/OECD questionnaires use the same
+  # restraint: items differentiate by the cream meta body and the
+  # inter-item spacer, not by heavy framing.
   if (isTRUE(has_code)) {
     ft <- flextable::align(ft, j = "code", align = "center", part = "body")
     ft <- flextable::width(ft, j = "code", width = 0.6, unit = "in")
@@ -1750,9 +2413,14 @@ lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
   ft <- flextable::valign(ft, valign = "top", part = "all")
   ft <- flextable::padding(ft, padding.top = 2, padding.bottom = 2,
                            padding.left = 4, padding.right = 4, part = "all")
-  # Equal-width language columns (best-effort; flextable will auto-fit in Word).
+  # Distribute language columns so the total table width matches the
+  # printable body width (theme$content_width_in). When a `code` column is
+  # present (shared scale, leaf item answers) reserve 0.6 in for it first.
+  code_reserve <- if (isTRUE(has_code)) 0.6 else 0
+  lang_total <- theme$content_width_in - code_reserve
+  lang_w <- lang_total / max(length(lang_cols), 1L)
   for (lg in lang_cols) {
-    ft <- flextable::width(ft, j = lg, width = 2.5, unit = "in")
+    ft <- flextable::width(ft, j = lg, width = lang_w, unit = "in")
   }
   ft
 }
@@ -1788,7 +2456,7 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   doc <- officer::body_add_fpar(
     doc,
     officer::fpar(officer::ftext(
-      "Audit findings",
+      theme$chrome$audit_findings_title,
       prop = officer::fp_text(
         font.family = theme$font_body, font.size = theme$size_heading1,
         bold = TRUE, color = theme$color_primary
@@ -1797,7 +2465,7 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
     style = "heading 1"
   )
   summary_line <- sprintf(
-    "%d finding(s): %d error(s), %d warning(s), %d note(s).",
+    theme$chrome$audit_summary_fmt,
     audit$n_findings, audit$n_errors, audit$n_warnings, audit$n_notes
   )
   doc <- officer::body_add_fpar(
@@ -1814,8 +2482,11 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::flextable(fdf)
   ft <- flextable::set_header_labels(
     ft,
-    severity = "Severity", check = "Check",
-    location = "Location", language = "Lang", message = "Message"
+    severity = theme$chrome$audit_col_severity,
+    check    = theme$chrome$audit_col_check,
+    location = theme$chrome$audit_col_location,
+    language = theme$chrome$audit_col_language,
+    message  = theme$chrome$audit_col_message
   )
   sev_colors <- c(error = theme$color_error,
                   warning = theme$color_warning,
@@ -1833,7 +2504,7 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
   ft <- flextable::border_remove(ft)
-  thin <- officer::fp_border(color = "#BFBFBF", width = 0.5)
+  thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
   ft <- flextable::valign(ft, valign = "top", part = "all")
   ft <- flextable::padding(ft, padding = 2, part = "all")
@@ -1850,11 +2521,25 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
 # Small text helpers -----------------------------------------------------
 
 #' Translate a LimeSurvey Y/N/blank value into a display label
+#'
+#' When `theme` is supplied, the localized strings from
+#' `theme$chrome$mandatory_yes` / `mandatory_no` / `mandatory_soft` are
+#' used so the Mandatory cell reads in the chrome language. Without
+#' `theme`, returns English (the legacy default used by audit-text
+#' generation where the chrome is not threaded through).
 #' @keywords internal
 #' @noRd
-lss_yes_no <- function(x) {
+lss_yes_no <- function(x, theme = NULL) {
   if (is.null(x) || is.na(x) || !nzchar(x)) return("\u2014")
-  switch(toupper(x), Y = "yes", N = "no", S = "soft", x)
+  yes <- if (!is.null(theme)) theme$chrome$mandatory_yes else "Yes"
+  no  <- if (!is.null(theme)) theme$chrome$mandatory_no  else "No"
+  # "Soft" mandatory is a LimeSurvey UI affordance (warning but
+  # submission allowed); semantically the variable IS optional in the
+  # data (missing values possible). For a variable-centric review
+  # document we collapse `S` -> No so the cell answers the question
+  # "is the response guaranteed?". The original `S` value remains in
+  # the .lss source for any reviewer who needs the UI distinction.
+  switch(toupper(x), Y = yes, N = no, S = no, x)
 }
 
 #' Strip a leading author-written numeric prefix from a group name
@@ -1893,11 +2578,17 @@ lss_strip_group_number_prefix <- function(name) {
 }
 
 #' Display label for a relevance expression
+#'
+#' When `theme` is supplied, the localized "All" string from
+#' `theme$chrome$filter_all` is used; otherwise English (audit text
+#' generation does not thread the chrome through).
 #' @keywords internal
 #' @noRd
-lss_relevance_label <- function(x) {
+lss_relevance_label <- function(x, theme = NULL) {
   if (is.null(x) || is.na(x) || !nzchar(x)) return("\u2014")
-  if (identical(x, "1")) return("All")
+  if (identical(x, "1")) {
+    return(if (!is.null(theme)) theme$chrome$filter_all else "All")
+  }
   x
 }
 
@@ -1914,9 +2605,9 @@ lss_relevance_label <- function(x) {
 #' @return A single human-readable string. `"All"` for `1`, empty, or `NA`.
 #' @keywords internal
 #' @noRd
-lss_humanize_relevance <- function(x) {
+lss_humanize_relevance <- function(x, theme = NULL) {
   if (is.null(x) || is.na(x) || !nzchar(x) || identical(x, "1")) {
-    return("All")
+    return(if (!is.null(theme)) theme$chrome$filter_all else "All")
   }
   s <- as.character(x)
   s <- lss_strip_outer_parens(s)
@@ -1949,7 +2640,14 @@ lss_humanize_relevance <- function(x) {
   s <- gsub("([A-Za-z0-9_]+)\\.NAOK", "\\1", s, perl = TRUE)
   s <- gsub("\\s*&&\\s*", " AND ", s)
   s <- gsub("\\s*\\|\\|\\s*", " OR ", s)
+  # Comparison operators rendered with Unicode math symbols so they read
+  # at a glance for a methodologist: U+2260 (not-equal), U+2264 (<=),
+  # U+2265 (>=). Order matters: substitute the two-character forms
+  # first so the single `==` rule does not consume the `=` of `!=` /
+  # `<=` / `>=`.
   s <- gsub("\\s*!=\\s*", " \u2260 ", s)
+  s <- gsub("\\s*<=\\s*", " \u2264 ", s)
+  s <- gsub("\\s*>=\\s*", " \u2265 ", s)
   s <- gsub("\\s*==\\s*", " = ", s)
   s <- lss_strip_outer_parens(s)
   trimws(s)
@@ -2012,9 +2710,12 @@ lss_render_question_meta_table <- function(doc, theme,
                     !nzchar(relevance)) {
     "1"
   } else {
-    relevance
+    # Strip the layers of decorative outer parentheses that LimeSurvey
+    # adds around every relevance expression. The inner parens that
+    # actually group conditions are preserved.
+    lss_strip_outer_parens(relevance)
   }
-  filter_plain <- lss_humanize_relevance(filter_raw)
+  filter_plain <- lss_humanize_relevance(filter_raw, theme)
   # The legacy type code (L, M, F, ...) is implicit in the variable's
   # data and meaningful only to LimeSurvey insiders. The descriptive
   # label is what reviewers read; drop the code prefix to avoid the
@@ -2026,19 +2727,29 @@ lss_render_question_meta_table <- function(doc, theme,
     No = no_value,
     Variable = variable,
     Type = type_full,
-    Mandatory = lss_yes_no(mandatory),
+    Mandatory = lss_yes_no(mandatory, theme),
     Filter = "",
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
 
   ft <- flextable::flextable(df)
+  ft <- flextable::set_header_labels(
+    ft,
+    No        = theme$chrome$meta_no,
+    Variable  = theme$chrome$meta_variable,
+    Type      = theme$chrome$meta_type,
+    Mandatory = theme$chrome$meta_mandatory,
+    Filter    = theme$chrome$meta_filter
+  )
   plain_props <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_meta,
     color = theme$color_text
   )
+  # Raw expression rendered in the monospace face so operators and dots
+  # like `!is_empty(X.NAOK) && (X.NAOK == 1)` stay readable.
   raw_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_meta - 1L,
+    font.family = theme$font_code, font.size = theme$size_meta - 1L,
     color = theme$color_muted, italic = TRUE
   )
   filter_chunks <- list(flextable::as_chunk(filter_plain, props = plain_props))
@@ -2065,20 +2776,57 @@ lss_render_question_meta_table <- function(doc, theme,
     size = theme$size_heading2, part = "body"
   )
   ft <- flextable::bold(ft, j = "Variable", part = "body")
+  # Variable code is an identifier (e.g. `satisfaction_4`); monospace
+  # disambiguates l/1/I, 0/O and keeps the underscore visible.
+  ft <- flextable::font(ft, j = "Variable", fontname = theme$font_code, part = "body")
+  # Dark petrol header (#1F4E5F) with white text gives every item a
+  # clear "new variable" banner without competing with the group banner
+  # above (which uses the deeper #133B52).
   ft <- flextable::bold(ft, part = "header")
-  ft <- flextable::color(ft, color = theme$color_primary, part = "header")
-  ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
+  ft <- flextable::color(ft, color = theme$color_white, part = "header")
+  ft <- flextable::bg(ft, bg = theme$color_band_dark, part = "header")
+  # Light cream tint across the body row marks the start of a new item
+  # without a redundant heading line. Resilient to page breaks because
+  # the tint is on a single body row.
+  ft <- flextable::bg(ft, i = 1L, bg = theme$color_zebra, part = "body")
   ft <- flextable::border_remove(ft)
-  thin <- officer::fp_border(color = "#BFBFBF", width = 0.5)
+  thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
   ft <- flextable::vline(ft, border = thin, part = "all")
+  # Outer left/right borders so the item table reads as a closed rectangle
+  # (without them, Word draws only the internal vlines and the table looks
+  # open on the sides).
+  ft <- flextable::vline_left(ft, border = thin, part = "all")
+  ft <- flextable::vline_right(ft, border = thin, part = "all")
   ft <- flextable::valign(ft, valign = "top", part = "all")
   ft <- flextable::padding(ft, padding = 2, part = "all")
-  ft <- flextable::align(ft, align = "center", j = c("No", "Mandatory"), part = "all")
-  ft <- flextable::width(ft, j = "No", width = 0.4, unit = "in")
-  ft <- flextable::width(ft, j = "Variable", width = 1.5, unit = "in")
-  ft <- flextable::width(ft, j = "Type", width = 1.5, unit = "in")
-  ft <- flextable::width(ft, j = "Mandatory", width = 1.0, unit = "in")
-  ft <- flextable::width(ft, j = "Filter", width = 2.0, unit = "in")
+  # Pro alignment by content type:
+  # - "No" (item number) is a number, right-aligned like in the variable
+  #   index and financial tables -- digits stack on the units column so
+  #   1, 12, 587 read as a clean scan.
+  # - "Mandatory" is a short yes/no token: centered.
+  # - All other columns hold text (codes, type label, filter expression),
+  #   left-aligned by default.
+  ft <- flextable::align(ft, align = "right",  j = "No", part = "all")
+  ft <- flextable::align(ft, align = "center", j = "Mandatory", part = "all")
+  # Column widths sum to theme$content_width_in (6.30 in). Calibrated to
+  # the actual content using 11 pt Consolas (~0.092 in/char) for Variable
+  # and 8 pt Calibri (~0.055 in/char) for the others:
+  #   No        0.35  - holds up to 3 digits in 11 pt body font (max #999).
+  #   Variable  1.95  - holds identifiers up to ~20 chars (e.g.
+  #                     `semestrechargetrav_1`) without wrapping the
+  #                     trailing digit; codes >=21 chars still wrap.
+  #   Type      1.25  - holds 8 pt labels up to ~22 chars; long labels
+  #                     ("Multiple choice with comments", 28 chars) wrap
+  #                     to a second line, which is acceptable.
+  #   Mandatory 0.70  - header "Mandatory" (9 chars at 8 pt bold ~0.55 in)
+  #                     fits; body content is a tight yes/no token.
+  #   Filter    2.05  - holds the human-readable form on top and the raw
+  #                     LimeSurvey expression in 7 pt italic mono below.
+  ft <- flextable::width(ft, j = "No", width = 0.35, unit = "in")
+  ft <- flextable::width(ft, j = "Variable", width = 1.95, unit = "in")
+  ft <- flextable::width(ft, j = "Type", width = 1.25, unit = "in")
+  ft <- flextable::width(ft, j = "Mandatory", width = 0.70, unit = "in")
+  ft <- flextable::width(ft, j = "Filter", width = 2.05, unit = "in")
   flextable::body_add_flextable(doc, ft, align = "left")
 }

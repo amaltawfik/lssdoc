@@ -10,7 +10,12 @@ render_lss_audit_docx(
   languages = NULL,
   logo = NULL,
   logo_width = 1.5,
-  logo_height = 0.75
+  logo_height = 0.75,
+  font = NULL,
+  font_code = NULL,
+  authors = NULL,
+  description = NULL,
+  chrome_lang = NULL
 )
 }
 \arguments{
@@ -26,6 +31,20 @@ of the cover page. \code{NULL} (default) keeps the cover logo-free.}
 
 \item{logo_width, logo_height}{Image dimensions in inches. Defaults
 tuned to a 2:1 logo (1.5 x 0.75 inches).}
+
+\item{font}{Body font name. \code{NULL} (default) keeps Calibri. See
+\code{\link[=render_lss_docx]{render_lss_docx()}} for guidance on overrides.}
+
+\item{font_code}{Monospace font used for code-like content
+(variable codes, raw expressions). \code{NULL} (default) keeps Consolas.}
+
+\item{authors, description}{Optional cover-page credit block and
+free-form note. Same shapes as in \code{\link[=render_lss_docx]{render_lss_docx()}}.}
+
+\item{chrome_lang}{Language used for the document chrome (column
+headers, row labels, audit section). Supported: \code{"en"}, \code{"fr"},
+\code{"de"}, \code{"es"}, \code{"it"}. \code{NULL} (default) follows \code{languages[1]}
+when supported, otherwise \code{"en"}.}
 }
 \value{
 The \code{output} path, invisibly.

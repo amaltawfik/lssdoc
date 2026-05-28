@@ -24,7 +24,12 @@ render_lss_docx(
   title = NULL,
   logo = NULL,
   logo_width = 1.5,
-  logo_height = 0.75
+  logo_height = 0.75,
+  font = NULL,
+  font_code = NULL,
+  authors = NULL,
+  description = NULL,
+  chrome_lang = NULL
 )
 }
 \arguments{
@@ -112,6 +117,60 @@ logo-free, matching the neutral style of survey-methodology references
 \item{logo_width, logo_height}{Image dimensions in inches. Defaults are
 tuned to a 2:1 logo (1.5 x 0.75 inches). Resize or pre-crop your image
 to fit if it has a different aspect ratio.}
+
+\item{font}{Body font name. \code{NULL} (default) keeps Calibri, which is
+pre-installed on every recent Windows Office and metric-substituted
+with Carlito (OFL) on Mac and Linux LibreOffice, so column widths
+stay stable across platforms. Pass a string to override
+(e.g. \code{"Source Sans 3"}, \code{"IBM Plex Sans"}, or a corporate brand
+font). The string is passed through to Word; install the font on
+the machine that opens the document, otherwise the reader's
+application will substitute its own fallback face.}
+
+\item{font_code}{Monospace font used for code-like content: the
+variable column in each meta table, the raw relevance expression
+under each filter cell, and the variable index entries. \code{NULL}
+(default) keeps Consolas; pass \code{"JetBrains Mono"} or \code{"IBM Plex Mono"} for sharper code style if installed on the reader's
+machine.}
+
+\item{authors}{Optional credit block for the questionnaire's
+designers, displayed on the cover page below the subtitle. Each
+author is shown centered on its own line as \verb{Name — Affiliation};
+when an ORCID iD is provided, a smaller monospace line below
+shows \verb{ORCID 0000-0000-0000-0000} as a hyperlink to
+\verb{https://orcid.org/<id>}. Accepts:
+\itemize{
+\item \code{NULL} (default): no authorship block.
+\item An \strong{unnamed character vector} (\code{c("Amal Tawfik", "John Doe")}):
+each entry becomes a line with no affiliation.
+\item A \strong{named character vector} (\code{c("Amal Tawfik" = "HES-SO Valais")}):
+names are authors, values are affiliations. Use the empty
+string \code{""} to render an author without affiliation.
+\item A \strong{list of named lists} for the full form, e.g.
+\code{list(list(name = "Amal Tawfik", affiliation = "HES-SO Valais", orcid = "0009-0006-2422-1555"), list(name = "John Doe", affiliation = "UNIL"))}. The \code{name} field is required; the
+\code{affiliation} and \code{orcid} fields are optional.
+}}
+
+\item{description}{Optional free-form text shown on the cover page
+below the authors block. Useful for a citation hint, a funding
+acknowledgement, a methodology note, or a link to a related
+publication. Pass a single string; line breaks (\verb{\\n}) split the
+block into separate centered lines. Any \verb{http://} or \verb{https://}
+token is rendered as a clickable hyperlink, so DOI URLs or article
+permalinks become navigable. Plain text otherwise.}
+
+\item{chrome_lang}{Language used for the \strong{chrome} of the document
+(column headers, row labels, navigation titles, MOSAiCH-style
+type labels, Value descriptors, audit section). Independent of
+\code{languages}, which controls the survey's content columns.
+Supported values: \code{"en"}, \code{"fr"}, \code{"de"}, \code{"es"}, \code{"it"}.
+\code{NULL} (default) follows \code{languages[1]} when it is a supported
+chrome language, otherwise falls back to \code{"en"}. Pass the value
+explicitly to force a specific chrome language regardless of the
+content -- e.g. \code{chrome_lang = "en"} with \code{languages = c("fr", "de")} produces an English-labeled document with French and
+German survey content. Spanish and Italian translations should
+be reviewed by a native speaker before publishing an official
+document.}
 }
 \value{
 The \code{output} path, invisibly.
@@ -127,6 +186,23 @@ cover page, an optional table of contents, and an optional audit summary
 tie the document together. Rendering uses the suggested packages
 \pkg{officer} and \pkg{flextable}; both must be installed.
 }
+\section{Field-update prompt in Word}{
+
+Opening the rendered \code{.docx} in Microsoft Word may surface a
+security-style prompt: \emph{"This document contains fields that may
+refer to other files. Do you want to update the fields in this
+document?"}. This is expected: the package marks the page-number
+and bookmark-reference fields as needing a refresh so the footer
+shows the correct page count and the table of contents links
+resolve to the right pages on first open (this is also what makes
+headless PDF conversion via LibreOffice produce correctly
+paginated output without a manual F9). Clicking \strong{Yes} is safe --
+the document has no \code{INCLUDETEXT}, \code{INCLUDEPICTURE}-linked, or DDE
+fields; the only external links are the ORCID and DOI URLs in the
+cover credits, which are static \code{HYPERLINK} targets and not fetched
+on update.
+}
+
 \examples{
 \dontrun{
 lss <- parse_lss(system.file("extdata", "hesav_2026.lss",
