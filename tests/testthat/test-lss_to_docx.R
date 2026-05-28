@@ -17,7 +17,10 @@ test_that("lss_audit_to_docx writes an audit-only document", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  res <- lss_audit_to_docx(path, out)
+  # Force English chrome so the assertion can match the exact
+  # heading text; the default chrome_lang follows the survey's
+  # primary language and would translate it.
+  res <- lss_audit_to_docx(path, out, chrome_lang = "en")
   expect_identical(res, out)
   s <- officer::docx_summary(officer::read_docx(out))
   expect_true(any(grepl("Audit findings", s$text)))

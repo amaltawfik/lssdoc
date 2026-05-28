@@ -17,7 +17,10 @@ test_that("render_lss_audit_docx writes a focused audit document", {
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
 
-  res <- render_lss_audit_docx(parse_lss(path), out)
+  # Pin English chrome so the assertions can pattern-match the
+  # canonical English headings; the default chrome_lang follows the
+  # survey's primary content language and would translate the labels.
+  res <- render_lss_audit_docx(parse_lss(path), out, chrome_lang = "en")
   expect_identical(res, out)
   expect_true(file.exists(out))
 
@@ -25,12 +28,16 @@ test_that("render_lss_audit_docx writes a focused audit document", {
   txt <- s$text[!is.na(s$text)]
   # Contains the audit headline and at least one severity-specific subsection.
   expect_true(any(grepl("Audit findings", txt)))
-  expect_true(any(grepl("Errors", txt)))
+  # The renderer now uses the singular chrome key
+  # (`audit_severity_error` = "error"); the heading reads as
+  # "error (N)". Match the prefix, case-insensitive.
+  expect_true(any(grepl("^(error|warning|note)\\s*\\(", txt,
+                        ignore.case = TRUE)))
   # The full review's group headings are NOT present.
   group_h1 <- sum(
     s$content_type == "paragraph" &
       s$style_name == "heading 1" &
-      grepl("^Audit|^Errors|^Warnings|^Notes", s$text)
+      grepl("Audit", s$text)
   )
   expect_true(group_h1 >= 1)
 })
@@ -42,7 +49,7 @@ test_that("render_lss_audit_docx on a clean survey says 'no anomalies'", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_lss_audit_docx(parse_lss(path), out)
+  render_lss_audit_docx(parse_lss(path), out, chrome_lang = "en")
   s <- officer::docx_summary(officer::read_docx(out))
   expect_true(any(grepl("No anomalies detected", s$text)))
 })

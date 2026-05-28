@@ -22,6 +22,20 @@
 #'   language absent from the survey is an error (`lssdoc_unknown_language`).
 #'   Defaults to all languages found in the `.lss` file, in the order of the
 #'   `<languages>` section.
+#' @param template Output style. `"cards"` (default) renders one
+#'   detached pair of tables per item (a meta table + an item table)
+#'   stacked vertically, with the survey's content languages
+#'   displayed side-by-side in the item table. `"table"` renders a
+#'   single dense table covering the whole document in codebook
+#'   style: every variable is one row, the meta columns
+#'   (`No | Variable | Type | Mandatory | Filter`) come first, then
+#'   one column per content language carrying the question stem, the
+#'   subquestion label (when applicable), and the response modalities
+#'   stacked underneath. Group banners become merged section rows
+#'   inside the table; the column header repeats on every page
+#'   automatically. The `table` template auto-promotes the page
+#'   format to A4 landscape for 2+ languages (overridable through
+#'   `page_format`).
 #' @param layout Reserved for future use. Currently `"side-by-side"` only.
 #' @param show_audit Logical; include an audit summary section near the top
 #'   and inline markers on questions that carry findings.
@@ -113,7 +127,7 @@
 #'   permalinks become navigable. Plain text otherwise.
 #' @param authors Optional credit block for the questionnaire's
 #'   designers, displayed on the cover page below the subtitle. Each
-#'   author is shown centered on its own line as `Name — Affiliation`;
+#'   author is shown centered on its own line as `Name \u2014 Affiliation`;
 #'   when an ORCID iD is provided, a smaller monospace line below
 #'   shows `ORCID 0000-0000-0000-0000` as a hyperlink to
 #'   `https://orcid.org/<id>`. Accepts:
@@ -158,6 +172,7 @@ render_lss_docx <- function(
   lss,
   output,
   languages = NULL,
+  template = c("cards", "table"),
   layout = c("auto", "side-by-side", "stacked"),
   show_audit = TRUE,
   show_help = TRUE,
@@ -193,8 +208,18 @@ render_lss_docx <- function(
       class = "lssdoc_bad_output"
     )
   }
+  template <- rlang::arg_match(template)
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
+  # The dense `table` template needs landscape width for 2+ content
+  # languages so the side-by-side Question columns do not collapse.
+  # Auto-promote unless the caller pinned the format explicitly.
+  effective_langs <- if (is.null(languages)) lss$languages else languages
+  if (identical(template, "table") &&
+      identical(page_format, "auto") &&
+      length(effective_langs) >= 2L) {
+    page_format <- "A4-landscape"
+  }
   lss_validate_logo(logo)
   lss_validate_font(font, "font")
   lss_validate_font(font_code, "font_code")
@@ -288,19 +313,46 @@ render_lss_docx <- function(
   }
   doc <- lss_render_welcome(doc, lss, langs, theme)
 
-  for (i in seq_along(model$groups)) {
-    cli::cli_progress_update(
-      set = 2L + i - 1L,
-      status = sprintf("Group %d/%d", i, n_groups)
-    )
-    doc <- lss_render_group(
-      doc, model$groups[[i]], langs, theme,
+  if (identical(template, "table")) {
+    # Dense codebook layout: collect the rows group-by-group here so
+    # cli_progress_update fires in the same environment that owns the
+    # progress bar, then hand the assembled rows to the renderer for
+    # a single flextable build.
+    table_rows <- list()
+    for (i in seq_along(model$groups)) {
+      cli::cli_progress_update(
+        set = 2L + i - 1L,
+        status = sprintf("Group %d/%d", i, n_groups)
+      )
+      table_rows <- c(
+        table_rows,
+        lss_table_template_rows_for_group(
+          model$groups[[i]], langs, theme,
+          show_help = show_help, state = state
+        )
+      )
+    }
+    doc <- lss_render_table_template(
+      doc, table_rows, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
-      show_technical_attrs = show_technical_attrs,
-      audit_idx = audit_idx,
       state = state
     )
+  } else {
+    for (i in seq_along(model$groups)) {
+      cli::cli_progress_update(
+        set = 2L + i - 1L,
+        status = sprintf("Group %d/%d", i, n_groups)
+      )
+      doc <- lss_render_group(
+        doc, model$groups[[i]], langs, theme,
+        show_help = show_help,
+        show_attrs = show_attrs,
+        show_technical_attrs = show_technical_attrs,
+        audit_idx = audit_idx,
+        state = state
+      )
+    }
   }
   doc <- lss_render_endtext(doc, lss, langs, theme)
   if (isTRUE(show_index) && length(state$index_entries) > 0L) {
@@ -1113,7 +1165,7 @@ lss_render_cover <- function(doc, lss, model, theme,
 
 #' Render the authors block on the cover page
 #'
-#' Each author becomes one centered line: `Name — Affiliation` (the
+#' Each author becomes one centered line: `Name \u2014 Affiliation` (the
 #' em-dash is omitted when affiliation is empty). When an ORCID iD is
 #' supplied, a smaller monospace line below shows
 #' `ORCID 0000-0000-0000-0000` as a hyperlink to
@@ -1146,7 +1198,7 @@ lss_render_authors_block <- function(doc, authors, theme) {
     chunks <- list(officer::ftext(a$name, prop = name_props))
     if (nzchar(trimws(a$affiliation))) {
       chunks[[length(chunks) + 1L]] <- officer::ftext(
-        paste0("  —  ", a$affiliation), prop = affil_props
+        paste0("  \u2014  ", a$affiliation), prop = affil_props
       )
     }
     doc <- officer::body_add_fpar(
@@ -1951,7 +2003,7 @@ lss_answer_rows <- function(q, langs, theme) {
 #' Render a unified item table with a left "Label" column
 #'
 #' Builds a single flextable per item with the layout
-#' `Language | Français | Deutsch | ...` as header and one body row per
+#' `Language | Fran\u00E7ais | Deutsch | ...` as header and one body row per
 #' content element (`Question`, `Help`, `Value 1`, `Value 2`, ...).
 #' Each row carries its own label so the document reads as
 #' self-describing: the reviewer sees `Question:` and `Help:` rather

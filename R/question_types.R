@@ -212,8 +212,13 @@ lss_methodological_label <- function(type, theme_name = NULL) {
     theme_name <- rep(NA_character_, length(type))
   }
   map <- function(code) {
+    # `switch()` has a formal parameter named `EXPR`; passing the
+    # type code "E" as a case label would trigger an R CMD check
+    # partial-argument-match note. Naming `EXPR =` explicitly tells
+    # R that the first argument is the value to switch on and that
+    # every named pair after it is a case label.
     switch(
-      as.character(code),
+      EXPR = as.character(code),
       # Single-choice family (all collapse to one category; the response
       # domain -- Y/N, M/F, 1-5, enumerated codes -- is in the Value
       # section).

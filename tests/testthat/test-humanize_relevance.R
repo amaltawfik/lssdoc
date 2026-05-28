@@ -31,12 +31,13 @@ test_that("the !is_empty(X.NAOK) && (X.NAOK == N) idiom is collapsed", {
     ),
     "filiere = 2"
   )
-  # Other comparison operators.
+  # Other comparison operators. `>=` is rendered with the Unicode
+  # math symbol U+2265 so the cell reads at a glance.
   expect_identical(
     lssdoc:::lss_humanize_relevance(
       "!is_empty(age.NAOK) && (age.NAOK >= 18)"
     ),
-    "age >= 18"
+    "age ≥ 18"
   )
 })
 

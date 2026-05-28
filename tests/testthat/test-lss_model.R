@@ -32,7 +32,10 @@ test_that("list questions carry per-language answer labels", {
   all_q <- unlist(lapply(m$groups, function(g) g$questions), recursive = FALSE)
 
   q <- Filter(function(x) x$type == "L", all_q)[[1]]
-  expect_identical(q$type_label, "List (radio)")
+  # The model now stores the MOSAiCH-style methodological label
+  # (independent of the LimeSurvey UI variant) so audit messages and
+  # the meta-table render with the same wording.
+  expect_identical(q$type_label, "Single choice")
   expect_true(length(q$answers) >= 1)
   expect_true(all(c("fr", "de") %in% names(q$answers[[1]]$labels)))
   expect_true(nzchar(q$answers[[1]]$labels$fr))
