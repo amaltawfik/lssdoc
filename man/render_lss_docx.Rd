@@ -8,6 +8,7 @@ render_lss_docx(
   lss,
   output,
   languages = NULL,
+  template = c("cards", "table"),
   layout = c("auto", "side-by-side", "stacked"),
   show_audit = TRUE,
   show_help = TRUE,
@@ -47,6 +48,21 @@ text in that language, and group headings fall back to it. Requesting a
 language absent from the survey is an error (\code{lssdoc_unknown_language}).
 Defaults to all languages found in the \code{.lss} file, in the order of the
 \verb{<languages>} section.}
+
+\item{template}{Output style. \code{"cards"} (default) renders one
+detached pair of tables per item (a meta table + an item table)
+stacked vertically, with the survey's content languages
+displayed side-by-side in the item table. \code{"table"} renders a
+single dense table covering the whole document in codebook
+style: every variable is one row, the meta columns
+(\code{No | Variable | Type | Mandatory | Filter}) come first, then
+one column per content language carrying the question stem, the
+subquestion label (when applicable), and the response modalities
+stacked underneath. Group banners become merged section rows
+inside the table; the column header repeats on every page
+automatically. The \code{table} template auto-promotes the page
+format to A4 landscape for 2+ languages (overridable through
+\code{page_format}).}
 
 \item{layout}{Reserved for future use. Currently \code{"side-by-side"} only.}
 
@@ -135,7 +151,7 @@ machine.}
 
 \item{authors}{Optional credit block for the questionnaire's
 designers, displayed on the cover page below the subtitle. Each
-author is shown centered on its own line as \verb{Name — Affiliation};
+author is shown centered on its own line as \verb{Name \\u2014 Affiliation};
 when an ORCID iD is provided, a smaller monospace line below
 shows \verb{ORCID 0000-0000-0000-0000} as a hyperlink to
 \verb{https://orcid.org/<id>}. Accepts:

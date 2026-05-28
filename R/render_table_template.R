@@ -20,13 +20,17 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   if (length(rows) == 0L) return(doc)
 
   chrome <- theme$chrome
-  meta_cols <- c("No", "Variable", "Type", "Mandatory", "Filter", "Value")
+  meta_cols <- c("Field", "No", "Variable", "Type", "Mandatory",
+                 "Filter", "Value")
   lang_cols <- paste0("Q_", langs)
   all_cols <- c(meta_cols, lang_cols)
 
   # ---- Build the data frame skeleton ------------------------------
-  # Every cell starts blank; the rich Question content is composed
-  # below with flextable::compose so we can mix sizes and styles.
+  # Codebook layout: every variable produces one tinted Question row
+  # carrying the meta (No, Variable, Type, Mandatory, Filter) and the
+  # localized question text, followed by N white Value rows (one per
+  # enumerated answer code), the rest empty. Section rows span the
+  # whole table in a dark petrol band.
   df <- as.data.frame(
     matrix("", nrow = length(rows), ncol = length(all_cols)),
     stringsAsFactors = FALSE
@@ -36,16 +40,24 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   for (i in seq_along(rows)) {
     r <- rows[[i]]
     if (identical(r$kind, "section")) {
-      # The section row text lives in the first column (No) so that
-      # `merge_at()` below keeps it visible after the row span is
-      # collapsed to a single cell.
-      df$No[i] <- r$text
+      # Section text in the first column so merge_at() below keeps
+      # it visible after the row span collapses into one cell.
+      df$Field[i] <- r$text
+    } else if (identical(r$kind, "scale_header")) {
+      # Dual-scale separator: announce "Value (scale N)" on the
+      # Value column. Lang cells stay empty.
+      df$Value[i] <- r$text
+    } else if (identical(r$kind, "value")) {
+      df$Value[i] <- as.character(r$code)
+      # Labels per language composed via flextable::compose() below.
     } else {
+      # Question row (leaf / subq / other).
+      df$Field[i]     <- chrome$item_question
       df$No[i]        <- as.character(r$no)
       df$Variable[i]  <- r$variable
       df$Type[i]      <- r$type_label
       df$Mandatory[i] <- r$mandatory_label
-      # Filter cell composed below (human-readable on top, raw below).
+      # Filter and Value cells composed below.
     }
   }
 
@@ -53,6 +65,7 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   ft <- flextable::set_header_labels(
     ft, values = stats::setNames(
       as.list(c(
+        "",  # Field column header stays empty; the cell content speaks for itself.
         chrome$meta_no, chrome$meta_variable, chrome$meta_type,
         chrome$meta_mandatory, chrome$meta_filter, chrome$item_value,
         lss_language_label(langs)
@@ -80,12 +93,50 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     color = theme$color_muted, italic = TRUE
   )
 
+  value_label_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_answer,
+    color = theme$color_text
+  )
+  empty_marker_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_answer,
+    color = theme$color_muted
+  )
+
   for (i in seq_along(rows)) {
     r <- rows[[i]]
-    if (identical(r$kind, "section")) next
+    kind <- r$kind
+    if (identical(kind, "section") || identical(kind, "scale_header")) {
+      # Section is merged & styled in the polish step. Scale header
+      # carries text already in df$Value -- no rich composition.
+      next
+    }
 
-    # Filter cell: humanized form on top, raw expression below in
-    # small italic mono. Same convention as the cards meta table.
+    if (identical(kind, "value")) {
+      # Value row: codes in mono primary inside the Value column (df
+      # already set the bare code), labels per language. Empty
+      # cells fall back to the muted em-dash.
+      for (lg in langs) {
+        label <- lss_html_to_text(r$labels[[lg]])
+        if (!nzchar(label)) {
+          ft <- flextable::compose(
+            ft, i = i, j = paste0("Q_", lg),
+            value = flextable::as_paragraph(flextable::as_chunk(
+              theme$empty_marker, props = empty_marker_props
+            ))
+          )
+        } else {
+          ft <- flextable::compose(
+            ft, i = i, j = paste0("Q_", lg),
+            value = flextable::as_paragraph(flextable::as_chunk(
+              label, props = value_label_props
+            ))
+          )
+        }
+      }
+      next
+    }
+
+    # Question row (leaf / subq / other) ----------------------------
     ft <- flextable::compose(
       ft, i = i, j = "Filter",
       value = lss_table_filter_paragraph(
@@ -95,11 +146,10 @@ lss_render_table_template <- function(doc, rows, langs, theme,
         show_raw = isTRUE(state$show_raw_filter)
       )
     )
-
-    # Value cell: compact summary of the response domain. Codes in
-    # mono primary ("1-5", "Y/blank"); descriptors for non-enumerated
-    # types in italic muted ("[num]", "[text]", "[date]"). Empty for
-    # section rows and for the standalone Other item.
+    # For non-enumerated types (M/P/N/K/T/S/U/D/...), the implicit
+    # response-domain descriptor goes in the Value cell of the
+    # Question row. For enumerated types (L/F/1/...) the cell stays
+    # empty because the codes appear in their own Value rows below.
     ft <- flextable::compose(
       ft, i = i, j = "Value",
       value = lss_table_value_paragraph(
@@ -108,8 +158,6 @@ lss_render_table_template <- function(doc, rows, langs, theme,
         descriptor_props = value_descriptor_props
       )
     )
-
-    # Question cells, one per content language.
     for (lg in langs) {
       ft <- flextable::compose(
         ft, i = i, j = paste0("Q_", lg),
@@ -119,11 +167,9 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     }
   }
 
-  # ---- Section rows: merge horizontally + dark band --------------
-  section_idx <- which(vapply(rows, function(r) identical(r$kind, "section"),
-                              logical(1L)))
-  ft <- lss_table_template_polish(ft, theme, section_idx,
-                                   n_lang = length(langs))
+  # Polish applies row-type-aware styling (section merge + petrol
+  # band, Q-row tint, scale_header tint, widths, etc.).
+  ft <- lss_table_template_polish(ft, theme, rows, n_lang = length(langs))
 
   doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
@@ -162,6 +208,70 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     text = sprintf("%d. %s", state$group_index, gname)
   )
 
+  # Build one Question row per variable (carrying the meta and the
+  # question/subq/help text) followed by N Value rows (one per
+  # enumerated answer code, each carrying its label per language).
+  # Variables with no enumerated answers produce only the Question
+  # row -- the implicit-coding descriptor sits in their Value cell.
+  emit_question_row <- function(kind, no, variable, q, sq = NULL,
+                                other_q = NULL) {
+    list(
+      kind = kind, no = no, variable = variable,
+      type_label = if (identical(kind, "other")) chrome$type_text_other
+                   else lss_localized_type_label(q, theme),
+      mandatory_label = lss_yes_no(
+        if (identical(kind, "other")) "N" else q$mandatory, theme
+      ),
+      relevance = q$relevance,
+      parent_text = stats::setNames(
+        lapply(langs, function(lg) q$texts[[lg]]$question), langs
+      ),
+      subq_text = if (!is.null(sq)) {
+        stats::setNames(
+          lapply(langs, function(lg) sq$texts[[lg]]$question), langs
+        )
+      } else NULL,
+      help = if (identical(kind, "other")) NULL else {
+        stats::setNames(
+          lapply(langs, function(lg) q$texts[[lg]]$help), langs
+        )
+      },
+      q = q, sq = sq, other_q = other_q
+    )
+  }
+
+  emit_value_rows_for <- function(q) {
+    # No value rows for non-enumerated types; the implicit descriptor
+    # sits in the Question row's Value cell.
+    if (length(q$answers) == 0L) return(list())
+    multi_scale <- !is.null(q$scales) && length(q$scales) > 1L
+    bundles <- if (multi_scale) q$scales else list(q$answers)
+    out <- list()
+    for (si in seq_along(bundles)) {
+      ans <- bundles[[si]]
+      if (length(ans) == 0L) next
+      if (multi_scale) {
+        # Dual-scale separator: a tinted scale-header row carrying
+        # "Value (scale N)" on the left so the reader sees a break
+        # between the two response axes.
+        out[[length(out) + 1L]] <- list(
+          kind = "scale_header",
+          text = sprintf(chrome$item_value_scale_fmt, si)
+        )
+      }
+      for (a in ans) {
+        out[[length(out) + 1L]] <- list(
+          kind = "value",
+          code = a$code,
+          labels = stats::setNames(
+            lapply(langs, function(lg) a$labels[[lg]]), langs
+          )
+        )
+      }
+    }
+    out
+  }
+
   for (q in g$questions) {
       info <- lss_type_info(q$type)
       if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
@@ -171,40 +281,19 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
             code = item_code, no = state$item_no
           )
-          rows[[length(rows) + 1L]] <- list(
-            kind = "subq",
-            no = state$item_no,
-            variable = item_code,
-            type_label = lss_localized_type_label(q, theme),
-            mandatory_label = lss_yes_no(q$mandatory, theme),
-            relevance = q$relevance,
-            parent_text = stats::setNames(
-              lapply(langs, function(lg) q$texts[[lg]]$question), langs
-            ),
-            subq_text = stats::setNames(
-              lapply(langs, function(lg) sq$texts[[lg]]$question), langs
-            ),
-            help = stats::setNames(
-              lapply(langs, function(lg) q$texts[[lg]]$help), langs
-            ),
-            q = q, sq = sq
+          rows[[length(rows) + 1L]] <- emit_question_row(
+            "subq", state$item_no, item_code, q = q, sq = sq
           )
+          rows <- c(rows, emit_value_rows_for(q))
         }
         if (identical(q$other, "Y")) {
-          # Standalone Other item, as in the cards template.
           state$item_no <- state$item_no + 1L
           item_code <- paste0(q$code, "_other")
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
             code = item_code, no = state$item_no
           )
-          rows[[length(rows) + 1L]] <- list(
-            kind = "other",
-            no = state$item_no,
-            variable = item_code,
-            type_label = chrome$type_text_other,
-            mandatory_label = lss_yes_no("N", theme),
-            relevance = q$relevance,
-            other_q = q
+          rows[[length(rows) + 1L]] <- emit_question_row(
+            "other", state$item_no, item_code, q = q, other_q = q
           )
         }
       } else {
@@ -212,21 +301,10 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         state$index_entries[[length(state$index_entries) + 1L]] <- list(
           code = q$code, no = state$item_no
         )
-        rows[[length(rows) + 1L]] <- list(
-          kind = "leaf",
-          no = state$item_no,
-          variable = q$code,
-          type_label = lss_localized_type_label(q, theme),
-          mandatory_label = lss_yes_no(q$mandatory, theme),
-          relevance = q$relevance,
-          parent_text = stats::setNames(
-            lapply(langs, function(lg) q$texts[[lg]]$question), langs
-          ),
-          help = stats::setNames(
-            lapply(langs, function(lg) q$texts[[lg]]$help), langs
-          ),
-          q = q
+        rows[[length(rows) + 1L]] <- emit_question_row(
+          "leaf", state$item_no, q$code, q = q
         )
+        rows <- c(rows, emit_value_rows_for(q))
       }
   }
   rows
@@ -281,41 +359,24 @@ lss_table_filter_paragraph <- function(relevance, theme,
 #' @keywords internal
 #' @noRd
 lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) {
-  if (identical(row$kind, "section") || identical(row$kind, "other")) {
+  # The codebook layout devotes a dedicated Value row to every
+  # enumerated code, so the Question row's Value cell stays empty
+  # for enumerated types -- only non-enumerated types receive an
+  # inline descriptor in the Question row itself.
+  if (identical(row$kind, "other")) {
     return(flextable::as_paragraph(flextable::as_chunk(
       "", props = descriptor_props
     )))
   }
   q <- row$q
-
-  # Enumerated answers (single or dual scale).
   if (length(q$answers) > 0L) {
-    multi_scale <- !is.null(q$scales) && length(q$scales) > 1L
-    if (multi_scale) {
-      chunks <- list()
-      for (si in seq_along(q$scales)) {
-        ans <- q$scales[[si]]
-        if (length(ans) == 0L) next
-        if (length(chunks) > 0L) {
-          chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
-            "\n", props = descriptor_props
-          )
-        }
-        chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
-          sprintf("S%d: %s", si, lss_table_value_codes(ans)),
-          props = code_props
-        )
-      }
-      return(do.call(flextable::as_paragraph, chunks))
-    }
     return(flextable::as_paragraph(flextable::as_chunk(
-      lss_table_value_codes(q$answers), props = code_props
+      "", props = descriptor_props
     )))
   }
-
   # Implicit codings: short mono token.
   short_code <- switch(
-    q$type,
+    EXPR = q$type,
     "M" = "Y/blank",
     "P" = "Y/blank",
     "Y" = "Y/N",
@@ -328,10 +389,8 @@ lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) 
       short_code, props = code_props
     )))
   }
-
-  # Open-ended / non-coded types: italic muted descriptor.
   descriptor <- switch(
-    q$type,
+    EXPR = q$type,
     "N" = "[num]",
     "K" = "[num]",
     "S" = "[text]",
@@ -385,8 +444,6 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help) {
   size_q  <- theme$size_question
   size_sq <- theme$size_subq
   size_h  <- theme$size_help
-  size_a  <- theme$size_answer
-  size_m  <- theme$size_meta
 
   plain <- function(size = size_q, color = theme$color_text,
                     italic = FALSE, bold = FALSE,
@@ -412,71 +469,31 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help) {
     add_text(text, props)
   }
 
-  # 1. Question stem (parent for compound rows, leaf question for leaf
-  # rows). For the Other item we use the customized "Other:" prompt.
+  # Question stem (parent for compound rows, leaf question for leaf
+  # rows). For the Other item the customized "Other:" prompt
+  # replaces the stem.
   if (identical(row$kind, "other")) {
-    text <- lss_table_other_prompt(row$other_q, lg)
-    add_text(text, plain())
+    add_text(lss_table_other_prompt(row$other_q, lg), plain())
   } else {
-    text <- lss_html_to_text(row$parent_text[[lg]])
-    add_text(text, plain())
+    add_text(lss_html_to_text(row$parent_text[[lg]]), plain())
   }
 
-  # 2. Subquestion label (compound only).
+  # Subquestion label below the stem (compound rows only), in
+  # italic so the eye separates "what's being asked" (stem) from
+  # "what this row narrows it to" (subq).
   if (identical(row$kind, "subq")) {
-    sq_text <- lss_html_to_text(row$subq_text[[lg]])
-    add_line(sq_text, plain(size = size_sq, italic = TRUE))
+    add_line(lss_html_to_text(row$subq_text[[lg]]),
+             plain(size = size_sq, italic = TRUE))
   }
 
-  # 3. Help (optional).
+  # Help (optional), small muted italic.
   if (isTRUE(show_help) && !identical(row$kind, "other")) {
     help_text <- lss_html_to_text(row$help[[lg]])
     if (!is.null(help_text) && !is.na(help_text) && nzchar(trimws(help_text))) {
-      if (length(chunks) > 0L) chunks[[length(chunks) + 1L]] <- br()
-      add_text(paste0("\u00AB ", help_text, " \u00BB"),
-               plain(size = size_h, color = theme$color_muted, italic = TRUE))
-    }
-  }
-
-  # 4. Response modalities: enumerated codes (q$answers) or the
-  # implicit-coding descriptor. Each code on its own line, code in
-  # mono primary + label in body. Skips for the Other item (the
-  # value is the free-text input itself).
-  if (!identical(row$kind, "other")) {
-    if (length(row$q$answers) > 0L) {
-      multi_scale <- !is.null(row$q$scales) && length(row$q$scales) > 1L
-      bundles <- if (multi_scale) row$q$scales else list(row$q$answers)
-      for (si in seq_along(bundles)) {
-        ans <- bundles[[si]]
-        if (length(ans) == 0L) next
-        if (multi_scale) {
-          # Scale separator label inside the same cell.
-          if (length(chunks) > 0L) chunks[[length(chunks) + 1L]] <- br()
-          add_text(
-            sprintf(theme$chrome$item_value_scale_fmt, si),
-            plain(size = size_m, color = theme$color_primary, bold = TRUE)
-          )
-        }
-        for (a in ans) {
-          if (length(chunks) > 0L) chunks[[length(chunks) + 1L]] <- br()
-          chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
-            sprintf("%s = ", a$code),
-            props = plain(size = size_a, color = theme$color_primary,
-                          bold = TRUE, font = theme$font_code)
-          )
-          chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
-            lss_html_to_text(a$labels[[lg]]) %||_% "",
-            props = plain(size = size_a)
-          )
-        }
-      }
-    } else {
-      implicit <- lss_table_implicit_value_text(row$q, theme)
-      if (!is.null(implicit)) {
-        if (length(chunks) > 0L) chunks[[length(chunks) + 1L]] <- br()
-        add_text(implicit,
-                 plain(size = size_a, color = theme$color_muted, italic = TRUE))
-      }
+      add_line(
+        paste0("\u00AB ", help_text, " \u00BB"),
+        plain(size = size_h, color = theme$color_muted, italic = TRUE)
+      )
     }
   }
 
@@ -539,13 +556,20 @@ lss_table_implicit_value_text <- function(q, theme) {
 #' merge and dark band) to the codebook flextable.
 #' @keywords internal
 #' @noRd
-lss_table_template_polish <- function(ft, theme, section_idx, n_lang) {
+lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
   ft <- flextable::fontsize(ft, size = theme$size_meta, part = "body")
   ft <- flextable::fontsize(ft, size = theme$size_lang_header, part = "header")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_white, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band_dark, part = "header")
+
+  # Field column body: bold primary so "Question" reads as a row
+  # label, with the same petrol-band header (empty text) as the rest
+  # of the meta header.
+  ft <- flextable::bold(ft, j = "Field", part = "body")
+  ft <- flextable::color(ft, j = "Field", color = theme$color_primary,
+                         part = "body")
 
   # Variable column: monospace, bold, primary color.
   ft <- flextable::font(ft, j = "Variable", fontname = theme$font_code,
@@ -554,7 +578,15 @@ lss_table_template_polish <- function(ft, theme, section_idx, n_lang) {
   ft <- flextable::color(ft, j = "Variable", color = theme$color_primary,
                          part = "body")
 
-  # Alignment: No right, Mandatory and Value center, rest left.
+  # Value column body: monospace bold primary for the codes that sit
+  # in the dedicated value rows.
+  ft <- flextable::font(ft, j = "Value", fontname = theme$font_code,
+                        part = "body")
+  ft <- flextable::bold(ft, j = "Value", part = "body")
+  ft <- flextable::color(ft, j = "Value", color = theme$color_primary,
+                         part = "body")
+
+  # Alignment.
   ft <- flextable::align(ft, align = "left", part = "all")
   ft <- flextable::align(ft, j = "No", align = "right", part = "all")
   ft <- flextable::align(ft, j = "Mandatory", align = "center", part = "all")
@@ -573,37 +605,50 @@ lss_table_template_polish <- function(ft, theme, section_idx, n_lang) {
                            padding.left = 4, padding.right = 4, part = "all")
 
   # Column widths. Calibrated so:
-  # - Bold 8 pt header text does not wrap. "Obligatoire" (FR, 11 ch)
-  #   and "Pflichtfeld" (DE, 11 ch) both need ~1.0 in at 8 pt bold
-  #   with padding; we give Mandatory 1.05 in for safety.
-  # - "Valeur" / "Variable" / "Filtre" headers fit with margin.
-  # - Variable column wide enough for the 20-char `parent_subq`
-  #   identifiers (11 pt Consolas ~ 0.092 in/char => ~1.85 in;
-  #   1.70 in accepts up to ~18 chars before wrap, an acceptable
-  #   compromise for the dense codebook layout).
-  # - The total stays at or below the landscape A4 body width
-  #   (~9.73 in with 2.5 cm side margins); whatever remains splits
-  #   evenly between language columns.
-  meta_w <- 0.40 + 1.70 + 1.15 + 1.05 + 1.20 + 0.85
+  # - Bold 8 pt header text does not wrap. "Obligatoire" / "Pflicht-
+  #   feld" need ~1.0 in; Field stays narrow (~0.75 in for the
+  #   chrome$item_question string, e.g. "Question" / "Frage" /
+  #   "Pregunta").
+  # - Variable column accommodates the longest `parent_subq` codes
+  #   on a single line (11 pt Consolas).
+  # - Total <= landscape A4 body width (~9.73 in with 2.5 cm side
+  #   margins); the remainder splits evenly between language columns.
+  meta_w <- 0.95 + 0.35 + 1.45 + 1.15 + 1.15 + 1.05 + 0.70
   total_w <- if (n_lang >= 2L) 9.73 else theme$content_width_in
-  lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 1.4)
-  ft <- flextable::width(ft, j = "No",        width = 0.40, unit = "in")
-  ft <- flextable::width(ft, j = "Variable",  width = 1.70, unit = "in")
+  lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 1.3)
+  ft <- flextable::width(ft, j = "Field",     width = 0.95, unit = "in")
+  ft <- flextable::width(ft, j = "No",        width = 0.35, unit = "in")
+  ft <- flextable::width(ft, j = "Variable",  width = 1.45, unit = "in")
   ft <- flextable::width(ft, j = "Type",      width = 1.15, unit = "in")
-  ft <- flextable::width(ft, j = "Mandatory", width = 1.05, unit = "in")
-  ft <- flextable::width(ft, j = "Filter",    width = 1.20, unit = "in")
-  ft <- flextable::width(ft, j = "Value",     width = 0.85, unit = "in")
+  ft <- flextable::width(ft, j = "Mandatory", width = 1.15, unit = "in")
+  ft <- flextable::width(ft, j = "Filter",    width = 1.05, unit = "in")
+  ft <- flextable::width(ft, j = "Value",     width = 0.70, unit = "in")
   for (idx in seq_len(n_lang)) {
-    ft <- flextable::width(ft, j = 6L + idx, width = lang_w, unit = "in")
+    ft <- flextable::width(ft, j = 7L + idx, width = lang_w, unit = "in")
+  }
+
+  # Row-type indices for selective styling.
+  kinds <- vapply(rows, function(r) as.character(r$kind), character(1L))
+  section_idx <- which(kinds == "section")
+  question_idx <- which(kinds %in% c("leaf", "subq", "other"))
+  scale_header_idx <- which(kinds == "scale_header")
+
+  # Question rows: tinted band so the eye finds the next variable
+  # at a glance. The tint sits between the white value rows and the
+  # dark petrol section banners, keeping the visual hierarchy
+  # section > question > value.
+  for (qi in question_idx) {
+    ft <- flextable::bg(ft, i = qi, bg = theme$color_band, part = "body")
+  }
+  # Scale-header rows (dual-scale arrays only) get the lighter
+  # zebra tint so they read as "subsection within the values".
+  for (sh in scale_header_idx) {
+    ft <- flextable::bg(ft, i = sh, bg = theme$color_zebra, part = "body")
+    ft <- flextable::bold(ft, i = sh, j = "Value", part = "body")
   }
 
   # Section rows: merge every column into one span so the petrol band
   # reads as a banner that physically separates the variable groups.
-  # `merge_at()` is explicit about the cell range to merge -- unlike
-  # `merge_h()` which only collapses cells that share an identical
-  # value. The text lives in the first column (No) by construction
-  # in the row builder.
-  n_cols <- length(all_cols_for_merge <- NULL)  # placeholder; we read ncol(ft)
   total_cols <- flextable::ncol_keys(ft)
   for (si in section_idx) {
     ft <- flextable::merge_at(ft, i = si, j = seq_len(total_cols),
@@ -618,8 +663,8 @@ lss_table_template_polish <- function(ft, theme, section_idx, n_lang) {
                              padding.left = 8, padding.right = 8,
                              part = "body")
     # Override the mono/primary that the body-wide rules set on the
-    # Variable column so the bandeau text reads as a heading
-    # (white on petrol) rather than a code identifier.
+    # Field / Variable / Value columns so the banner text reads as
+    # a heading (white on petrol).
     ft <- flextable::font(ft, i = si, fontname = theme$font_body,
                           part = "body")
     ft <- flextable::color(ft, i = si, color = theme$color_white,
