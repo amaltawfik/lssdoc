@@ -1,9 +1,10 @@
 /* lssdoc website touches.
-   The package renders multilingual codebook documents in a petrol
-   blue palette (primary #133B52, accent #3A7C8C, very-light blue
-   #E9F2F6 for header bands). The website mirrors that palette so
-   the visual identity is consistent between the .docx output and
-   the documentation site. */
+   The website uses LimeSurvey's brand lime green (#5C9F1A primary,
+   #7FA82E lighter variant) as a nod to the source data format.
+   The rendered .docx output deliberately keeps a different palette
+   -- editorial petrol blue (#133B52 / #3A7C8C) -- so the website
+   reads as "the source-aware portal" and the document reads as
+   "the publication-grade output". Two contexts, two identities. */
 
 body,
 .navbar,
@@ -60,7 +61,7 @@ code .co {
 /* Soft background on inline code so it pops off the prose without
    competing with block-code (already styled by the highlighter). */
 :not(pre) > code {
-  background-color: rgba(19, 59, 82, 0.08);  /* petrol with low alpha */
+  background-color: rgba(92, 159, 26, 0.10);  /* lime green low alpha */
   padding: 0.125em 0.35em;
   border-radius: 0.25rem;
 }
@@ -80,14 +81,15 @@ code .co {
   padding: 0.5rem 0.75rem;
 }
 
-/* Subtle petrol accent on H2 underline -- echoes the 1 pt primary
-   filet that sits below each group title in the rendered .docx. */
+/* Subtle lime accent on H2 underline -- the website's analogue of
+   the 1 pt group filet that sits below each group title in the
+   rendered .docx. Different hue, same typographic gesture. */
 .template-article h2 {
-  border-bottom: 1px solid rgba(19, 59, 82, 0.18);
+  border-bottom: 1px solid rgba(92, 159, 26, 0.22);
   padding-bottom: 0.35rem;
 }
 [data-bs-theme="dark"] .template-article h2 {
-  border-bottom-color: rgba(58, 124, 140, 0.35);
+  border-bottom-color: rgba(127, 168, 46, 0.40);
 }
 
 /* Respect users with vestibular sensitivity who request reduced

@@ -20,14 +20,19 @@ template:
   light-switch: true
   math-rendering: mathjax
   bslib:
-    primary: "#133B52"
-    info: "#1F4E5F"
+    # LimeSurvey brand lime green for the website -- a nod to the
+    # source data format. The rendered .docx output keeps its
+    # editorial petrol-blue palette, which is a deliberate
+    # separation: the website is the source-aware portal, the
+    # document is the publication-grade output.
+    primary: "#5C9F1A"
+    info: "#7FA82E"
     base_font:
       google: {family: "IBM Plex Sans", wght: [300, 400, 500, 600, 700], ital: [0, 1]}
     code_font:
       google: {family: "IBM Plex Mono", wght: [400, 500, 700], ital: [0, 1]}
-    headings-color: "#133B52"
-    link-color: "#3A7C8C"
+    headings-color: "#2e2e2e"
+    link-color: "#5C9F1A"
     link-decoration: underline dotted
 
 navbar:

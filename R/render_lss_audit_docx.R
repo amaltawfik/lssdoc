@@ -19,6 +19,8 @@
 #'   [render_lss_docx()] for guidance on overrides.
 #' @param font_code Monospace font used for code-like content
 #'   (variable codes, raw expressions). `NULL` (default) keeps Consolas.
+#' @param colors Optional named list of hex color overrides. Same
+#'   shape and accepted names as in [render_lss_docx()].
 #' @param authors,description Optional cover-page credit block and
 #'   free-form note. Same shapes as in [render_lss_docx()].
 #' @param chrome_lang Language used for the document chrome (column
@@ -42,6 +44,7 @@ render_lss_audit_docx <- function(lss, output, languages = NULL,
                                   logo_height = 0.75,
                                   font = NULL,
                                   font_code = NULL,
+                                  colors = NULL,
                                   authors = NULL,
                                   description = NULL,
                                   chrome_lang = NULL) {
@@ -60,6 +63,7 @@ render_lss_audit_docx <- function(lss, output, languages = NULL,
   lss_validate_logo(logo)
   lss_validate_font(font, "font")
   lss_validate_font(font_code, "font_code")
+  colors <- lss_validate_colors(colors)
   authors <- lss_normalize_authors(authors)
   description <- lss_normalize_description(description)
   for (pkg in c("officer", "flextable")) {
@@ -84,6 +88,7 @@ render_lss_audit_docx <- function(lss, output, languages = NULL,
   theme <- lss_render_theme()
   if (!is.null(font)) theme$font_body <- font
   if (!is.null(font_code)) theme$font_code <- font_code
+  if (!is.null(colors)) theme <- utils::modifyList(theme, colors)
   chrome_lang <- lss_resolve_chrome_lang(chrome_lang, model$languages)
   theme$chrome <- lss_chrome_strings(chrome_lang)
   theme$chrome_lang <- chrome_lang

@@ -13,6 +13,7 @@ render_lss_audit_docx(
   logo_height = 0.75,
   font = NULL,
   font_code = NULL,
+  colors = NULL,
   authors = NULL,
   description = NULL,
   chrome_lang = NULL
@@ -37,6 +38,9 @@ tuned to a 2:1 logo (1.5 x 0.75 inches).}
 
 \item{font_code}{Monospace font used for code-like content
 (variable codes, raw expressions). \code{NULL} (default) keeps Consolas.}
+
+\item{colors}{Optional named list of hex color overrides. Same
+shape and accepted names as in \code{\link[=render_lss_docx]{render_lss_docx()}}.}
 
 \item{authors, description}{Optional cover-page credit block and
 free-form note. Same shapes as in \code{\link[=render_lss_docx]{render_lss_docx()}}.}

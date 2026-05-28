@@ -184,3 +184,51 @@ test_that("authors and description appear on the cover when supplied", {
   expect_true(grepl("project XYZ", txt))
   expect_true(grepl("example.org", txt))
 })
+
+test_that("lss_validate_colors accepts NULL, normalizes hex maps, rejects garbage", {
+  expect_null(lss_validate_colors(NULL))
+
+  out <- lss_validate_colors(list(primary = "#5C9F1A", accent = "#7FA82E"))
+  expect_named(out, c("color_primary", "color_accent"))
+  expect_identical(out$color_primary, "#5C9F1A")
+  expect_identical(out$color_accent, "#7FA82E")
+
+  # Three-digit hex form is accepted too.
+  expect_identical(
+    lss_validate_colors(list(primary = "#abc"))$color_primary,
+    "#abc"
+  )
+
+  expect_error(
+    lss_validate_colors(list(primay = "#000")),  # typo on purpose
+    class = "lssdoc_bad_colors"
+  )
+  expect_error(
+    lss_validate_colors(list(primary = "red")),
+    class = "lssdoc_bad_colors"
+  )
+  expect_error(
+    lss_validate_colors(list(primary = NA_character_)),
+    class = "lssdoc_bad_colors"
+  )
+  expect_error(
+    lss_validate_colors(list("#5C9F1A")),  # no names
+    class = "lssdoc_bad_colors"
+  )
+})
+
+test_that("render_lss_docx accepts a colors override and runs end-to-end", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  out <- tempfile(fileext = ".docx")
+  on.exit(unlink(out), add = TRUE)
+  render_lss_docx(
+    parse_lss(path), out,
+    languages = c("fr", "de"),
+    colors = list(primary = "#5C9F1A", accent = "#7FA82E")
+  )
+  expect_true(file.exists(out))
+  expect_true(file.size(out) > 10000L)
+})

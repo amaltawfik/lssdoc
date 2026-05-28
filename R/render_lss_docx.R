@@ -135,6 +135,24 @@
 #'   (default) keeps Consolas; pass `"JetBrains Mono"` or `"IBM Plex
 #'   Mono"` for sharper code style if installed on the reader's
 #'   machine.
+#' @param colors Optional named list of hex color overrides for the
+#'   editorial petrol-blue palette. `NULL` (default) keeps the
+#'   package palette intact. Accepted names: `"primary"` (group
+#'   filets, headers text and item top borders, 1.0 pt strokes),
+#'   `"accent"` (hyperlinks, ORCID iD, URL auto-links, group
+#'   under-line in the cards layout), `"band"` (light header
+#'   backgrounds in the meta table headers and the codebook's
+#'   Question rows), `"band_dark"` (the meta-table dark header in
+#'   the cards layout), `"zebra"` (the very-light tint on the
+#'   codebook Question rows in the table template), `"grid"`
+#'   (the 0.5 pt border color used for every internal table line),
+#'   `"text"` and `"muted"`. Each value must be a hex string
+#'   (`"#XXXXXX"` or `"#XXX"`). Unknown keys are rejected with a
+#'   classed condition so a typo never silently turns into a
+#'   no-op. Useful for honoring an institutional brand: e.g.
+#'   `colors = list(primary = "#5C9F1A", accent = "#7FA82E")`
+#'   produces a LimeSurvey-green codebook instead of the default
+#'   petrol blue.
 #' @param chrome_lang Language used for the **chrome** of the document
 #'   (column headers, row labels, navigation titles, MOSAiCH-style
 #'   type labels, Value descriptors, audit section). Independent of
@@ -245,6 +263,7 @@ render_lss_docx <- function(
   logo_height = 0.75,
   font = NULL,
   font_code = NULL,
+  colors = NULL,
   authors = NULL,
   description = NULL,
   chrome_lang = NULL
@@ -276,6 +295,7 @@ render_lss_docx <- function(
   lss_validate_logo(logo)
   lss_validate_font(font, "font")
   lss_validate_font(font_code, "font_code")
+  colors <- lss_validate_colors(colors)
   authors <- lss_normalize_authors(authors)
   description <- lss_normalize_description(description)
   for (pkg in c("officer", "flextable")) {
@@ -297,6 +317,7 @@ render_lss_docx <- function(
   theme <- lss_render_theme()
   if (!is.null(font)) theme$font_body <- font
   if (!is.null(font_code)) theme$font_code <- font_code
+  if (!is.null(colors)) theme <- utils::modifyList(theme, colors)
   # Resolve the chrome language now that we know the content languages,
   # then attach the localized chrome strings to the theme so every
   # renderer helper can pick them up via `theme$chrome$<key>` without
@@ -785,6 +806,62 @@ lss_validate_font <- function(value, arg_name) {
     )
   }
   invisible()
+}
+
+#' Validate and normalize the `colors` argument
+#'
+#' Returns a named list keyed by `color_<name>` (the actual theme
+#' keys) so the renderer can `modifyList(theme, colors)` without
+#' re-mapping. Accepts `NULL` (no override), a list with the eight
+#' palette names (`primary`, `accent`, `band`, `band_dark`, `zebra`,
+#' `grid`, `text`, `muted`), each value a hex color string
+#' (`"#XXXXXX"` or `"#XXX"`).
+#'
+#' Unknown names are rejected with a classed condition so a typo
+#' (e.g. `"primay"`) never silently turns into a no-op.
+#'
+#' @keywords internal
+#' @noRd
+lss_validate_colors <- function(colors) {
+  if (is.null(colors)) return(NULL)
+  if (!is.list(colors) || is.null(names(colors)) ||
+      any(!nzchar(names(colors)))) {
+    lssdoc_abort(
+      "{.arg colors} must be {.code NULL} or a named list of hex colors.",
+      class = "lssdoc_bad_colors"
+    )
+  }
+  allowed <- c("primary", "accent", "band", "band_dark", "zebra",
+               "grid", "text", "muted")
+  unknown <- setdiff(names(colors), allowed)
+  if (length(unknown) > 0L) {
+    lssdoc_abort(
+      c(
+        "{.arg colors} has unknown name{?s}: {.val {unknown}}.",
+        "i" = "Accepted: {.val {allowed}}."
+      ),
+      class = "lssdoc_bad_colors"
+    )
+  }
+  hex_re <- "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+  bad_hex <- vapply(
+    colors,
+    function(v) {
+      !is.character(v) || length(v) != 1L || is.na(v) ||
+        !grepl(hex_re, v)
+    },
+    logical(1L)
+  )
+  if (any(bad_hex)) {
+    lssdoc_abort(
+      c(
+        "Every value in {.arg colors} must be a hex string ({.code \"#XXXXXX\"} or {.code \"#XXX\"}).",
+        "i" = "Invalid: {.val {names(colors)[bad_hex]}}."
+      ),
+      class = "lssdoc_bad_colors"
+    )
+  }
+  stats::setNames(colors, paste0("color_", names(colors)))
 }
 
 #' Validate the optional logo argument: NULL or an existing image path

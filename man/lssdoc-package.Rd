@@ -11,6 +11,7 @@ Build a professional Word ('.docx') review document from a LimeSurvey '.lss' exp
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://amaltawfik.github.io/lssdoc/}
   \item \url{https://github.com/amaltawfik/lssdoc}
   \item Report bugs at \url{https://github.com/amaltawfik/lssdoc/issues}
 }

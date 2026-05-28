@@ -34,6 +34,7 @@ render_lss_docx(
   logo_height = 0.75,
   font = NULL,
   font_code = NULL,
+  colors = NULL,
   authors = NULL,
   description = NULL,
   chrome_lang = NULL
@@ -190,6 +191,25 @@ variable column in each meta table, the raw relevance expression
 under each filter cell, and the variable index entries. \code{NULL}
 (default) keeps Consolas; pass \code{"JetBrains Mono"} or \code{"IBM Plex Mono"} for sharper code style if installed on the reader's
 machine.}
+
+\item{colors}{Optional named list of hex color overrides for the
+editorial petrol-blue palette. \code{NULL} (default) keeps the
+package palette intact. Accepted names: \code{"primary"} (group
+filets, headers text and item top borders, 1.0 pt strokes),
+\code{"accent"} (hyperlinks, ORCID iD, URL auto-links, group
+under-line in the cards layout), \code{"band"} (light header
+backgrounds in the meta table headers and the codebook's
+Question rows), \code{"band_dark"} (the meta-table dark header in
+the cards layout), \code{"zebra"} (the very-light tint on the
+codebook Question rows in the table template), \code{"grid"}
+(the 0.5 pt border color used for every internal table line),
+\code{"text"} and \code{"muted"}. Each value must be a hex string
+(\code{"#XXXXXX"} or \code{"#XXX"}). Unknown keys are rejected with a
+classed condition so a typo never silently turns into a
+no-op. Useful for honoring an institutional brand: e.g.
+\code{colors = list(primary = "#5C9F1A", accent = "#7FA82E")}
+produces a LimeSurvey-green codebook instead of the default
+petrol blue.}
 
 \item{authors}{Optional credit block for the questionnaire's
 designers, displayed on the cover page below the subtitle. Each
