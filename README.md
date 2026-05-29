@@ -10,6 +10,8 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![Project Status:
 WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![R-CMD-check](https://github.com/amaltawfik/lssdoc/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amaltawfik/lssdoc/actions/workflows/R-CMD-check.yaml)
+[![Codecov test
+coverage](https://codecov.io/gh/amaltawfik/lssdoc/graph/badge.svg)](https://app.codecov.io/gh/amaltawfik/lssdoc)
 [![MIT
 License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->

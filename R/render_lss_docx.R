@@ -2713,32 +2713,44 @@ lss_relevance_label <- function(x, theme = NULL) {
   x
 }
 
-#' Best-effort translation of a LimeSurvey relevance expression into plain
-#' English
+#' Best-effort translation of a LimeSurvey relevance expression into a
+#' human-readable form.
 #'
-#' Recognized patterns: `is_empty(X.NAOK)` -> "X is empty";
-#' `!is_empty(X.NAOK)` -> "X is answered"; `X.NAOK == N` -> "X = N";
-#' `X.NAOK != N` -> "X != N"; `&&` -> "AND"; `||` -> "OR". The function
-#' strips obviously balanced outer parentheses. When the expression cannot
-#' be matched it is returned unchanged, so the raw text is never lost.
+#' Recognized patterns:
+#' * `is_empty(X.NAOK)` -> "X empty"
+#' * `!is_empty(X.NAOK)` -> "X answered"
+#' * `X.NAOK == N` -> "X = N"; `X.NAOK != N` -> "X \u2260 N";
+#'   `X.NAOK <= N` -> "X \u2264 N" (idem `>=`, `<`, `>`)
+#' * `&&` -> "AND"; `||` -> "OR"
+#' * Multiple disjunctions on the **same variable** collapse to set
+#'   notation: `X == 1 || X == 2 || X == 3` -> "X \u2208 {1, 2, 3}"
+#' * Two bounds on the **same variable** collapse to an encased range:
+#'   `X >= 18 && X <= 65` -> "18 \u2264 X \u2264 65"
+#'
+#' All Boolean and predicate tokens (`AND`, `OR`, `answered`, `empty`,
+#' `in`) localize via `theme$chrome$filter_*` when a theme is supplied.
+#' The function strips balanced outer parentheses. When the expression
+#' cannot be matched it is returned unchanged so the raw text is never
+#' lost.
 #'
 #' @param x A character relevance expression as stored in LimeSurvey.
-#' @return A single human-readable string. `"All"` for `1`, empty, or `NA`.
+#' @param theme Optional theme list. When `NULL`, English chrome is used.
+#' @return A single human-readable string. The localized "All" token for
+#'   `1`, empty, or `NA`.
 #' @keywords internal
 #' @noRd
 lss_humanize_relevance <- function(x, theme = NULL) {
+  chrome <- lss_filter_chrome(theme)
   if (is.null(x) || is.na(x) || !nzchar(x) || identical(x, "1")) {
-    return(if (!is.null(theme)) theme$chrome$filter_all else "All")
+    return(chrome$all)
   }
   s <- as.character(x)
   s <- lss_strip_outer_parens(s)
 
-  # Collapse the LimeSurvey "answered-and-equals" idiom on the SAME
-  # variable. LimeSurvey's conditional designer always emits
-  # `!is_empty(X.NAOK) && (X.NAOK OP value)` as a defensive guard, even
-  # though the comparison alone is enough semantically. For human review
-  # the guard is noise, so we drop it. The collapse repeats so chained
-  # conditions on different variables each get simplified.
+  # Step 1: collapse the LimeSurvey "answered-and-equals" idiom on the
+  # SAME variable. LimeSurvey's conditional designer emits
+  # `!is_empty(X.NAOK) && (X.NAOK OP value)` as a defensive guard;
+  # for human review the guard is noise so we drop it.
   idiom_left <- paste0(
     "!\\s*is_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)\\s*&&\\s*",
     "\\(\\s*\\1\\.NAOK\\s*(==|!=|>=|<=|>|<)\\s*([^)&|]+)\\s*\\)"
@@ -2754,24 +2766,145 @@ lss_humanize_relevance <- function(x, theme = NULL) {
     if (identical(s, before)) break
   }
 
-  s <- gsub("!\\s*is_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)", "\\1 is answered",
-            s, perl = TRUE)
-  s <- gsub("\\bis_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)", "\\1 is empty",
-            s, perl = TRUE)
+  # Step 2: collapse `X == a || X == b || X == c` (same variable)
+  # to "X \u2208 {a, b, c}". Same for negation with `!=` and `&&` ->
+  # "X \u2209 {a, b, c}". Repeat while the pattern keeps shrinking
+  # so chained sets of any length collapse.
+  for (i in seq_len(8L)) {
+    before <- s
+    s <- lss_collapse_set(s, op = "==", join = "||")
+    s <- lss_collapse_set(s, op = "!=", join = "&&")
+    if (identical(s, before)) break
+  }
+
+  # Step 3: collapse `X >= a && X <= b` (same variable) to
+  # "a \u2264 X \u2264 b" (and the strict variants).
+  s <- lss_collapse_range(s)
+
+  # Step 4: predicate forms.
+  s <- gsub("!\\s*is_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)",
+            paste0("\\1 ", chrome$answered), s, perl = TRUE)
+  s <- gsub("\\bis_empty\\(([A-Za-z0-9_]+)\\.NAOK\\)",
+            paste0("\\1 ", chrome$empty), s, perl = TRUE)
   s <- gsub("([A-Za-z0-9_]+)\\.NAOK", "\\1", s, perl = TRUE)
-  s <- gsub("\\s*&&\\s*", " AND ", s)
-  s <- gsub("\\s*\\|\\|\\s*", " OR ", s)
-  # Comparison operators rendered with Unicode math symbols so they read
-  # at a glance for a methodologist: U+2260 (not-equal), U+2264 (<=),
-  # U+2265 (>=). Order matters: substitute the two-character forms
-  # first so the single `==` rule does not consume the `=` of `!=` /
-  # `<=` / `>=`.
+  s <- gsub("\\s*&&\\s*", paste0(" ", chrome$and, " "), s)
+  s <- gsub("\\s*\\|\\|\\s*", paste0(" ", chrome$or, " "), s)
+  # Step 5: comparison operators rendered with Unicode math symbols
+  # so they read at a glance for a methodologist: U+2260 (\u2260),
+  # U+2264 (\u2264), U+2265 (\u2265). Order matters: substitute the
+  # two-character forms first so the single `==` rule does not consume
+  # the `=` of `!=` / `<=` / `>=`.
   s <- gsub("\\s*!=\\s*", " \u2260 ", s)
   s <- gsub("\\s*<=\\s*", " \u2264 ", s)
   s <- gsub("\\s*>=\\s*", " \u2265 ", s)
   s <- gsub("\\s*==\\s*", " = ", s)
   s <- lss_strip_outer_parens(s)
   trimws(s)
+}
+
+#' Localized filter token chrome with English fallback
+#'
+#' @keywords internal
+#' @noRd
+lss_filter_chrome <- function(theme = NULL) {
+  defaults <- list(
+    all      = "All",
+    and      = "AND",
+    or       = "OR",
+    answered = "is answered",
+    empty    = "is empty",
+    inset    = "\u2208",
+    notinset = "\u2209"
+  )
+  if (is.null(theme) || is.null(theme$chrome)) return(defaults)
+  pick <- function(key, fallback) {
+    v <- theme$chrome[[paste0("filter_", key)]]
+    if (is.null(v) || !nzchar(v)) fallback else v
+  }
+  list(
+    all      = pick("all",      defaults$all),
+    and      = pick("and",      defaults$and),
+    or       = pick("or",       defaults$or),
+    answered = pick("answered", defaults$answered),
+    empty    = pick("empty",    defaults$empty),
+    inset    = defaults$inset,
+    notinset = defaults$notinset
+  )
+}
+
+#' Collapse repeated `X OP a JOIN X OP b JOIN X OP c` on the same
+#' variable into set notation `X \u2208 {a, b, c}` (or `\u2209` when
+#' negation).
+#'
+#' @keywords internal
+#' @noRd
+lss_collapse_set <- function(s, op, join) {
+  # Match the simplest 2-term pair first; the outer loop in the caller
+  # extends the captured set on subsequent iterations by re-matching
+  # the produced set against another `X == v` clause.
+  var_pat <- "([A-Za-z0-9_]+)(?:\\.NAOK)?"
+  val_pat <- "([^)&|\\s]+)"
+  op_re <- gsub("([=!<>])", "\\\\\\1", op, perl = TRUE)
+  join_re <- if (identical(join, "||")) "\\|\\|" else "&&"
+  # Pair pattern: X OP a JOIN X OP b
+  pair_re <- paste0(
+    "\\b", var_pat, "\\s*", op_re, "\\s*", val_pat,
+    "\\s*", join_re, "\\s*",
+    "\\b\\1(?:\\.NAOK)?", "\\s*", op_re, "\\s*", val_pat
+  )
+  # When the rhs is already an existing set marker (built on a previous
+  # iteration), append the next value into the set.
+  set_token <- if (identical(op, "==")) "\u2208" else "\u2209"
+  s <- gsub(
+    pair_re,
+    paste0("\\1 ", set_token, " {\\2, \\3}"),
+    s, perl = TRUE
+  )
+  # Extension pattern: existing set `X \u2208 {...}` JOIN `X OP v`
+  ext_re <- paste0(
+    "\\b", var_pat, "\\s+", set_token, "\\s+\\{([^}]+)\\}",
+    "\\s*", join_re, "\\s*",
+    "\\b\\1(?:\\.NAOK)?", "\\s*", op_re, "\\s*", val_pat
+  )
+  s <- gsub(
+    ext_re,
+    paste0("\\1 ", set_token, " {\\2, \\3}"),
+    s, perl = TRUE
+  )
+  s
+}
+
+#' Collapse `X >= a && X <= b` (same variable) to `a \u2264 X \u2264 b`.
+#' Supports the four combinations of strict / non-strict bounds.
+#'
+#' @keywords internal
+#' @noRd
+lss_collapse_range <- function(s) {
+  var_pat <- "([A-Za-z0-9_]+)(?:\\.NAOK)?"
+  val_pat <- "([^)&|\\s]+)"
+  # X (>=|>) a && X (<=|<) b -> a (\u2264|<) X (\u2264|<) b
+  patterns <- list(
+    c(">=", "<=", "\u2264", "\u2264"),
+    c(">=", "<",  "\u2264", "<"),
+    c(">",  "<=", "<",      "\u2264"),
+    c(">",  "<",  "<",      "<")
+  )
+  for (p in patterns) {
+    lo_op <- p[1]; hi_op <- p[2]; lo_disp <- p[3]; hi_disp <- p[4]
+    lo_re <- gsub("([=<>])", "\\\\\\1", lo_op, perl = TRUE)
+    hi_re <- gsub("([=<>])", "\\\\\\1", hi_op, perl = TRUE)
+    pat <- paste0(
+      "\\b", var_pat, "\\s*", lo_re, "\\s*", val_pat,
+      "\\s*&&\\s*",
+      "\\b\\1(?:\\.NAOK)?", "\\s*", hi_re, "\\s*", val_pat
+    )
+    s <- gsub(
+      pat,
+      paste0("\\2 ", lo_disp, " \\1 ", hi_disp, " \\3"),
+      s, perl = TRUE
+    )
+  }
+  s
 }
 
 #' Strip balanced outer parentheses up to a few levels deep

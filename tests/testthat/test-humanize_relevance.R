@@ -37,7 +37,7 @@ test_that("the !is_empty(X.NAOK) && (X.NAOK == N) idiom is collapsed", {
     lssdoc:::lss_humanize_relevance(
       "!is_empty(age.NAOK) && (age.NAOK >= 18)"
     ),
-    "age ≥ 18"
+    "age \u2265 18"
   )
 })
 
@@ -59,7 +59,7 @@ test_that("the idiom is collapsed per variable, not across variables", {
 test_that("operators are normalized to plain English / unicode", {
   expect_match(
     lssdoc:::lss_humanize_relevance("foo.NAOK != 1"),
-    "foo ≠ 1"
+    "foo \u2260 1"
   )
   expect_match(
     lssdoc:::lss_humanize_relevance("foo.NAOK == 1 || bar.NAOK == 2"),
@@ -72,5 +72,84 @@ test_that("unparseable expressions are returned trimmed but otherwise intact", {
   expect_identical(
     lssdoc:::lss_humanize_relevance("count(a.NAOK, b.NAOK) > 0"),
     "count(a, b) > 0"
+  )
+})
+
+test_that("repeated `X == v` clauses on the same variable collapse to a set", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("a.NAOK == 1 || a.NAOK == 2"),
+    "a \u2208 {1, 2}"
+  )
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("a.NAOK == 1 || a.NAOK == 2 || a.NAOK == 3"),
+    "a \u2208 {1, 2, 3}"
+  )
+  # Negation form: `&&` and `!=` collapse to `X \u2209 {...}`.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("a.NAOK != 1 && a.NAOK != 2"),
+    "a \u2209 {1, 2}"
+  )
+})
+
+test_that("set collapse only fires on the SAME variable", {
+  # Different variables stay disjoined.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("a.NAOK == 1 || b.NAOK == 2"),
+    "a = 1 OR b = 2"
+  )
+})
+
+test_that("paired bounds collapse to an encased range", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("age.NAOK >= 18 && age.NAOK <= 65"),
+    "18 \u2264 age \u2264 65"
+  )
+  # Strict variant.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("age.NAOK > 0 && age.NAOK < 100"),
+    "0 < age < 100"
+  )
+  # Mixed strictness.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("age.NAOK >= 18 && age.NAOK < 100"),
+    "18 \u2264 age < 100"
+  )
+})
+
+test_that("range collapse only fires on the SAME variable", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("a.NAOK >= 1 && b.NAOK <= 5"),
+    "a \u2265 1 AND b \u2264 5"
+  )
+})
+
+test_that("AND, OR, is answered, is empty localize via theme$chrome", {
+  fr_theme <- list(chrome = lssdoc:::lss_chrome_strings("fr"))
+  expect_identical(
+    lssdoc:::lss_humanize_relevance(
+      "!is_empty(a.NAOK) && b.NAOK == 1",
+      theme = fr_theme
+    ),
+    "a est renseign\u00E9 ET b = 1"
+  )
+  expect_identical(
+    lssdoc:::lss_humanize_relevance(
+      "is_empty(a.NAOK) || b.NAOK == 1",
+      theme = fr_theme
+    ),
+    "a est vide OU b = 1"
+  )
+  de_theme <- list(chrome = lssdoc:::lss_chrome_strings("de"))
+  expect_identical(
+    lssdoc:::lss_humanize_relevance(
+      "a.NAOK == 1 || a.NAOK == 2",
+      theme = de_theme
+    ),
+    "a \u2208 {1, 2}"
+  )
+  # Trivial expressions localize the `All` token.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("1", theme = fr_theme),
+    "Toutes"
   )
 })
