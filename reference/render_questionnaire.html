@@ -94,7 +94,7 @@ tie the document together. Rendering uses the suggested packages
 <span>  show_header_title <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_source <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_item_heading <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  show_raw_filter <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  show_raw_filter <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  show_groups <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_welcome <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_endtext <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -232,11 +232,14 @@ for scroll-time navigation.</p></dd>
 
 
 <dt id="arg-show-raw-filter">show_raw_filter<a class="anchor" aria-label="anchor" href="#arg-show-raw-filter"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), the Filter
-cell shows the human-readable form on top and the raw LimeSurvey
-relevance expression underneath in small italic gray. Set to
-<code>FALSE</code> for plain form only (the raw expression is still shown
-when it could not be simplified).</p></dd>
+<dd><p>Logical. If <code>FALSE</code> (the default), the
+Filter cell shows only the human-readable form (e.g.
+<code>Q1 = 1</code>) – editorial codebook style, matching ESS / MOSAiCH /
+GESIS conventions. Set to <code>TRUE</code> to also surface the raw
+LimeSurvey relevance expression underneath in small italic
+gray (e.g. <code>!is_empty(Q1.NAOK) &amp;&amp; (Q1.NAOK == 1)</code>), useful for
+QA cross-checks. The raw form is always shown when the plain
+form could not be simplified.</p></dd>
 
 
 <dt id="arg-show-groups">show_groups<a class="anchor" aria-label="anchor" href="#arg-show-groups"></a></dt>
