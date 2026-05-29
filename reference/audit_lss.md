@@ -44,6 +44,14 @@ Checks performed:
 - **Missing options for the type** – a question whose type requires
   answer options or subquestions but has none (per the type taxonomy).
 
+- **Forward filter references** – a relevance expression that names a
+  variable appearing at or after the filtered question (the value is not
+  yet collected when the filter is evaluated).
+
+- **Array-scale inconsistencies** – an array (single or dual) whose
+  subquestions reference a `scale_id` that has no answer options, or
+  vice versa.
+
 - **Orphan references** – a subquestion or answer pointing to a question
   that does not exist.
 
@@ -60,7 +68,7 @@ audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
 print(audit)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpaEgReu/temp_libpath1a4770433c16/lssdoc/extdata/hesav_2026.lss
+#> File: /tmp/RtmptfYdBy/temp_libpath1a086c4dd217/lssdoc/extdata/hesav_2026.lss
 #> Languages: "de" and "fr"
 #> ✔ No anomalies detected.
 ```

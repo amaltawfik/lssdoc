@@ -93,6 +93,12 @@ language.</p></li>
 survey, or an answer/subquestion code repeated within one question.</p></li>
 <li><p><strong>Missing options for the type</strong> – a question whose type requires
 answer options or subquestions but has none (per the type taxonomy).</p></li>
+<li><p><strong>Forward filter references</strong> – a relevance expression that names
+a variable appearing at or after the filtered question (the value
+is not yet collected when the filter is evaluated).</p></li>
+<li><p><strong>Array-scale inconsistencies</strong> – an array (single or dual) whose
+subquestions reference a <code>scale_id</code> that has no answer options, or
+vice versa.</p></li>
 <li><p><strong>Orphan references</strong> – a subquestion or answer pointing to a
 question that does not exist.</p></li>
 </ul></div>
@@ -109,7 +115,7 @@ PDF document.</p></div>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">audit</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc audit</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────────────────</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpaEgReu/temp_libpath1a4770433c16/lssdoc/extdata/hesav_2026.lss</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmptfYdBy/temp_libpath1a086c4dd217/lssdoc/extdata/hesav_2026.lss</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">Languages</span>: <span style="color: #0000BB;">"de"</span> and <span style="color: #0000BB;">"fr"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> No anomalies detected.</span>
 </code></pre></div>
