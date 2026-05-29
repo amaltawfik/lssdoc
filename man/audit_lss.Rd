@@ -33,6 +33,9 @@ text present in at least one language but empty in another.
 language.
 \item \strong{Duplicate codes} -- a question variable code repeated in the
 survey, or an answer/subquestion code repeated within one question.
+\item \strong{Whitespace in codes} -- a question, subquestion or answer code
+containing leading, trailing or interior whitespace (likely a typo;
+causes subtle bugs in the data export).
 \item \strong{Missing options for the type} -- a question whose type requires
 answer options or subquestions but has none (per the type taxonomy).
 \item \strong{Forward filter references} -- a relevance expression that names

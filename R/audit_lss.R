@@ -12,6 +12,9 @@
 #'   language.
 #' * **Duplicate codes** -- a question variable code repeated in the
 #'   survey, or an answer/subquestion code repeated within one question.
+#' * **Whitespace in codes** -- a question, subquestion or answer code
+#'   containing leading, trailing or interior whitespace (likely a typo;
+#'   causes subtle bugs in the data export).
 #' * **Missing options for the type** -- a question whose type requires
 #'   answer options or subquestions but has none (per the type taxonomy).
 #' * **Forward filter references** -- a relevance expression that names
@@ -153,6 +156,11 @@ audit_lss <- function(input) {
     )
   }
 
+  # Whitespace in identifier codes: leading, trailing or interior
+  # spaces are almost always typos and cause subtle bugs at data
+  # export (column names match exactly, including the whitespace).
+  lss_audit_whitespace_codes(findings, lss)
+
   # Forward references in routing filters: a question's relevance
   # expression mentions a variable that appears LATER in the survey,
   # which means the answer is not yet collected when the filter is
@@ -290,6 +298,49 @@ lss_audit_codes <- function(findings, codes, groups, location, kind) {
       "error", "duplicate_code", location, NA_character_,
       sprintf("Duplicate %s: '%s'.", kind, d)
     )
+  }
+  invisible()
+}
+
+#' Flag question / subquestion / answer codes carrying whitespace
+#'
+#' A code like `"q1 "` (with trailing space) matches `"q1"` only if
+#' the consumer trims; in practice this means the column at data
+#' export is named exactly `"q1 "`, with the space, and downstream
+#' joins / scripts that look up `"q1"` silently fail. Severity:
+#' `warning`.
+#'
+#' @keywords internal
+#' @noRd
+lss_audit_whitespace_codes <- function(findings, lss) {
+  flag <- function(value, kind, location) {
+    if (is.null(value) || is.na(value) || !nzchar(value)) return()
+    trimmed <- trimws(value)
+    if (!identical(trimmed, value) || grepl("\\s", trimmed)) {
+      findings$add(
+        "warning", "code_whitespace", location, NA_character_,
+        sprintf("The %s '%s' contains whitespace; LimeSurvey will export it verbatim, which usually breaks downstream lookups.",
+                kind, value)
+      )
+    }
+  }
+  if (!is.null(lss$questions) && nrow(lss$questions) > 0L) {
+    for (i in seq_len(nrow(lss$questions))) {
+      flag(lss$questions$title[i], "question code",
+           lss_locate("Question", lss$questions$title[i]))
+    }
+  }
+  if (!is.null(lss$subquestions) && nrow(lss$subquestions) > 0L) {
+    for (i in seq_len(nrow(lss$subquestions))) {
+      flag(lss$subquestions$title[i], "subquestion code",
+           lss_locate("Subquestion", lss$subquestions$title[i]))
+    }
+  }
+  if (!is.null(lss$answers) && nrow(lss$answers) > 0L) {
+    for (i in seq_len(nrow(lss$answers))) {
+      flag(lss$answers$code[i], "answer code",
+           lss_locate("Answer", lss$answers$code[i]))
+    }
   }
   invisible()
 }
@@ -446,8 +497,24 @@ lss_audit_orphans <- function(findings, lss) {
   invisible()
 }
 
+#' Print an `lss_audit` object
+#'
+#' Pretty-printed audit summary on the console, capped at the first
+#' `n` findings. Severity-based bullet symbols (errors, warnings,
+#' notes) mirror what is shown in the audit table inside the
+#' rendered `.docx`.
+#'
+#' @param x An `lss_audit` object returned by [audit_lss()].
+#' @param ... Currently ignored.
+#' @param n Maximum number of findings to print. Defaults to `20`. Set
+#'   to `Inf` to print every finding. The remaining count, when any, is
+#'   summarized at the bottom with a hint to use `as.data.frame()` for
+#'   the full list.
+#'
+#' @return The audit object, invisibly.
+#'
 #' @export
-print.lss_audit <- function(x, ...) {
+print.lss_audit <- function(x, ..., n = 20L) {
   cli::cli_h1("lssdoc audit")
   cli::cli_text("{.field File}: {.path {x$file}}")
   cli::cli_text("{.field Languages}: {.val {x$languages}}")
@@ -462,14 +529,24 @@ print.lss_audit <- function(x, ...) {
     "{x$n_errors} error{?s}, {x$n_warnings} warning{?s}, {x$n_notes} note{?s}."
   )
 
+  total <- nrow(x$findings)
+  cap <- if (is.finite(n)) min(as.integer(n), total) else total
   symbols <- c(error = "x", warning = "warning", note = "i")
-  for (i in seq_len(nrow(x$findings))) {
+  for (i in seq_len(cap)) {
     f <- x$findings[i, ]
     where <- if (is.na(f$language)) f$location else paste0(f$location, " [", f$language, "]")
     cli::cli_bullets(stats::setNames(
       paste0("{.strong ", where, "}: ", f$message),
       symbols[[f$severity]]
     ))
+  }
+  if (cap < total) {
+    remaining <- total - cap
+    cli::cli_text(
+      "{.emph \u2026 and {remaining} more finding{?s}.} ",
+      "Use {.code as.data.frame(x)} to see them all, or ",
+      "{.code print(x, n = Inf)} to expand here."
+    )
   }
   invisible(x)
 }

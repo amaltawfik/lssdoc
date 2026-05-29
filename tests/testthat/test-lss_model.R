@@ -103,3 +103,53 @@ test_that("a missing translation surfaces as NA, not a dropped entry", {
   all_q <- unlist(lapply(m$groups, function(g) g$questions), recursive = FALSE)
   expect_true(all(vapply(all_q, function(q) "fr" %in% names(q$texts), logical(1))))
 })
+
+test_that("lss_build_l10n_index returns an O(1) lookup environment", {
+  l10n <- data.frame(
+    qid = c("1", "2", "1"),
+    language = c("en", "en", "fr"),
+    question = c("Hello", "World", "Bonjour"),
+    stringsAsFactors = FALSE
+  )
+  idx <- lssdoc:::lss_build_l10n_index(l10n, "qid")
+  expect_true(is.environment(idx))
+  expect_identical(idx[[paste("1", "en", sep = "\r")]], 1L)
+  expect_identical(idx[[paste("2", "en", sep = "\r")]], 2L)
+  expect_identical(idx[[paste("1", "fr", sep = "\r")]], 3L)
+  # Missing key returns NULL (the env semantics) so callers can branch.
+  expect_null(idx[[paste("99", "en", sep = "\r")]])
+})
+
+test_that("lss_build_l10n_index handles empty / NULL tables gracefully", {
+  idx_null <- lssdoc:::lss_build_l10n_index(NULL, "qid")
+  expect_true(is.environment(idx_null))
+  expect_identical(length(ls(idx_null)), 0L)
+
+  idx_empty <- lssdoc:::lss_build_l10n_index(
+    data.frame(qid = character(0), language = character(0),
+               stringsAsFactors = FALSE),
+    "qid"
+  )
+  expect_identical(length(ls(idx_empty)), 0L)
+})
+
+test_that("lss_localized returns identical results with or without the index", {
+  l10n <- data.frame(
+    qid = c("a", "a", "b"),
+    language = c("en", "fr", "en"),
+    question = c("Q1", "Question 1", "Q2"),
+    stringsAsFactors = FALSE
+  )
+  expect_identical(
+    lssdoc:::lss_localized(l10n, "qid", "a", c("en", "fr"), "question"),
+    lssdoc:::lss_localized(l10n, "qid", "a", c("en", "fr"), "question",
+                           index = lssdoc:::lss_build_l10n_index(l10n, "qid"))
+  )
+  # And the indexed version reads the missing language as NA.
+  out <- lssdoc:::lss_localized(
+    l10n, "qid", "b", c("en", "fr"), "question",
+    index = lssdoc:::lss_build_l10n_index(l10n, "qid")
+  )
+  expect_identical(out$en$question, "Q2")
+  expect_true(is.na(out$fr$question))
+})

@@ -72,6 +72,9 @@ read_lss <- function(file) {
     )
   }
 
+  db_version <- lss_scalar(doc, "DBVersion")
+  lss_check_db_version(db_version, file)
+
   languages <- xml2::xml_text(
     xml2::xml_find_all(doc, "/document/languages/language")
   )
@@ -85,7 +88,7 @@ read_lss <- function(file) {
   structure(
     list(
       file = file,
-      db_version = lss_scalar(doc, "DBVersion"),
+      db_version = db_version,
       doc_type = doc_type,
       languages = languages,
       base_language = base_language,
@@ -103,6 +106,53 @@ read_lss <- function(file) {
     ),
     class = "lss"
   )
+}
+
+#' Validate the `.lss` DBVersion against the supported window
+#'
+#' The package was designed around DBVersion 4xx-7xx: the family of
+#' schemas that splits structural and localized content into
+#' `*_l10ns` sections. Older versions (< 400) use a flat schema and
+#' parsing silently produces an `lss` object with missing translations.
+#' Future versions (>= 800) have not been validated -- we warn but let
+#' the call proceed so users can give feedback when a newer schema
+#' lands.
+#'
+#' @keywords internal
+#' @noRd
+lss_check_db_version <- function(db_version, file) {
+  v <- suppressWarnings(as.integer(db_version))
+  if (is.na(v)) {
+    # No DBVersion element or non-integer: very old or hand-crafted.
+    lssdoc_warn(
+      c(
+        "Could not read {.field DBVersion} from {.path {file}}.",
+        "i" = "lssdoc was designed for DBVersion 400-799. Parsing may produce incomplete results."
+      ),
+      class = "lssdoc_unknown_db_version"
+    )
+    return(invisible())
+  }
+  if (v < 400L) {
+    lssdoc_abort(
+      c(
+        "{.path {file}} uses {.field DBVersion} {.val {db_version}}, which predates the {.code *_l10ns} schema.",
+        "i" = "lssdoc supports DBVersion 400 and later (LimeSurvey 3.x and newer).",
+        "i" = "Re-export the survey from a recent LimeSurvey installation, then retry."
+      ),
+      class = "lssdoc_unsupported_db_version"
+    )
+  }
+  if (v >= 800L) {
+    lssdoc_warn(
+      c(
+        "{.path {file}} uses {.field DBVersion} {.val {db_version}}, which is newer than the versions lssdoc has been validated against (400-799).",
+        "i" = "Parsing will continue but please report any incorrect rendering at {.url https://github.com/amaltawfik/lssdoc/issues}."
+      ),
+      class = "lssdoc_untested_db_version"
+    )
+  }
+  invisible()
 }
 
 #' Resolve a polymorphic input (path or `lss` object) to an `lss` object

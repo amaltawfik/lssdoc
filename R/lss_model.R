@@ -38,11 +38,19 @@ lss_model <- function(lss, languages = NULL) {
   q_order <- order(suppressWarnings(as.integer(questions$question_order)))
   questions <- questions[q_order, , drop = FALSE]
 
+  # Pre-index every localized table once, by (key, language). The
+  # lookup inside `lss_localized()` becomes O(1) instead of O(rows),
+  # which matters for surveys with hundreds of questions or many
+  # languages.
+  g_idx <- lss_build_l10n_index(lss$group_l10ns,    "gid")
+  q_idx <- lss_build_l10n_index(lss$question_l10ns, "qid")
+  a_idx <- lss_build_l10n_index(lss$answer_l10ns,   "aid")
+
   group_models <- lapply(seq_len(nrow(groups)), function(i) {
     gid <- groups$gid[i]
     gtext <- lss_localized(
       lss$group_l10ns, "gid", gid, langs,
-      c("group_name", "description")
+      c("group_name", "description"), index = g_idx
     )
     gquestions <- questions[questions$gid == gid, , drop = FALSE]
     list(
@@ -52,7 +60,8 @@ lss_model <- function(lss, languages = NULL) {
       descriptions = lapply(gtext, function(x) x$description),
       questions = lapply(
         seq_len(nrow(gquestions)),
-        function(j) lss_question_model(lss, gquestions[j, , drop = FALSE], langs)
+        function(j) lss_question_model(lss, gquestions[j, , drop = FALSE], langs,
+                                       q_idx = q_idx, a_idx = a_idx)
       )
     )
   })
@@ -92,14 +101,15 @@ lss_resolve_languages <- function(lss, languages) {
 #' Build the model for a single (main) question
 #' @keywords internal
 #' @noRd
-lss_question_model <- function(lss, qrow, langs) {
+lss_question_model <- function(lss, qrow, langs,
+                               q_idx = NULL, a_idx = NULL) {
   qid <- qrow$qid
   info <- lss_type_info(qrow$type)
 
   answers <- NULL
   scales <- NULL
   if (isTRUE(info$has_answers) && !is.null(lss$answers)) {
-    answers <- lss_answer_models(lss, qid, langs)
+    answers <- lss_answer_models(lss, qid, langs, a_idx = a_idx)
     if (isTRUE(info$has_scales)) {
       scales <- split(answers, vapply(answers, function(a) a$scale_id, character(1)))
     }
@@ -107,7 +117,7 @@ lss_question_model <- function(lss, qrow, langs) {
 
   subquestions <- NULL
   if (isTRUE(info$has_subquestions) && !is.null(lss$subquestions)) {
-    subquestions <- lss_subquestion_models(lss, qid, langs)
+    subquestions <- lss_subquestion_models(lss, qid, langs, q_idx = q_idx)
   }
 
   attrs <- NULL
@@ -116,7 +126,8 @@ lss_question_model <- function(lss, qrow, langs) {
   }
 
   texts <- lss_localized(
-    lss$question_l10ns, "qid", qid, langs, c("question", "help")
+    lss$question_l10ns, "qid", qid, langs, c("question", "help"),
+    index = q_idx
   )
 
   list(
@@ -139,7 +150,7 @@ lss_question_model <- function(lss, qrow, langs) {
 #' Build the per-language answer-option models for a question
 #' @keywords internal
 #' @noRd
-lss_answer_models <- function(lss, qid, langs) {
+lss_answer_models <- function(lss, qid, langs, a_idx = NULL) {
   ans <- lss$answers[lss$answers$qid == qid, , drop = FALSE]
   if (nrow(ans) == 0) {
     return(list())
@@ -151,7 +162,8 @@ lss_answer_models <- function(lss, qid, langs) {
   ans <- ans[ord, , drop = FALSE]
   lapply(seq_len(nrow(ans)), function(i) {
     aid <- ans$aid[i]
-    labels <- lss_localized(lss$answer_l10ns, "aid", aid, langs, "answer")
+    labels <- lss_localized(lss$answer_l10ns, "aid", aid, langs, "answer",
+                            index = a_idx)
     list(
       aid = aid,
       code = ans$code[i],
@@ -165,7 +177,7 @@ lss_answer_models <- function(lss, qid, langs) {
 #' Build the per-language subquestion models for a question
 #' @keywords internal
 #' @noRd
-lss_subquestion_models <- function(lss, qid, langs) {
+lss_subquestion_models <- function(lss, qid, langs, q_idx = NULL) {
   sq <- lss$subquestions[lss$subquestions$parent_qid == qid, , drop = FALSE]
   if (nrow(sq) == 0) {
     return(list())
@@ -177,7 +189,8 @@ lss_subquestion_models <- function(lss, qid, langs) {
   sq <- sq[ord, , drop = FALSE]
   lapply(seq_len(nrow(sq)), function(i) {
     sqid <- sq$qid[i]
-    texts <- lss_localized(lss$question_l10ns, "qid", sqid, langs, c("question", "help"))
+    texts <- lss_localized(lss$question_l10ns, "qid", sqid, langs,
+                           c("question", "help"), index = q_idx)
     # LimeSurvey stores per-subquestion attributes (`exclude_all_others`,
     # display rules, ...) in the same `question_attributes` table keyed
     # by the subquestion's own qid. Surface them so renderers can show
@@ -208,22 +221,56 @@ lss_subquestion_models <- function(lss, qid, langs) {
 #' missing translations are visible to the audit rather than silently
 #' dropped.
 #'
+#' @param index Optional environment produced by [lss_build_l10n_index()].
+#'   When supplied, the row lookup is O(1) instead of O(nrow(l10n)). When
+#'   `NULL`, falls back to a full table scan so the helper remains usable
+#'   standalone (e.g. in tests).
+#'
 #' @keywords internal
 #' @noRd
-lss_localized <- function(l10n, key_col, key, langs, cols) {
+lss_localized <- function(l10n, key_col, key, langs, cols, index = NULL) {
   out <- lapply(langs, function(lg) {
     values <- stats::setNames(as.list(rep(NA_character_, length(cols))), cols)
-    if (!is.null(l10n)) {
+    if (is.null(l10n)) return(values)
+
+    row_idx <- if (!is.null(index)) {
+      index[[paste(key, lg, sep = "\r")]]
+    } else {
       hit <- l10n[[key_col]] == key & l10n$language == lg
       hit[is.na(hit)] <- FALSE
-      if (any(hit)) {
-        row <- l10n[which(hit)[1], , drop = FALSE]
-        for (cc in cols) {
-          if (cc %in% names(row)) values[[cc]] <- row[[cc]]
-        }
-      }
+      pos <- which(hit)
+      if (length(pos) == 0L) NULL else pos[1]
+    }
+    if (is.null(row_idx)) return(values)
+
+    row <- l10n[row_idx, , drop = FALSE]
+    for (cc in cols) {
+      if (cc %in% names(row)) values[[cc]] <- row[[cc]]
     }
     values
   })
   stats::setNames(out, langs)
+}
+
+#' Build a (key, language) -> row-index environment for an l10n table.
+#'
+#' The resulting environment has hash semantics; lookups are O(1). The
+#' key is built as `paste(key_value, language, sep = "\r")` -- the
+#' `\r` separator is safe because LimeSurvey identifiers and language
+#' codes never contain it.
+#'
+#' @keywords internal
+#' @noRd
+lss_build_l10n_index <- function(l10n, key_col) {
+  env <- new.env(hash = TRUE, parent = emptyenv())
+  if (is.null(l10n) || nrow(l10n) == 0L) return(env)
+  if (!(key_col %in% names(l10n)) || !("language" %in% names(l10n))) {
+    return(env)
+  }
+  keys <- paste(l10n[[key_col]], l10n$language, sep = "\r")
+  for (i in seq_along(keys)) {
+    k <- keys[i]
+    if (is.null(env[[k]])) env[[k]] <- i
+  }
+  env
 }

@@ -53,3 +53,54 @@ test_that("read_lss keeps localized text and distinguishes empty from absent", {
   # A present-but-empty <help/> reads as "", never NA.
   expect_false(anyNA(lss$question_l10ns$help))
 })
+
+test_that("DBVersion < 400 is rejected with a classed error", {
+  tmp <- tempfile(fileext = ".lss")
+  on.exit(unlink(tmp), add = TRUE)
+  writeLines(c(
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    "<document>",
+    "<LimeSurveyDocType>Survey</LimeSurveyDocType>",
+    "<DBVersion>350</DBVersion>",
+    "<languages><language>en</language></languages>",
+    "</document>"
+  ), tmp)
+
+  expect_error(read_lss(tmp), class = "lssdoc_unsupported_db_version")
+})
+
+test_that("DBVersion >= 800 emits a warning but parses", {
+  tmp <- tempfile(fileext = ".lss")
+  on.exit(unlink(tmp), add = TRUE)
+  writeLines(c(
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    "<document>",
+    "<LimeSurveyDocType>Survey</LimeSurveyDocType>",
+    "<DBVersion>800</DBVersion>",
+    "<languages><language>en</language></languages>",
+    "</document>"
+  ), tmp)
+
+  # `expect_warning(...)` returns the warning, not the function result --
+  # assign with `<-` inside the expression so we can inspect both.
+  expect_warning(
+    out <- read_lss(tmp),
+    class = "lssdoc_untested_db_version"
+  )
+  expect_s3_class(out, "lss")
+  expect_identical(out$db_version, "800")
+})
+
+test_that("a missing DBVersion is warned about but parses", {
+  tmp <- tempfile(fileext = ".lss")
+  on.exit(unlink(tmp), add = TRUE)
+  writeLines(c(
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    "<document>",
+    "<LimeSurveyDocType>Survey</LimeSurveyDocType>",
+    "<languages><language>en</language></languages>",
+    "</document>"
+  ), tmp)
+
+  expect_warning(read_lss(tmp), class = "lssdoc_unknown_db_version")
+})

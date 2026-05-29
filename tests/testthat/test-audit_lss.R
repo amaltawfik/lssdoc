@@ -147,3 +147,64 @@ test_that("an array whose subquestion scales do not match the answer scales is f
   expect_true(nrow(scale_findings) >= 1)
   expect_true(all(scale_findings$severity == "warning"))
 })
+
+test_that("whitespace in a question code is flagged as a warning", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+
+  lss$questions$title[1] <- paste0(lss$questions$title[1], " ")
+
+  a <- audit_lss(lss)
+  ws <- a$findings[a$findings$check == "code_whitespace", ]
+  expect_true(nrow(ws) >= 1)
+  expect_true(all(ws$severity == "warning"))
+})
+
+test_that("whitespace inside a code is also caught", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+
+  # Interior space, not just leading/trailing.
+  lss$questions$title[1] <- "q 1"
+
+  a <- audit_lss(lss)
+  ws <- a$findings[a$findings$check == "code_whitespace", ]
+  expect_true(nrow(ws) >= 1)
+})
+
+test_that("print.lss_audit paginates and respects n = Inf", {
+  path <- system.file("extdata", "limesurvey_survey_751689.lss",
+                      package = "lssdoc")
+  skip_if_not(file.exists(path))
+  a <- audit_lss(read_lss(path))
+  skip_if(a$n_findings < 2L, "Need >=2 findings to test pagination")
+
+  # Default cap (20) -- output must mention the remaining count when
+  # there are more than 20 findings.
+  out <- utils::capture.output(print(a))
+  out <- paste(out, collapse = "\n")
+  if (a$n_findings > 20L) {
+    expect_match(out, "more finding")
+  } else {
+    expect_no_match(out, "more finding")
+  }
+
+  # n = Inf -- never truncate.
+  out_full <- utils::capture.output(print(a, n = Inf))
+  out_full <- paste(out_full, collapse = "\n")
+  expect_no_match(out_full, "more finding")
+})
+
+test_that("audit_lss returns an empty data frame when no findings", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  a <- audit_lss(read_lss(path))
+  expect_s3_class(as.data.frame(a), "data.frame")
+  # Identity in structure: same columns whether empty or populated.
+  expect_setequal(
+    names(as.data.frame(a)),
+    c("severity", "check", "location", "language", "message")
+  )
+})
