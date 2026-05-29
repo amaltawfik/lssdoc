@@ -14,6 +14,12 @@
 #'   survey, or an answer/subquestion code repeated within one question.
 #' * **Missing options for the type** -- a question whose type requires
 #'   answer options or subquestions but has none (per the type taxonomy).
+#' * **Forward filter references** -- a relevance expression that names
+#'   a variable appearing at or after the filtered question (the value
+#'   is not yet collected when the filter is evaluated).
+#' * **Array-scale inconsistencies** -- an array (single or dual) whose
+#'   subquestions reference a `scale_id` that has no answer options, or
+#'   vice versa.
 #' * **Orphan references** -- a subquestion or answer pointing to a
 #'   question that does not exist.
 #'
@@ -147,6 +153,17 @@ audit_lss <- function(input) {
     )
   }
 
+  # Forward references in routing filters: a question's relevance
+  # expression mentions a variable that appears LATER in the survey,
+  # which means the answer is not yet collected when the filter is
+  # evaluated. Almost always a survey-design bug.
+  lss_audit_forward_refs(findings, model)
+
+  # Array-scale consistency: every subquestion of a given array
+  # question should share the answer-options scale that the question
+  # type declares.
+  lss_audit_array_scales(findings, model)
+
   # Orphan structural references.
   lss_audit_orphans(findings, lss)
 
@@ -273,6 +290,122 @@ lss_audit_codes <- function(findings, codes, groups, location, kind) {
       "error", "duplicate_code", location, NA_character_,
       sprintf("Duplicate %s: '%s'.", kind, d)
     )
+  }
+  invisible()
+}
+
+#' Flag relevance expressions that reference a variable appearing at or
+#' after the filtered question.
+#'
+#' The reviewer almost always reads "filter references later variable"
+#' as a design bug: the answer is not yet collected when the filter is
+#' evaluated. We resolve references against question codes AND
+#' subquestion codes (in both the bare form `SQ1` and the parent
+#' `parent_SQ1` form), so a filter on a subq that lives in an earlier
+#' question does not trigger a false positive.
+#'
+#' @keywords internal
+#' @noRd
+lss_audit_forward_refs <- function(findings, model) {
+  # Build position index. Each variable code (question or subquestion)
+  # is mapped to the display order of the FIRST question that owns
+  # it. Subquestions inherit their parent's position so a filter on
+  # `Q1_SQ1` at Q2 reads as backward (correct).
+  position <- list()
+  pos <- 0L
+  for (group in model$groups) {
+    for (q in group$questions) {
+      pos <- pos + 1L
+      position[[q$code]] <- pos
+      if (!is.null(q$subquestions)) {
+        for (s in q$subquestions) {
+          position[[s$code]] <- pos
+          position[[paste0(q$code, "_", s$code)]] <- pos
+        }
+      }
+    }
+  }
+
+  pos <- 0L
+  for (group in model$groups) {
+    for (q in group$questions) {
+      pos <- pos + 1L
+      rel <- q$relevance
+      if (is.null(rel) || is.na(rel) || !nzchar(rel) || identical(rel, "1")) next
+
+      # Extract every variable code referenced via `X.NAOK`.
+      matches <- regmatches(
+        rel, gregexpr("\\b([A-Za-z][A-Za-z0-9_]*)\\.NAOK\\b", rel, perl = TRUE)
+      )[[1]]
+      refs <- unique(sub("\\.NAOK$", "", matches))
+      for (ref in refs) {
+        ref_pos <- position[[ref]]
+        if (is.null(ref_pos)) next  # Unknown ref: could be a calc
+                                    # field or unsupported construct.
+        if (ref_pos >= pos) {
+          findings$add(
+            "error", "forward_filter_reference",
+            lss_locate("Question", q$code), NA_character_,
+            sprintf(
+              "Filter references variable '%s' (item %d), which is not asked before this question (item %d).",
+              ref, ref_pos, pos
+            )
+          )
+        }
+      }
+    }
+  }
+  invisible()
+}
+
+#' Flag array-type questions whose answer-options scales do not match
+#' the scales used by their subquestions.
+#'
+#' For array (`F`), dual-scale array (`1`) and similar, every
+#' subquestion's `scale_id` should be matched by at least one answer
+#' option with the same `scale_id`, and vice versa. A mismatch is a
+#' methodological bug: rows or columns will be unlabelled in the data
+#' export.
+#'
+#' @keywords internal
+#' @noRd
+lss_audit_array_scales <- function(findings, model) {
+  for (group in model$groups) {
+    for (q in group$questions) {
+      if (is.null(q$subquestions) || length(q$subquestions) == 0L) next
+      if (is.null(q$answers) || length(q$answers) == 0L) next
+
+      ans_scales <- unique(vapply(q$answers,
+                                  function(a) as.character(a$scale_id),
+                                  character(1)))
+      sq_scales <- unique(vapply(q$subquestions,
+                                 function(s) as.character(s$scale_id),
+                                 character(1)))
+
+      missing_in_ans <- setdiff(sq_scales, ans_scales)
+      missing_in_sq <- setdiff(ans_scales, sq_scales)
+
+      if (length(missing_in_ans) > 0L) {
+        findings$add(
+          "warning", "array_scale_missing_answers",
+          lss_locate("Question", q$code), NA_character_,
+          sprintf(
+            "Subquestions reference scale_id '%s' but no answer options are defined for it.",
+            paste(missing_in_ans, collapse = "', '")
+          )
+        )
+      }
+      if (length(missing_in_sq) > 0L) {
+        findings$add(
+          "warning", "array_scale_missing_subquestions",
+          lss_locate("Question", q$code), NA_character_,
+          sprintf(
+            "Answer options reference scale_id '%s' but no subquestions are defined for it.",
+            paste(missing_in_sq, collapse = "', '")
+          )
+        )
+      }
+    }
   }
   invisible()
 }

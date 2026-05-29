@@ -79,3 +79,71 @@ test_that("an empty equation text is a note, not an error", {
   expect_true(nrow(this) >= 1)
   expect_true(all(this$severity == "note"))
 })
+
+test_that("a filter referencing a later variable is flagged as an error", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+
+  # Sort questions by display order so we can pick the first and a
+  # later one deterministically.
+  q_ord <- order(suppressWarnings(as.integer(lss$questions$question_order)))
+  earlier_code <- lss$questions$title[q_ord[1]]
+  later_code   <- lss$questions$title[q_ord[2]]
+
+  # Inject a filter on the EARLIER question that references the LATER
+  # question's code -- a forward reference.
+  lss$questions$relevance[q_ord[1]] <- paste0(later_code, ".NAOK == 1")
+
+  a <- audit_lss(lss)
+  fwd <- a$findings[a$findings$check == "forward_filter_reference", ]
+  expect_true(nrow(fwd) >= 1)
+  expect_true(all(fwd$severity == "error"))
+  expect_true(any(grepl(earlier_code, fwd$location, fixed = TRUE)))
+  expect_true(any(grepl(later_code, fwd$message, fixed = TRUE)))
+})
+
+test_that("a backward filter reference does not trigger forward_filter_reference", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+
+  q_ord <- order(suppressWarnings(as.integer(lss$questions$question_order)))
+  earlier_code <- lss$questions$title[q_ord[1]]
+
+  # Inject a filter on a LATER question that references an EARLIER
+  # code -- a legitimate backward reference.
+  lss$questions$relevance[q_ord[3]] <- paste0(earlier_code, ".NAOK == 1")
+
+  a <- audit_lss(lss)
+  fwd <- a$findings[a$findings$check == "forward_filter_reference", ]
+  # No forward refs introduced -- the only one would have been ours,
+  # which is now backward.
+  expect_equal(nrow(fwd), 0L)
+})
+
+test_that("an array whose subquestion scales do not match the answer scales is flagged", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+
+  # Find any question that has BOTH answers and subquestions.
+  qid <- NA
+  for (id in unique(lss$questions$qid)) {
+    has_a <- !is.null(lss$answers)      && any(lss$answers$qid == id)
+    has_s <- !is.null(lss$subquestions) && any(lss$subquestions$parent_qid == id)
+    if (has_a && has_s) { qid <- id; break }
+  }
+  skip_if(is.na(qid), "No array-style question in the fixture")
+
+  # Force one subquestion to claim a `scale_id` no answer option uses.
+  sq_rows <- which(lss$subquestions$parent_qid == qid)
+  lss$subquestions$scale_id[sq_rows[1]] <- "99"
+
+  a <- audit_lss(lss)
+  scale_findings <- a$findings[
+    a$findings$check == "array_scale_missing_answers",
+  ]
+  expect_true(nrow(scale_findings) >= 1)
+  expect_true(all(scale_findings$severity == "warning"))
+})

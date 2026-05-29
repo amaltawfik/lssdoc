@@ -67,11 +67,12 @@ Other things lssdoc takes care of for you:
   response semantics are identical and the actual codes appear in
   the Value section. The Type cell reads in the methodologist's
   vocabulary, not LimeSurvey's.
-- **Automated audit.** Missing translations, unreachable filter
-  expressions, dangling references, structural inconsistencies
-  -- all flagged inline on the rendered item and, when you ask
-  for it, in a dedicated section. No AI; rule-based and
-  reviewable.
+- **Automated audit.** Missing translations, duplicate codes,
+  forward references in routing filters, array-scale
+  inconsistencies, orphan structural references, types missing
+  their required options or subquestions -- all flagged inline
+  on the rendered item and, when you ask for it, in a dedicated
+  section. No AI; rule-based and reviewable.
 - **Local-only processing.** No network calls, no third-party
   services. The questionnaire content never leaves the machine
   where R runs.

@@ -35,6 +35,12 @@ language.
 survey, or an answer/subquestion code repeated within one question.
 \item \strong{Missing options for the type} -- a question whose type requires
 answer options or subquestions but has none (per the type taxonomy).
+\item \strong{Forward filter references} -- a relevance expression that names
+a variable appearing at or after the filtered question (the value
+is not yet collected when the filter is evaluated).
+\item \strong{Array-scale inconsistencies} -- an array (single or dual) whose
+subquestions reference a \code{scale_id} that has no answer options, or
+vice versa.
 \item \strong{Orphan references} -- a subquestion or answer pointing to a
 question that does not exist.
 }

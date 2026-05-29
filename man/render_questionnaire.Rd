@@ -12,8 +12,7 @@ render_questionnaire(
   layout = c("auto", "side-by-side", "stacked"),
   show_audit = TRUE,
   show_help = TRUE,
-  show_attrs = c("prefix", "suffix", "other_replace_text", "validation",
-    "exclude_all_others", "exclude_all_others_auto"),
+  show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,
@@ -87,10 +86,11 @@ that carry findings. Set to \code{FALSE} for a clean reading copy.}
 help texts under the question text.}
 
 \item{show_attrs}{Character vector of question attributes to surface
-under the question text when present. Default lists the attributes
-that are useful to reviewers: \code{"prefix"}, \code{"suffix"},
-\code{"other_replace_text"}, \code{"validation"}, \code{"exclude_all_others"},
-\code{"exclude_all_others_auto"}. Pass \code{character(0)} to hide all.}
+under the question text when present. Default keeps the attributes
+that change how respondents see the item: \code{"prefix"}, \code{"suffix"},
+\code{"other_replace_text"}, \code{"validation"}. Add \code{"exclude_all_others"}
+or \code{"exclude_all_others_auto"} to also surface the row-level
+exclusivity flags (debug-style). Pass \code{character(0)} to hide all.}
 
 \item{show_technical_attrs}{Logical. If \code{TRUE}, include technical
 attributes such as \code{answer_order} and \verb{location_*}. \code{FALSE} (the
