@@ -23,7 +23,7 @@
   show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,
-  show_raw_filter = TRUE,
+  show_raw_filter = FALSE,
   show_groups = TRUE,
   show_welcome = TRUE,
   show_endtext = TRUE,
@@ -844,9 +844,14 @@ lss_render_index <- function(doc, entries, theme) {
   ft <- flextable::border_remove(ft)
   thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
-  ft <- flextable::valign(ft, valign = "top", part = "all")
+  ft <- flextable::valign(ft, valign = "top", part = "body")
+  ft <- flextable::valign(ft, valign = "center", part = "header")
   ft <- flextable::padding(ft, padding = 2, part = "all")
-  ft <- flextable::align(ft, align = "right", j = "No", part = "all")
+  # Cell-symmetric: Variable header reads as a word and the body holds
+  # monospace identifiers -- both left. No header sits above a column
+  # of right-aligned digits -- both right.
+  ft <- flextable::align(ft, align = "left",  j = "Variable", part = "all")
+  ft <- flextable::align(ft, align = "right", j = "No",       part = "all")
   ft <- flextable::width(ft, j = "Variable", width = 2.6, unit = "in")
   ft <- flextable::width(ft, j = "No", width = 0.6, unit = "in")
   flextable::body_add_flextable(doc, ft, align = "left")
@@ -2205,6 +2210,11 @@ lss_value_implicit_row <- function(q, langs, theme) {
 
 #' Insert a small vertical spacer before each item so consecutive
 #' meta tables do not touch.
+#'
+#' Carries `keep_with_next` so the spacer stays anchored to its own
+#' meta table at the top of the next item, which in turn keeps with
+#' the gap and the item table (full meta -> gap -> item chain on
+#' a single page).
 #' @keywords internal
 #' @noRd
 lss_render_item_spacer <- function(doc, theme) {
@@ -2215,13 +2225,17 @@ lss_render_item_spacer <- function(doc, theme) {
         font.family = theme$font_body,
         font.size = theme$size_meta
       )),
-      fp_p = officer::fp_par(padding.top = 14, padding.bottom = 0)
+      fp_p = officer::fp_par(padding.top = 14, padding.bottom = 0,
+                             keep_with_next = TRUE)
     )
   )
 }
 
 #' Thin breathing space between the meta table and the item table
 #' so they read as two separate panels rather than one continuous block.
+#' Carries `keep_with_next` so Word does not break a page between the
+#' meta table and the item table that follows: the dark band stays
+#' anchored to its content.
 #' @keywords internal
 #' @noRd
 lss_render_intra_item_gap <- function(doc, theme) {
@@ -2231,7 +2245,8 @@ lss_render_intra_item_gap <- function(doc, theme) {
       officer::ftext(" ", prop = officer::fp_text(
         font.family = theme$font_body,
         font.size = 4
-      ))
+      )),
+      fp_p = officer::fp_par(keep_with_next = TRUE)
     )
   )
 }
@@ -2458,6 +2473,21 @@ lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
   ft <- flextable::color(ft, color = theme$color_text, part = "body")
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
+  # Language column headers (`Francais`, `Deutsch`, `English`) sit
+  # centered above the translation paragraph below: in a wide column
+  # they read as a section title rather than a left-anchored label.
+  # Same convention as ESS / MOSAiCH / Eurobarometer multilingual
+  # codebooks. The optional `code` column header (short atom) stays
+  # centered too (handled below); the meta header line, when present,
+  # explicitly resets to left.
+  ft <- flextable::align(ft, align = "center", part = "header")
+  # The `Label` column (when present) holds row-type labels:
+  # "Language", "Question", "Help", "Value 1", "Value 2", ... It
+  # reads as a small left-margin index of row types, so both header
+  # and body sit left.
+  if ("Label" %in% colnames(ft$body$dataset)) {
+    ft <- flextable::align(ft, j = "Label", align = "left", part = "all")
+  }
   if (isTRUE(meta_header)) {
     # The meta line is the first header row when add_header_lines was used.
     ft <- flextable::bg(ft, i = 1L, bg = theme$color_primary, part = "header")
@@ -2481,10 +2511,19 @@ lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
   # restraint: items differentiate by the cream meta body and the
   # inter-item spacer, not by heavy framing.
   if (isTRUE(has_code)) {
-    ft <- flextable::align(ft, j = "code", align = "center", part = "body")
+    # `code` column holds short atom values (answer codes like `1`, `Y`,
+    # `A1`). Cell-symmetric: header and body both centered.
+    ft <- flextable::align(ft, j = "code", align = "center", part = "all")
     ft <- flextable::width(ft, j = "code", width = 0.6, unit = "in")
   }
-  ft <- flextable::valign(ft, valign = "top", part = "all")
+  # Body cells are top-aligned so multiline answer labels read from the
+  # top down (question text, then subquestion / answer rows). The header
+  # labels (language codes on the tinted band) get an explicit center
+  # so they sit visually in the band instead of clinging to the top
+  # edge -- noticeable when the body grows tall (long question text,
+  # several answer modalities).
+  ft <- flextable::valign(ft, valign = "top", part = "body")
+  ft <- flextable::valign(ft, valign = "center", part = "header")
   ft <- flextable::padding(ft, padding.top = 2, padding.bottom = 2,
                            padding.left = 4, padding.right = 4, part = "all")
   # Distribute language columns so the total table width matches the
@@ -2580,8 +2619,16 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::border_remove(ft)
   thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
-  ft <- flextable::valign(ft, valign = "top", part = "all")
+  ft <- flextable::valign(ft, valign = "top", part = "body")
+  ft <- flextable::valign(ft, valign = "center", part = "header")
   ft <- flextable::padding(ft, padding = 2, part = "all")
+  # Cell-symmetric for the readable columns (severity, check, location,
+  # message): header and body both left -- the column label reads as a
+  # word above text paragraphs. The "language" column is asymmetric on
+  # purpose: header left (the word "Language") above body codes
+  # centered (the two-letter atoms `fr`, `de`, `en`).
+  ft <- flextable::align(ft, align = "left",   part = "all")
+  ft <- flextable::align(ft, align = "center", j = "language", part = "body")
   ft <- flextable::width(ft, j = "severity", width = 0.8, unit = "in")
   ft <- flextable::width(ft, j = "check", width = 1.5, unit = "in")
   ft <- flextable::width(ft, j = "location", width = 2.0, unit = "in")
@@ -2779,7 +2826,7 @@ lss_render_question_meta_table <- function(doc, theme,
                                            type_label,
                                            mandatory,
                                            relevance,
-                                           show_raw_filter = TRUE) {
+                                           show_raw_filter = FALSE) {
   filter_raw <- if (is.null(relevance) || is.na(relevance) ||
                     !nzchar(relevance)) {
     "1"
@@ -2872,35 +2919,59 @@ lss_render_question_meta_table <- function(doc, theme,
   # open on the sides).
   ft <- flextable::vline_left(ft, border = thin, part = "all")
   ft <- flextable::vline_right(ft, border = thin, part = "all")
-  ft <- flextable::valign(ft, valign = "top", part = "all")
+  # Vertical alignment: the meta table has a single body row with short
+  # cells (No, Variable, Type, Mand.) plus a Filter cell that may grow
+  # to two lines when the raw expression is shown beneath the plain
+  # form. With `valign = "top"` everywhere, the short cells appear
+  # to float at the top of the tall row and the header labels drift up
+  # in the dark band. Centering both header and body keeps the short
+  # cells vertically balanced against the Filter cell and gives the
+  # dark-band labels their visual seat.
+  ft <- flextable::valign(ft, valign = "center", part = "all")
   ft <- flextable::padding(ft, padding = 2, part = "all")
-  # Pro alignment by content type:
-  # - "No" (item number) is a number, right-aligned like in the variable
-  #   index and financial tables -- digits stack on the units column so
-  #   1, 12, 587 read as a clean scan.
-  # - "Mandatory" is a short yes/no token: centered.
-  # - All other columns hold text (codes, type label, filter expression),
-  #   left-aligned by default.
-  ft <- flextable::align(ft, align = "right",  j = "No", part = "all")
+  # Cell-symmetric alignment (Quarto gt / knitr / pandoc convention):
+  # the header label takes the same alignment as the column body, so
+  # each column reads as a coherent unit and the dark-band label sits
+  # over its content.
+  # - "No": right (digits stack as a column when scanning across cards)
+  # - "Variable": left (monospace identifier; left preserves the prefix
+  #   scan, e.g. q1 / q2 / semestre_1)
+  # - "Type": center (short categorical token)
+  # - "Mandatory": center (Yes / No)
+  # - "Filter": left (expression reads left-to-right; operators stay
+  #   anchored at the cell's left edge)
+  ft <- flextable::align(ft, align = "right",  j = "No",        part = "all")
+  ft <- flextable::align(ft, align = "left",   j = "Variable",  part = "all")
+  ft <- flextable::align(ft, align = "center", j = "Type",      part = "all")
   ft <- flextable::align(ft, align = "center", j = "Mandatory", part = "all")
+  ft <- flextable::align(ft, align = "left",   j = "Filter",    part = "all")
   # Column widths sum to theme$content_width_in (6.30 in). Calibrated to
   # the actual content using 11 pt Consolas (~0.092 in/char) for Variable
   # and 8 pt Calibri (~0.055 in/char) for the others:
   #   No        0.35  - holds up to 3 digits in 11 pt body font (max #999).
-  #   Variable  1.95  - holds identifiers up to ~20 chars (e.g.
-  #                     `semestrechargetrav_1`) without wrapping the
-  #                     trailing digit; codes >=21 chars still wrap.
-  #   Type      1.25  - holds 8 pt labels up to ~22 chars; long labels
-  #                     ("Multiple choice with comments", 28 chars) wrap
-  #                     to a second line, which is acceptable.
-  #   Mandatory 0.70  - header "Mandatory" (9 chars at 8 pt bold ~0.55 in)
-  #                     fits; body content is a tight yes/no token.
-  #   Filter    2.05  - holds the human-readable form on top and the raw
-  #                     LimeSurvey expression in 7 pt italic mono below.
+  #   Variable  2.05  - holds identifiers up to ~22 chars (e.g.
+  #                     `semestrechargetravail_1`) without wrapping;
+  #                     codes >=23 chars still wrap.
+  #   Type      1.00  - holds 8 pt labels up to ~18 chars; common labels
+  #                     ("Single choice", "Multiple choice", "Number")
+  #                     fit on one line. Long localized variants
+  #                     ("Choix multiple avec commentaire", 31 chars)
+  #                     wrap to two lines, which is acceptable for a
+  #                     rare type.
+  #   Mandatory 0.70  - widest localized header is Italian
+  #                     "Obbligatoria" (12 chars at 8 pt bold ~0.66 in);
+  #                     0.70 fits with a thin margin.
+  #   Filter    2.20  - holds the human-readable form on top and the raw
+  #                     LimeSurvey expression in 7 pt italic mono below;
+  #                     widened so 2-3 chained conditions fit on a
+  #                     single line.
   ft <- flextable::width(ft, j = "No", width = 0.35, unit = "in")
-  ft <- flextable::width(ft, j = "Variable", width = 1.95, unit = "in")
-  ft <- flextable::width(ft, j = "Type", width = 1.25, unit = "in")
+  ft <- flextable::width(ft, j = "Variable", width = 2.05, unit = "in")
+  ft <- flextable::width(ft, j = "Type", width = 1.00, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.70, unit = "in")
-  ft <- flextable::width(ft, j = "Filter", width = 2.05, unit = "in")
-  flextable::body_add_flextable(doc, ft, align = "left")
+  ft <- flextable::width(ft, j = "Filter", width = 2.20, unit = "in")
+  # keepnext: the meta table is a header for the item table that
+  # follows; Word must keep them on the same page so the dark band
+  # never floats orphaned at the bottom.
+  flextable::body_add_flextable(doc, ft, align = "left", keepnext = TRUE)
 }

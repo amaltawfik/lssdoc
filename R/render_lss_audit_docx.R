@@ -185,8 +185,16 @@ lss_render_audit_full <- function(doc, audit, theme) {
     ft <- flextable::border_remove(ft)
     thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
     ft <- flextable::hline(ft, border = thin, part = "all")
-    ft <- flextable::valign(ft, valign = "top", part = "all")
+    ft <- flextable::valign(ft, valign = "top", part = "body")
+    ft <- flextable::valign(ft, valign = "center", part = "header")
     ft <- flextable::padding(ft, padding = 2, part = "all")
+    # Cell-symmetric for readable columns (check, location, message):
+    # header and body both left -- the column label reads as a word
+    # above text paragraphs. "language" is asymmetric on purpose:
+    # header left (the word "Language") above body codes centered
+    # (the two-letter atoms `fr`, `de`, `en`).
+    ft <- flextable::align(ft, align = "left",   part = "all")
+    ft <- flextable::align(ft, align = "center", j = "language", part = "body")
     ft <- flextable::width(ft, j = "check", width = 1.6, unit = "in")
     ft <- flextable::width(ft, j = "location", width = 2.2, unit = "in")
     ft <- flextable::width(ft, j = "language", width = 0.5, unit = "in")

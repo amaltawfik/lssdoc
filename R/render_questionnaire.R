@@ -78,11 +78,14 @@
 #'   meta table starts each item directly, for a compact layout. If
 #'   `TRUE`, a bold `"N. variable"` heading is added above each item
 #'   for scroll-time navigation.
-#' @param show_raw_filter Logical. If `TRUE` (default), the Filter
-#'   cell shows the human-readable form on top and the raw LimeSurvey
-#'   relevance expression underneath in small italic gray. Set to
-#'   `FALSE` for plain form only (the raw expression is still shown
-#'   when it could not be simplified).
+#' @param show_raw_filter Logical. If `FALSE` (the default), the
+#'   Filter cell shows only the human-readable form (e.g.
+#'   `Q1 = 1`) -- editorial codebook style, matching ESS / MOSAiCH /
+#'   GESIS conventions. Set to `TRUE` to also surface the raw
+#'   LimeSurvey relevance expression underneath in small italic
+#'   gray (e.g. `!is_empty(Q1.NAOK) && (Q1.NAOK == 1)`), useful for
+#'   QA cross-checks. The raw form is always shown when the plain
+#'   form could not be simplified.
 #' @param show_groups Logical. If `TRUE` (default), show the group
 #'   banners (cards layout) or group rows (table layout). Pass
 #'   `FALSE` to flatten the document into a single sequence of items
@@ -288,7 +291,7 @@ render_questionnaire <- function(
   show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,
-  show_raw_filter = TRUE,
+  show_raw_filter = FALSE,
   show_groups = TRUE,
   show_welcome = TRUE,
   show_endtext = TRUE,

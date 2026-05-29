@@ -67,12 +67,17 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   }
 
   ft <- flextable::flextable(df)
+  # In the dense table template the Mandatory header uses the
+  # abbreviated chrome string (`Mand.` / `Oblig.` / `Pflicht` /
+  # `Obblig.`) so the column can stay narrow and the question
+  # languages get >=50% of the page width. The cards template keeps
+  # the full localized word.
   ft <- flextable::set_header_labels(
     ft, values = stats::setNames(
       as.list(c(
         chrome$item_field,
         chrome$meta_no, chrome$meta_variable, chrome$meta_type,
-        chrome$meta_mandatory, chrome$meta_filter, chrome$item_value,
+        chrome$meta_mandatory_short, chrome$meta_filter, chrome$item_value,
         lss_language_label(langs)
       )),
       all_cols
@@ -641,8 +646,16 @@ lss_table_implicit_value_text <- function(q, theme) {
 #' @noRd
 lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
-  ft <- flextable::fontsize(ft, size = theme$size_meta, part = "body")
-  ft <- flextable::fontsize(ft, size = theme$size_lang_header, part = "header")
+  # Auto-reduce body and header font sizes when the table holds 3+
+  # languages so the translation paragraphs keep enough breathing
+  # room per cell. With 2 languages each gets >=2.6 in at 8 pt body;
+  # with 3 languages 1.75 in, with 4 languages 1.32 in -- 7 pt body
+  # is the editorial floor (matches GESIS / OECD codebooks for
+  # multi-column layouts).
+  body_size <- if (n_lang >= 3L) theme$size_meta - 1L else theme$size_meta
+  header_size <- if (n_lang >= 3L) theme$size_lang_header - 1L else theme$size_lang_header
+  ft <- flextable::fontsize(ft, size = body_size, part = "body")
+  ft <- flextable::fontsize(ft, size = header_size, part = "header")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_white, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band_dark, part = "header")
@@ -669,11 +682,30 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   ft <- flextable::color(ft, j = "Value", color = theme$color_primary,
                          part = "body")
 
-  # Alignment.
-  ft <- flextable::align(ft, align = "left", part = "all")
-  ft <- flextable::align(ft, j = "No", align = "right", part = "all")
+  # Alignment per column, content-driven:
+  # - Field, Variable: left both (text / identifier)
+  # - No: right both (digits stack as a column)
+  # - Type, Mandatory: center both (short categorical tokens)
+  # - Value: header center (the word "Value" / "Valeur" / "Wert"
+  #   reads as a section title), body right (numeric answer codes
+  #   align as a column, Stata / SPSS / GESIS convention)
+  # - Language columns: header center (`Francais`, `Deutsch`,
+  #   `English` read as section titles above the translation
+  #   paragraph), body left (text reads L->R)
+  ft <- flextable::align(ft, align = "left",   part = "all")
+  ft <- flextable::align(ft, j = "No",        align = "right",  part = "all")
+  ft <- flextable::align(ft, j = "Type",      align = "center", part = "all")
   ft <- flextable::align(ft, j = "Mandatory", align = "center", part = "all")
-  ft <- flextable::align(ft, j = "Value", align = "center", part = "all")
+  ft <- flextable::align(ft, j = "Value",     align = "right",  part = "body")
+  ft <- flextable::align(ft, j = "Value",     align = "center", part = "header")
+  # Language columns are the last `n_lang` columns of the table (the
+  # meta columns occupy positions 1:7). Body stays left (translations
+  # read L->R); header centered so the language name sits as a
+  # section title above the column.
+  n_meta <- 7L
+  lang_j <- seq.int(n_meta + 1L, length.out = n_lang)
+  ft <- flextable::align(ft, j = lang_j, align = "center", part = "header")
+  ft <- flextable::align(ft, j = lang_j, align = "left",   part = "body")
 
   # Borders: soft grid only, no per-row primary outline.
   ft <- flextable::border_remove(ft)
@@ -683,29 +715,48 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   ft <- flextable::vline_left(ft, border = thin, part = "all")
   ft <- flextable::vline_right(ft, border = thin, part = "all")
 
-  ft <- flextable::valign(ft, valign = "top", part = "all")
+  # Body cells are top-aligned so multiline language content reads from
+  # the top. Header labels sit centered in the tinted band.
+  ft <- flextable::valign(ft, valign = "top", part = "body")
+  ft <- flextable::valign(ft, valign = "center", part = "header")
   ft <- flextable::padding(ft, padding.top = 3, padding.bottom = 3,
                            padding.left = 4, padding.right = 4, part = "all")
 
-  # Column widths. Calibrated so:
-  # - Bold 8 pt header text does not wrap. "Obligatoire" / "Pflicht-
-  #   feld" need ~1.0 in; Field stays narrow (~0.75 in for the
-  #   chrome$item_question string, e.g. "Question" / "Frage" /
-  #   "Pregunta").
-  # - Variable column accommodates the longest `parent_subq` codes
-  #   on a single line (11 pt Consolas).
-  # - Total <= landscape A4 body width (~9.73 in with 2.5 cm side
-  #   margins); the remainder splits evenly between language columns.
-  meta_w <- 0.95 + 0.35 + 1.45 + 1.15 + 1.15 + 1.05 + 0.70
+  # Column widths. Tight on the meta columns to give the language
+  # columns >=50% of the total width (the translation paragraphs
+  # are the primary content of the codebook). Short header labels
+  # are allowed to wrap to two lines ("Single | choice") -- the
+  # visual cost is small and the question-column gain is large.
+  #   Field     0.62  - "Welcome" (7) and "Question" (8) fit on
+  #                     one line; longer localized labels
+  #                     ("Description", 11) wrap.
+  #   No        0.30  - 3 digits in 11 pt body font ("999" max).
+  #   Variable  1.30  - common `parent_subq` codes fit on a single
+  #                     11 pt Consolas line; codes >14 chars wrap.
+  #   Type      0.55  - "Single choice" wraps to two lines (an
+  #                     acceptable cost on the per-variable header
+  #                     row); shorter labels ("Number", "Text")
+  #                     fit on one line.
+  #   Mandatory 0.50  - uses the abbreviated header
+  #                     (`meta_mandatory_short`); the widest
+  #                     localized variant ("Pflicht", 7 chars at
+  #                     8 pt bold ~0.42 in) fits with thin margin.
+  #   Filter    0.65  - editorial default (show_raw_filter = FALSE)
+  #                     shows only the plain form (e.g. `Q1 = 1`);
+  #                     longer chained conditions wrap.
+  #   Value     0.55  - 1-3 digit codes in 11 pt Consolas bold
+  #                     ("1", "12", "999").
+  # Total meta = 4.47; languages get ~5.26 in (54.1% of 9.73 in).
+  meta_w <- 0.62 + 0.30 + 1.30 + 0.55 + 0.50 + 0.65 + 0.55
   total_w <- if (n_lang >= 2L) 9.73 else theme$content_width_in
   lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 1.3)
-  ft <- flextable::width(ft, j = "Field",     width = 0.95, unit = "in")
-  ft <- flextable::width(ft, j = "No",        width = 0.35, unit = "in")
-  ft <- flextable::width(ft, j = "Variable",  width = 1.45, unit = "in")
-  ft <- flextable::width(ft, j = "Type",      width = 1.15, unit = "in")
-  ft <- flextable::width(ft, j = "Mandatory", width = 1.15, unit = "in")
-  ft <- flextable::width(ft, j = "Filter",    width = 1.05, unit = "in")
-  ft <- flextable::width(ft, j = "Value",     width = 0.70, unit = "in")
+  ft <- flextable::width(ft, j = "Field",     width = 0.62, unit = "in")
+  ft <- flextable::width(ft, j = "No",        width = 0.30, unit = "in")
+  ft <- flextable::width(ft, j = "Variable",  width = 1.30, unit = "in")
+  ft <- flextable::width(ft, j = "Type",      width = 0.55, unit = "in")
+  ft <- flextable::width(ft, j = "Mandatory", width = 0.50, unit = "in")
+  ft <- flextable::width(ft, j = "Filter",    width = 0.65, unit = "in")
+  ft <- flextable::width(ft, j = "Value",     width = 0.55, unit = "in")
   for (idx in seq_len(n_lang)) {
     ft <- flextable::width(ft, j = 7L + idx, width = lang_w, unit = "in")
   }

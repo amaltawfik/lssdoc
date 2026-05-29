@@ -21,7 +21,7 @@ render_questionnaire(
   show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,
-  show_raw_filter = TRUE,
+  show_raw_filter = FALSE,
   show_groups = TRUE,
   show_welcome = TRUE,
   show_endtext = TRUE,
@@ -126,11 +126,14 @@ meta table starts each item directly, for a compact layout. If
 \code{TRUE}, a bold \code{"N. variable"} heading is added above each item
 for scroll-time navigation.}
 
-\item{show_raw_filter}{Logical. If \code{TRUE} (default), the Filter
-cell shows the human-readable form on top and the raw LimeSurvey
-relevance expression underneath in small italic gray. Set to
-\code{FALSE} for plain form only (the raw expression is still shown
-when it could not be simplified).}
+\item{show_raw_filter}{Logical. If \code{FALSE} (the default), the
+Filter cell shows only the human-readable form (e.g.
+\code{Q1 = 1}) -- editorial codebook style, matching ESS / MOSAiCH /
+GESIS conventions. Set to \code{TRUE} to also surface the raw
+LimeSurvey relevance expression underneath in small italic
+gray (e.g. \code{!is_empty(Q1.NAOK) && (Q1.NAOK == 1)}), useful for
+QA cross-checks. The raw form is always shown when the plain
+form could not be simplified.}
 
 \item{show_groups}{Logical. If \code{TRUE} (default), show the group
 banners (cards layout) or group rows (table layout). Pass

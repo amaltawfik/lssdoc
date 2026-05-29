@@ -30,7 +30,7 @@
 lss_chrome_strings <- function(lang = "en") {
   base <- list(
     # ---- Cover page ----
-    cover_subtitle_review = "LimeSurvey questionnaire review",
+    cover_subtitle_review = "Questionnaire",
     cover_subtitle_audit  = "Questionnaire audit report",
     cover_source_file     = "Source file",
     cover_survey_id       = "Survey ID",
@@ -64,6 +64,7 @@ lss_chrome_strings <- function(lang = "en") {
     meta_variable         = "Variable",
     meta_type             = "Type",
     meta_mandatory        = "Mandatory",
+    meta_mandatory_short  = "Mand.",
     meta_filter           = "Filter",
     # ---- Item table row labels ----
     item_language         = "Language",
@@ -133,7 +134,7 @@ lss_chrome_strings <- function(lang = "en") {
   )
 
   fr <- list(
-    cover_subtitle_review = "Revue du questionnaire LimeSurvey",
+    cover_subtitle_review = "Questionnaire",
     cover_subtitle_audit  = "Rapport d'audit du questionnaire",
     cover_source_file     = "Fichier source",
     cover_survey_id       = "Identifiant de l'enqu\u00EAte",
@@ -162,6 +163,7 @@ lss_chrome_strings <- function(lang = "en") {
     meta_variable         = "Variable",
     meta_type             = "Type",
     meta_mandatory        = "Obligatoire",
+    meta_mandatory_short  = "Oblig.",
     meta_filter           = "Filtre",
     item_language         = "Langue",
     item_question         = "Question",
@@ -222,7 +224,7 @@ lss_chrome_strings <- function(lang = "en") {
   )
 
   de <- list(
-    cover_subtitle_review = "Pr\u00FCfung des LimeSurvey-Fragebogens",
+    cover_subtitle_review = "Fragebogen",
     cover_subtitle_audit  = "Audit-Bericht zum Fragebogen",
     cover_source_file     = "Quelldatei",
     cover_survey_id       = "Umfrage-ID",
@@ -251,6 +253,7 @@ lss_chrome_strings <- function(lang = "en") {
     meta_variable         = "Variable",
     meta_type             = "Typ",
     meta_mandatory        = "Pflichtfeld",
+    meta_mandatory_short  = "Pflicht",
     meta_filter           = "Filter",
     item_language         = "Sprache",
     item_question         = "Frage",
@@ -310,7 +313,7 @@ lss_chrome_strings <- function(lang = "en") {
   # Spanish and Italian: best-effort translations. Reviewers should
   # validate before using in an official publication.
   es <- list(
-    cover_subtitle_review = "Revisi\u00F3n del cuestionario LimeSurvey",
+    cover_subtitle_review = "Cuestionario",
     cover_subtitle_audit  = "Informe de auditor\u00EDa del cuestionario",
     cover_source_file     = "Archivo de origen",
     cover_survey_id       = "Identificador de la encuesta",
@@ -339,6 +342,7 @@ lss_chrome_strings <- function(lang = "en") {
     meta_variable         = "Variable",
     meta_type             = "Tipo",
     meta_mandatory        = "Obligatorio",
+    meta_mandatory_short  = "Oblig.",
     meta_filter           = "Filtro",
     item_language         = "Idioma",
     item_question         = "Pregunta",
@@ -396,7 +400,7 @@ lss_chrome_strings <- function(lang = "en") {
   )
 
   it <- list(
-    cover_subtitle_review = "Revisione del questionario LimeSurvey",
+    cover_subtitle_review = "Questionario",
     cover_subtitle_audit  = "Rapporto di audit del questionario",
     cover_source_file     = "File sorgente",
     cover_survey_id       = "Identificativo dell'indagine",
@@ -425,6 +429,7 @@ lss_chrome_strings <- function(lang = "en") {
     meta_variable         = "Variabile",
     meta_type             = "Tipo",
     meta_mandatory        = "Obbligatoria",
+    meta_mandatory_short  = "Obblig.",
     meta_filter           = "Filtro",
     item_language         = "Lingua",
     item_question         = "Domanda",
