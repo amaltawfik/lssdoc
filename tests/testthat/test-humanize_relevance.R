@@ -123,6 +123,56 @@ test_that("range collapse only fires on the SAME variable", {
   )
 })
 
+test_that("intval(X.NAOK) is unwrapped to X", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("intval(age.NAOK) > 18"),
+    "age > 18"
+  )
+  # Spaces inside the function are tolerated.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("intval( age.NAOK ) == 0"),
+    "age = 0"
+  )
+})
+
+test_that("strlen(X.NAOK) > 0 maps to the same chrome as !is_empty(X.NAOK)", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("strlen(comment.NAOK) > 0"),
+    "comment is answered"
+  )
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("strlen(comment.NAOK) == 0"),
+    "comment is empty"
+  )
+})
+
+test_that("regexMatch(\"pat\", X.NAOK) becomes a predicate", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance(
+      'regexMatch("^[A-Z]+$", code.NAOK)'
+    ),
+    'code matches "^[A-Z]+$"'
+  )
+})
+
+test_that("that.X group references lose the structural prefix", {
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("that.q1.NAOK == 1"),
+    "q1 = 1"
+  )
+})
+
+test_that("count(...) stays but its .NAOK markers are stripped", {
+  # The "at least N of {...}" rewrite is intentionally not performed
+  # (low frequency, requires careful chrome). The function name stays
+  # but the .NAOK noise inside the args is cleaned up so the cell
+  # reads as `count(a, b, c) \u2265 2`.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance("count(a.NAOK, b.NAOK, c.NAOK) >= 2"),
+    "count(a, b, c) \u2265 2"
+  )
+})
+
 test_that("AND, OR, is answered, is empty localize via theme$chrome", {
   fr_theme <- list(chrome = lssdoc:::lss_chrome_strings("fr"))
   expect_identical(

@@ -25,8 +25,15 @@ lss_relevance_label <- function(x, theme = NULL) {
 #' human-readable form.
 #'
 #' Recognized patterns:
-#' * `is_empty(X.NAOK)` -> "X empty"
-#' * `!is_empty(X.NAOK)` -> "X answered"
+#' * `is_empty(X.NAOK)` -> "X is empty"
+#' * `!is_empty(X.NAOK)` -> "X is answered"
+#' * `strlen(X.NAOK) == 0` -> "X is empty"; `strlen(X.NAOK) > 0` ->
+#'   "X is answered" (the same predicates written via string length)
+#' * `intval(X.NAOK) OP N` -> "X OP N" (the integer cast is invisible
+#'   to a methodologist)
+#' * `regexMatch("pat", X.NAOK)` -> "X matches \"pat\""
+#' * `that.X.NAOK` -> "X" (LimeSurvey group references lose the
+#'   structural prefix)
 #' * `X.NAOK == N` -> "X = N"; `X.NAOK != N` -> "X \u2260 N";
 #'   `X.NAOK <= N` -> "X \u2264 N" (idem `>=`, `<`, `>`)
 #' * `&&` -> "AND"; `||` -> "OR"
@@ -35,11 +42,11 @@ lss_relevance_label <- function(x, theme = NULL) {
 #' * Two bounds on the **same variable** collapse to an encased range:
 #'   `X >= 18 && X <= 65` -> "18 \u2264 X \u2264 65"
 #'
-#' All Boolean and predicate tokens (`AND`, `OR`, `answered`, `empty`,
-#' `in`) localize via `theme$chrome$filter_*` when a theme is supplied.
-#' The function strips balanced outer parentheses. When the expression
-#' cannot be matched it is returned unchanged so the raw text is never
-#' lost.
+#' All Boolean and predicate tokens (`AND`, `OR`, `is answered`,
+#' `is empty`, `matches`) localize via `theme$chrome$filter_*` when a
+#' theme is supplied. The function strips balanced outer parentheses.
+#' When the expression cannot be matched it is returned unchanged so
+#' the raw text is never lost.
 #'
 #' @param x A character relevance expression as stored in LimeSurvey.
 #' @param theme Optional theme list. When `NULL`, English chrome is used.
@@ -54,6 +61,27 @@ lss_humanize_relevance <- function(x, theme = NULL) {
   }
   s <- as.character(x)
   s <- lss_strip_outer_parens(s)
+
+  # Step 0: preprocess LimeSurvey wrappers and group references so the
+  # subsequent steps see canonical `X.NAOK` references.
+  # - `that.Q1.NAOK` is a group reference (LimeSurvey routes inside
+  #   one group via `that.code`); the prefix is structural noise.
+  # - `intval(X.NAOK)` wraps a string value into an integer for
+  #   comparison; the cast is invisible to a methodologist.
+  # - `regexMatch("pat", X.NAOK)` becomes `X matches "pat"` so the
+  #   reader sees a predicate, not a function call.
+  # - `strlen(X.NAOK) > 0` is the LimeSurvey idiom for "answered";
+  #   `strlen(X.NAOK) == 0` for "empty". Map both to the same chrome
+  #   strings as `is_empty()`.
+  s <- gsub("\\bthat\\.([A-Za-z0-9_]+)", "\\1", s, perl = TRUE)
+  s <- gsub("\\bintval\\s*\\(\\s*([A-Za-z0-9_]+\\.NAOK)\\s*\\)", "\\1",
+            s, perl = TRUE)
+  s <- gsub("\\bregexMatch\\s*\\(\\s*\"([^\"]*)\"\\s*,\\s*([A-Za-z0-9_]+)\\.NAOK\\s*\\)",
+            paste0("\\2 ", chrome$matches, " \"\\1\""), s, perl = TRUE)
+  s <- gsub("\\bstrlen\\s*\\(\\s*([A-Za-z0-9_]+)\\.NAOK\\s*\\)\\s*>\\s*0",
+            paste0("\\1 ", chrome$answered), s, perl = TRUE)
+  s <- gsub("\\bstrlen\\s*\\(\\s*([A-Za-z0-9_]+)\\.NAOK\\s*\\)\\s*(==|<=)\\s*0",
+            paste0("\\1 ", chrome$empty), s, perl = TRUE)
 
   # Step 1: collapse the LimeSurvey "answered-and-equals" idiom on the
   # SAME variable. LimeSurvey's conditional designer emits
@@ -121,6 +149,7 @@ lss_filter_chrome <- function(theme = NULL) {
     or       = "OR",
     answered = "is answered",
     empty    = "is empty",
+    matches  = "matches",
     inset    = "\u2208",
     notinset = "\u2209"
   )
@@ -135,6 +164,7 @@ lss_filter_chrome <- function(theme = NULL) {
     or       = pick("or",       defaults$or),
     answered = pick("answered", defaults$answered),
     empty    = pick("empty",    defaults$empty),
+    matches  = pick("matches",  defaults$matches),
     inset    = defaults$inset,
     notinset = defaults$notinset
   )
