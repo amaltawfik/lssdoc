@@ -55,6 +55,14 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     } else if (identical(r$kind, "value")) {
       df$Value[i] <- as.character(r$code)
       # Labels per language composed via flextable::compose() below.
+    } else if (identical(r$kind, "mc_option")) {
+      # Multiple-choice option: the option's full variable code in the
+      # Variable column; the option label per language composed below.
+      df$Variable[i] <- r$variable
+    } else if (identical(r$kind, "mc_exclusive")) {
+      # Exclusive-option note: a localized sentence in the Field column,
+      # spanning nothing else; language cells stay empty.
+      df$Field[i] <- chrome$item_exclusive
     } else {
       # Question row (leaf / subq / other).
       df$Field[i]     <- chrome$item_question
@@ -161,10 +169,12 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       next
     }
 
-    if (identical(kind, "value")) {
-      # Value row: codes in mono primary inside the Value column (df
-      # already set the bare code), labels per language. Empty
-      # cells fall back to the muted em-dash.
+    if (identical(kind, "value") || identical(kind, "mc_option")) {
+      # Value row (enumerated answer code) OR multiple-choice option
+      # row: the language columns carry the answer / option label.
+      # `df` already holds the code (Value column) or the full option
+      # variable name (Variable column). Empty cells fall back to the
+      # muted em-dash.
       for (lg in langs) {
         label <- lss_html_to_text(r$labels[[lg]])
         if (!nzchar(label)) {
@@ -182,6 +192,21 @@ lss_render_table_template <- function(doc, rows, langs, theme,
             ))
           )
         }
+      }
+      next
+    }
+
+    if (identical(kind, "mc_exclusive")) {
+      # Exclusive-option note: the localized sentence in each language
+      # column, muted italic, mirroring the cards layout. The Field
+      # column already carries the "Exclusive" label.
+      for (lg in langs) {
+        ft <- flextable::compose(
+          ft, i = i, j = paste0("Q_", lg),
+          value = flextable::as_paragraph(flextable::as_chunk(
+            r$text, props = value_descriptor_props
+          ))
+        )
       }
       next
     }
@@ -360,9 +385,67 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out
   }
 
+  # One grouped block for a multiple-choice question: a parent
+  # Question row (stem once, Variable = parent_*, the implicit
+  # "Y/blank" coding in the Value cell) followed by one row per option
+  # carrying that option's FULL variable code -- so the dense codebook
+  # keeps every exported variable on its own findable row -- with the
+  # option label in the language columns. Options are not numbered
+  # individually (one No for the question), but each option variable is
+  # registered in the variable index.
+  emit_multiple_choice <- function(q) {
+    out <- list()
+    state$item_no <- state$item_no + 1L
+    parent_no <- state$item_no
+    # The parent row is the question header: it carries the stem, type,
+    # filter and the shared "Y/blank" coding, but NO variable code. In
+    # this dense codebook the option rows below already list every full
+    # variable name (difficultesetudes_1, _2, ...), so a `difficultesetudes_*`
+    # family pattern here would just repeat the prefix -- and the bare
+    # parent is not a real data column. Keeping the Variable cell blank
+    # leaves the Variable column a clean list of actual dataset columns.
+    out[[length(out) + 1L]] <- emit_question_row(
+      "leaf", parent_no, "", q = q
+    )
+    for (sq in q$subquestions) {
+      item_code <- paste0(q$code, "_", sq$code)
+      state$index_entries[[length(state$index_entries) + 1L]] <- list(
+        code = item_code, no = parent_no
+      )
+      out[[length(out) + 1L]] <- list(
+        kind = "mc_option",
+        variable = item_code,
+        labels = stats::setNames(
+          lapply(langs, function(lg) sq$texts[[lg]]$question), langs
+        )
+      )
+    }
+    excl <- lss_exclusive_codes(q)
+    if (length(excl) > 0L) {
+      out[[length(out) + 1L]] <- list(
+        kind = "mc_exclusive",
+        text = sprintf(chrome$exclusive_text_fmt, paste(excl, collapse = ", "))
+      )
+    }
+    if (identical(q$other, "Y")) {
+      state$item_no <- state$item_no + 1L
+      item_code <- paste0(q$code, "_other")
+      state$index_entries[[length(state$index_entries) + 1L]] <- list(
+        code = item_code, no = state$item_no
+      )
+      out[[length(out) + 1L]] <- emit_question_row(
+        "other", state$item_no, item_code, q = q, other_q = q
+      )
+    }
+    out
+  }
+
   for (q in g$questions) {
       info <- lss_type_info(q$type)
-      if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
+      if (identical(info$family, "multiple") &&
+          length(q$subquestions) > 0L) {
+        rows <- c(rows, emit_multiple_choice(q))
+      } else if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
         for (sq in q$subquestions) {
           state$item_no <- state$item_no + 1L
           item_code <- paste0(q$code, "_", sq$code)

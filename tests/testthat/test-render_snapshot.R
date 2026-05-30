@@ -132,6 +132,34 @@ test_that("every question code appears in the variable index", {
   }
 })
 
+# ---- Table template groups multiple-choice into parent + option rows --
+
+test_that("the table template renders multiple choice as a parent row plus full-name option rows", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+  skip_if(!("semestrechargetrav" %in% lss$questions$title),
+          "fixture changed; MC question absent")
+  txt <- lss_render_text(lss, chrome_lang = "en",
+                         languages = c("fr", "de"), template = "table")
+
+  # The parent row carries the implicit Y/blank coding once.
+  expect_true(grepl("Y/blank", txt, fixed = TRUE))
+  # The parent row does NOT repeat a `code_*` family pattern in the
+  # Variable column: in the table the option rows below already list the
+  # full names, so the family wildcard would be redundant (and the bare
+  # parent is not a real data column).
+  expect_false(grepl("semestrechargetrav_*", txt, fixed = TRUE))
+  # Each option keeps its FULL variable name on its own codebook row
+  # (the table is a variable dictionary, unlike the card's suffix-only
+  # option list).
+  for (k in 1:8) {
+    code <- sprintf("semestrechargetrav_%d", k)
+    expect_true(grepl(code, txt, fixed = TRUE),
+                info = sprintf("expected full option variable '%s'", code))
+  }
+})
+
 # ---- Multiple-choice questions render as one grouped card ----------
 
 test_that("a multiple-choice question renders as a single grouped card", {
