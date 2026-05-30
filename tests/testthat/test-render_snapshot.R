@@ -10,6 +10,7 @@
 # token from the .docx (paragraphs + table cells + headers + footers).
 
 lss_render_text <- function(lss, ..., template = "cards") {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")

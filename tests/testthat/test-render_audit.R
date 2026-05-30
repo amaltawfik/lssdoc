@@ -10,6 +10,7 @@ test_that("render_audit rejects bad inputs", {
 })
 
 test_that("render_audit writes a focused audit document", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
@@ -43,6 +44,7 @@ test_that("render_audit writes a focused audit document", {
 })
 
 test_that("render_audit on a clean survey says 'no anomalies'", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")

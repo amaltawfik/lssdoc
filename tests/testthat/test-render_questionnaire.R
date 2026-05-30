@@ -14,6 +14,7 @@ test_that("render_questionnaire validates its output argument", {
 })
 
 test_that("render_questionnaire produces a non-empty .docx for hesav (2 langs)", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
@@ -41,6 +42,7 @@ test_that("render_questionnaire produces a non-empty .docx for hesav (2 langs)",
 })
 
 test_that("render_questionnaire with show_audit = FALSE drops the audit section", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
@@ -56,6 +58,7 @@ test_that("render_questionnaire with show_audit = FALSE drops the audit section"
 })
 
 test_that("the cover page carries the Survey ID and LimeSurvey last-save fields", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
@@ -95,6 +98,7 @@ test_that("render_questionnaire validates the logo argument", {
 })
 
 test_that("a valid logo is embedded in the rendered document", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
@@ -162,6 +166,7 @@ test_that("lss_normalize_description coerces empty/whitespace input to NULL", {
 })
 
 test_that("authors and description appear on the cover when supplied", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
@@ -218,6 +223,7 @@ test_that("lss_validate_colors accepts NULL, normalizes hex maps, rejects garbag
 })
 
 test_that("render_questionnaire accepts a colors override and runs end-to-end", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")

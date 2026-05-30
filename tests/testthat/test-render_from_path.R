@@ -1,4 +1,5 @@
 test_that("render_questionnaire parses then renders to .docx", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
@@ -11,6 +12,7 @@ test_that("render_questionnaire parses then renders to .docx", {
 })
 
 test_that("render_audit writes an audit-only document", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
@@ -37,6 +39,7 @@ test_that(".docx_to_pdf reports a clear error when soffice is unavailable", {
 })
 
 test_that("render_questionnaire and render_audit produce PDFs when soffice is present", {
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   if (is.null(lssdoc:::lss_find_soffice())) {
