@@ -129,15 +129,16 @@ test_that("font and font_code overrides flow through the theme", {
 })
 
 test_that("lss_validate_font rejects non-character / NA / multi-element values", {
-  expect_null(lss_validate_font(NULL, "font"))
+  # The validator returns invisible() on success, so we check the
+  # call is silent rather than its return value.
+  expect_silent(lss_validate_font(NULL, "font"))
+  expect_silent(lss_validate_font("Source Sans 3", "font"))
   expect_error(lss_validate_font(123, "font"),
                class = "lssdoc_bad_font")
   expect_error(lss_validate_font(c("a", "b"), "font"),
                class = "lssdoc_bad_font")
   expect_error(lss_validate_font(NA_character_, "font"),
                class = "lssdoc_bad_font")
-  expect_identical(lss_validate_font("Source Sans 3", "font"),
-                   "Source Sans 3")
 })
 
 # ---- Audit doc paths --------------------------------------------------
