@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lssdoc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,78 +47,85 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.0.9000" id="lssdoc-0009000">lssdoc 0.0.0.9000<a class="anchor" aria-label="anchor" href="#lssdoc-0009000"></a></h2>
-<ul><li>
-<strong>Public API simplified to four functions.</strong> The package now exposes only <code><a href="../reference/read_lss.html">read_lss()</a></code>, <code><a href="../reference/audit_lss.html">audit_lss()</a></code>, <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code>, and <code><a href="../reference/render_audit.html">render_audit()</a></code>. The previous nine-function surface (<code>parse_lss()</code>, <code>render_lss_docx()</code>, <code>render_lss_audit_docx()</code>, <code>lss_to_docx()</code>, <code>lss_to_pdf()</code>, <code>lss_audit_to_docx()</code>, <code>lss_audit_to_pdf()</code>, <code>lss_docx_to_pdf()</code>) has been collapsed:
-<ul><li>
-<code>parse_lss()</code> -&gt; <code><a href="../reference/read_lss.html">read_lss()</a></code> (readr-style verb).</li>
-<li>
-<code><a href="../reference/audit_lss.html">audit_lss()</a></code> now accepts either a <code>.lss</code> path or an <code>lss</code> object, so a one-line audit is <code>audit_lss("survey.lss")</code>.</li>
-<li>
-<code>render_questionnaire(input, output, ...)</code> replaces <code>render_lss_docx()</code>, <code>lss_to_docx()</code>, and <code>lss_to_pdf()</code>. The output format is inferred from the extension of <code>output</code> (<code>.docx</code> or <code>.pdf</code>). <code>input</code> accepts a path or a pre-parsed <code>lss</code> object.</li>
-<li>
-<code>render_audit(input, output, ...)</code> replaces <code>render_lss_audit_docx()</code>, <code>lss_audit_to_docx()</code>, and <code>lss_audit_to_pdf()</code> with the same polymorphism and format detection.</li>
-<li>
-<code>lss_docx_to_pdf()</code> is now an internal helper invoked automatically by the <code>.pdf</code> branch of the renderers. Pre-release breaking change (the package was at <code>0.0.0.9000</code>), no deprecation shims are provided.</li>
-</ul></li>
-<li>The survey title now appears at the <strong>top-right header</strong> of every page (one line per displayed language, truncated to 80 characters with a trailing ellipsis when longer), replacing the previous footer-left position. The footer now holds only the compact <code>X/Y</code> page counter (no spaces) right-aligned. Controlled by the renamed <code>show_header_title</code> argument (was <code>show_footer_title</code>).</li>
-<li>New <code>title</code> argument to <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code>. Pass a single string to override every language with the same title, or a named character vector like <code>c(fr = "Mon titre", de = "Mein Titel")</code> for per-language overrides. <code>NULL</code> (the default) keeps the per-language titles from the survey settings. Drives both the cover page and the header.</li>
-<li>Each item now renders as a <strong>unified mini-table</strong> with a left label column and one row per content element (<code>Language | Question | Help | Value 1 | Value 2 | ...</code>). Each row is self-describing in line with ESS / MOSAiCH convention.</li>
-<li>When a question has <code>other = "Y"</code>, the LimeSurvey free-text variable <code>&lt;parent&gt;_other</code> is now surfaced as its own numbered item with the customized <code>other_replace_text</code> prompt, instead of being buried in the attributes section.</li>
-<li>Table-of-contents entries are now <strong>clickable hyperlinks</strong> that jump to the corresponding group heading. Each group heading is anchored with a bookmark and the TOC entry is an internal hyperlink to that anchor. Works in Word, LibreOffice and PDF.</li>
-<li>Group headings are rendered as a <strong>uniformly styled paragraph</strong> (manual <code>"N. group name"</code> prefix in Calibri 14pt blue bold) rather than a Word Heading 1 paragraph. Word’s Heading 1 style ships with a linked list definition whose number style does not match the body font; using a styled paragraph keeps the whole heading typographically uniform. Trade-off: groups no longer appear in Word’s left-side navigation pane, but the clickable TOC at the start of the document provides the same navigation in every viewer.</li>
-<li>The table of contents is now a <strong>manual list</strong> of group names with sequential numbering, rather than a Word <code>TOC</code> field. The previous field-based implementation had two practical limitations: Word’s auto-refresh of <code>PAGEREF</code> entries can fire before pagination is complete, producing page numbers of <code>1</code> everywhere; and LibreOffice does not refresh field values on open or during headless PDF conversion. The manual list is always visible immediately in every viewer (Word, LibreOffice, PDF) with no refresh interaction. Trade- off: no page numbers in the TOC.</li>
-<li>The page footer’s <code>X / Y</code> page counter now inherits the same muted Calibri 8pt gray as the title on its left; <code><a href="https://davidgohel.github.io/officer/reference/run_word_field.html" class="external-link">officer::run_word_field</a></code> needs an explicit <code>prop</code> argument to override the paragraph default.</li>
-<li>The field-dirty marker injection now patches <code>word/footer*.xml</code> and <code>word/header*.xml</code> in addition to <code>word/document.xml</code>, so Word refreshes PAGE/NUMPAGES fields wherever they appear.</li>
-<li>
-<code>zip</code> declared in <code>Suggests</code> (used by <code>lss_inject_update_fields()</code> to repack the .docx after modifying its parts). The helper now guards behind <code><a href="https://github.com/r-lib/zip" class="external-link">requireNamespace("zip")</a></code> and silently no-ops if the package is unavailable.</li>
-<li>Generated <code>.docx</code> files now embed the <code>&lt;w:updateFields w:val="true"/&gt;</code> setting, so Word refreshes the table-of-contents and page-number fields automatically when the document is opened – no F9 needed. The instruction line “Press F9 in Word to refresh page numbers” above the TOC has been removed, and the marketing line “Processed locally with lssdoc. Nothing is uploaded.” has been dropped from the cover page. (LibreOffice headless PDF conversion still does not refresh fields, so <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> produces a PDF with an empty TOC; open the .docx in Word and save as PDF to obtain a populated TOC.)</li>
-<li>New <code>show_source</code> argument (default <code>TRUE</code>). When <code>FALSE</code>, the <code>Source file</code> and <code>Survey ID</code> rows are hidden from the cover metadata table – useful when sharing a review document without exposing the internal LimeSurvey survey id or the original filename.</li>
-<li>
-<code>show_item_heading</code> default flipped to <code>FALSE</code>: the meta table now starts each item directly for a more compact layout. The item number is still visible in the meta table’s <code>No</code> column and the variable index, so the bold “N. variable” heading is redundant for cross- reference. Pass <code>show_item_heading = TRUE</code> to restore it.</li>
-<li>Each <strong>subquestion</strong> now carries its own structured meta table (with its own No, composite variable code <code>parent_subq</code>, and the type / mandatory / filter inherited from the parent question). Every numbered item is now fully self-documented.</li>
-<li>
-<strong>Compound parent banners</strong> use the same 5-column meta layout as leaf items (No, Variable, Type, Mand., Filter) instead of a 4-column variant, with the No cell left empty since the parent itself is not a numbered item (its subquestions below carry the numbers). Visual structure is now consistent across leaf and compound questions.</li>
-<li>Group names with a leading author-written numeric prefix (<code>"1. Vos etudes"</code>, <code>"Section A - Demographics"</code>) are now stripped before being passed to Heading 1, so Word’s auto-numbering is the only visible one (“1. Vos etudes” rather than “1. 1. Vos etudes”).</li>
-<li>New <code>show_item_heading</code> argument (default <code>TRUE</code>). When <code>FALSE</code>, the bold “N. variable” line above each item is suppressed and the meta table starts the item directly. Use it for a more compact layout.</li>
-<li>The mandatory column is now labelled <strong><code>Mand.</code></strong> (was <code>Oblig.</code>), widened to 0.7”, and recognizes LimeSurvey’s <code>S</code> value as <code>soft</code> (soft-mandatory questions). Headers stay short while accommodating the longer value.</li>
-<li>A page break now follows the table of contents so the welcome text and groups start on a fresh page.</li>
-<li>New navigation layer for the rendered document:
-<ul><li>
-<strong>Table of contents</strong> now lists groups only, not items: a 95-item survey produces a clean 5-line TOC instead of a 95-line list. Controlled by <code>show_toc</code> (default <code>TRUE</code>), skipped automatically when the survey has fewer than two groups.</li>
-<li>
-<strong>Variable index</strong> appended at the end of the document: every item code with its sequential number, sorted alphabetically, so the reader can look up a specific variable. Controlled by <code>show_index</code> (default <code>TRUE</code>).</li>
-<li>
-<strong>Page footer</strong> redesigned: survey title (per displayed language, joined by <code>|</code>) on the left, <code>X / Y</code> page number on the right. Controlled by <code>show_footer_title</code> (default <code>TRUE</code>); the page number is always shown.</li>
-</ul></li>
-<li>Items are now rendered as styled paragraphs with a manual sequential prefix (<code>12. variable</code>) instead of Heading 1 paragraphs. Groups become Heading 1 so the TOC reads as a list of sections. Word’s auto-numbering of Heading 1 thus increments per group, not per item; the manual prefix on items preserves the flat per-item numbering.</li>
-<li>The filter humanizer now collapses LimeSurvey’s defensive <code>!is_empty(X.NAOK) &amp;&amp; (X.NAOK OP value)</code> idiom into the equivalent human-readable form <code>X OP value</code>. The LimeSurvey conditional designer emits this guard automatically for every comparison; for a human reviewer it is redundant boilerplate. The collapse only applies when both clauses reference the <strong>same</strong> variable (so a real two-variable filter like <code>!is_empty(a.NAOK) &amp;&amp; (b.NAOK == 1)</code> is preserved as <code>a is answered AND (b = 1)</code>).</li>
-<li>The meta description of every question is now a <strong>structured 5-column table</strong> (<code>No</code> / <code>Variable</code> / <code>Type</code> / <code>Oblig.</code> / <code>Filter</code>) instead of the previous colored band string. The <code>Variable</code> header replaces the former <code>Code</code> label, matching the SPSS / Stata convention. The Filter cell shows a human-readable form of the LimeSurvey relevance expression on top (best-effort: <code>is_empty(X.NAOK)</code> -&gt; <code>X is empty</code>, <code>!is_empty(X.NAOK)</code> -&gt; <code>X is answered</code>, <code>X.NAOK == N</code> -&gt; <code>X = N</code>, <code>&amp;&amp;</code> / <code>||</code> -&gt; <code>AND</code> / <code>OR</code>); when the new <code>show_raw_filter</code> argument is <code>TRUE</code> (the default), the raw expression is shown underneath in small italic gray for verification. Parent stems of compound questions show a 4-column variant (no <code>No</code>, since their subquestions below carry the numbering).</li>
-<li>Answer scale tables now label the code column <strong><code>Value</code></strong> (rather than <code>Code</code>), in line with the variable/value convention.</li>
-<li>The rendered document is now organized <strong>item-by-item</strong> (ESS / MOSAiCH style) rather than question-by-question. Each leaf question becomes one numbered item with its own answer scale; for compound questions (multiple choice, arrays, multiple numerical, etc.), the parent stem is shown once in a colored band, the shared answer scale once below it, and each subquestion becomes its <strong>own numbered item</strong> with the full LimeSurvey response variable code (<code>parent_subq</code>). The Word table of contents now lists items sequentially across the whole document; groups remain visible as section banners but are not numbered. The redundant “Francais / Deutsch” header that previously repeated above every small table is dropped; the language column header is kept only where it adds information (the shared answer scale, leaf-item answer tables).</li>
-<li>Every page now carries a centered “Page X of Y” footer (Word fields, so the totals update on open).</li>
-<li>All flextables in the rendered document are horizontally centered rather than left-aligned.</li>
-<li>The Word table-of-contents entry for each question now combines the variable code with the question text in the <strong>first requested language</strong>, making the TOC readable in that language while keeping the variable code as a stable cross-reference anchor. The <code>languages</code> argument is documented as both a selector and an ordering: the first language is treated as the primary language for headings and the TOC.</li>
-<li>
-<code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> and <code><a href="../reference/render_audit.html">render_audit()</a></code> accept an optional <code>logo</code> argument (path to a PNG or JPEG) that places an image at the top of the cover page; <code>logo_width</code> and <code>logo_height</code> control its size. The default keeps the cover logo-free, matching the neutral style of survey-methodology references.</li>
-<li>The cover page now shows the LimeSurvey <strong>Survey ID</strong> and <strong>Last modified</strong> timestamp from the <code>.lss</code>, giving reviewers stable traceability for the source questionnaire.</li>
-<li>
-<code><a href="../reference/render_audit.html">render_audit()</a></code> and <code><a href="../reference/render_audit.html">render_audit()</a></code> pipeline wrappers run the audit and produce a focused report in one call.</li>
-<li>
-<code>.docx_to_pdf()</code> converts a generated <code>.docx</code> to PDF locally via LibreOffice (or Word) in headless mode. Nothing leaves the user’s machine. <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> ties the full pipeline together.</li>
-<li>
-<code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> runs the full pipeline (<code><a href="../reference/read_lss.html">read_lss()</a></code> then <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code>) in one call.</li>
-<li>
-<code><a href="../reference/render_audit.html">render_audit()</a></code> produces a focused audit-only Word document: the same cover page, then one section per severity (errors, warnings, notes) with a table of findings. Use it for QA follow-up, separate from the full review.</li>
-<li>
-<code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> produces a professional Word review document from a parsed <code>lss</code> object: cover page with the survey title in every language and a metadata table, table of contents, optional audit section near the top with inline markers on affected questions, group sections (Word Heading 1/2 styles for navigation), one compact <code>flextable</code> per question with a single meta header (variable code, QID, type, mandatory, filter) and one column per language for the question text, subquestions, and answer options. Auto-picks portrait (1-2 languages) or landscape (3+).</li>
-<li>
-<code><a href="../reference/audit_lss.html">audit_lss()</a></code> inspects a parsed survey and reports reviewable anomalies (missing translations, texts empty in every language, duplicate question or answer codes, types missing their required options or subquestions, and orphan references) as a classed <code>lss_audit</code> object with a print method.</li>
-<li>
-<code><a href="../reference/read_lss.html">read_lss()</a></code> reads a LimeSurvey <code>.lss</code> file into a structured <code>lss</code> object, preserving all user text verbatim.</li>
-<li>Initial package scaffolding: the user-facing API (<code><a href="../reference/read_lss.html">read_lss()</a></code>, <code><a href="../reference/audit_lss.html">audit_lss()</a></code>, <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code>, and the <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> wrapper) is defined and documented, with <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> still to come.</li>
+<h2 class="pkg-version" data-toc-text="0.1.0" id="lssdoc-010">lssdoc 0.1.0<a class="anchor" aria-label="anchor" href="#lssdoc-010"></a></h2>
+<p>First release. The user-facing API is four functions and is now stable: <code><a href="../reference/read_lss.html">read_lss()</a></code>, <code><a href="../reference/audit_lss.html">audit_lss()</a></code>, <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code>, <code><a href="../reference/render_audit.html">render_audit()</a></code>. Tested across two example surveys, both templates (<code>cards</code> and <code>table</code>), the five chrome languages (English, French, German, Spanish, Italian) and the two output formats (Word <code>.docx</code> and PDF).</p>
+<div class="section level3">
+<h3 id="breaking-changes-0-1-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-0"></a></h3>
+<ul><li><p>The user-facing API is now four functions: <code><a href="../reference/read_lss.html">read_lss()</a></code>, <code><a href="../reference/audit_lss.html">audit_lss()</a></code>, <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> and <code><a href="../reference/render_audit.html">render_audit()</a></code>. The previous nine-function surface (<code>parse_lss()</code>, <code>render_lss_docx()</code>, <code>render_lss_audit_docx()</code>, <code>lss_to_docx()</code>, <code>lss_to_pdf()</code>, <code>lss_audit_to_docx()</code>, <code>lss_audit_to_pdf()</code>, <code>lss_docx_to_pdf()</code>) is gone – no deprecation shims, since the package had not yet been released. The two renderers infer the output format (<code>.docx</code> or <code>.pdf</code>) from the extension of the <code>output</code> argument, and <code>input</code> accepts either a path or a pre-parsed <code>lss</code> object.</p></li>
+<li><p><code>show_raw_filter</code> now defaults to <code>FALSE</code>. The <code>Filter</code> cell shows only the human-readable form (e.g. <code>Q1 = 1</code>) by default, matching ESS / MOSAiCH / GESIS conventions. Pass <code>show_raw_filter = TRUE</code> to also surface the raw LimeSurvey expression underneath.</p></li>
+<li><p><code>show_attrs</code> no longer surfaces the two row-level exclusivity flags (<code>exclude_all_others</code>, <code>exclude_all_others_auto</code>) by default. Add them explicitly if you need them.</p></li>
+<li><p>The cover subtitle is now a single localized noun (<code>Questionnaire</code> / <code>Fragebogen</code> / <code>Cuestionario</code> / <code>Questionario</code>) instead of the previous long “Revue du questionnaire LimeSurvey” / “LimeSurvey questionnaire review” family.</p></li>
 </ul></div>
-  </main></div>
+<div class="section level3">
+<h3 id="new-features-0-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0"></a></h3>
+<div class="section level4">
+<h4 id="audit-0-1-0">Audit<a class="anchor" aria-label="anchor" href="#audit-0-1-0"></a></h4>
+<ul><li><p><code><a href="../reference/audit_lss.html">audit_lss()</a></code> now flags <strong>forward filter references</strong> – a routing condition that depends on a variable appearing at or after the filtered question, which is almost always a survey design bug (severity: error).</p></li>
+<li><p><code><a href="../reference/audit_lss.html">audit_lss()</a></code> flags <strong>array-scale inconsistencies</strong> – an array question whose subquestions and answer options use mismatched <code>scale_id</code> values (severity: warning).</p></li>
+<li><p><code><a href="../reference/audit_lss.html">audit_lss()</a></code> flags <strong>whitespace in identifier codes</strong> – a question, subquestion or answer code carrying leading, trailing or interior whitespace, which causes silent lookup failures at data export (severity: warning).</p></li>
+<li><p><code>print(audit)</code> paginates output at 20 findings by default with a hint to use <code>print(audit, n = Inf)</code> or <code>as.data.frame(audit)</code> to see them all.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="filter-rendering-0-1-0">Filter rendering<a class="anchor" aria-label="anchor" href="#filter-rendering-0-1-0"></a></h4>
+<ul><li><p>The <code>Filter</code> cell now reads in the chosen chrome language – <code>AND</code>, <code>OR</code>, <code>is answered</code>, <code>is empty</code> and <code>matches</code> localize alongside the rest of the chrome (English, French, German, Spanish, Italian).</p></li>
+<li><p>Several disjunctions on the same variable collapse to set notation: <code>Q1 = 1 OR Q1 = 2 OR Q1 = 3</code> reads as <code>Q1 in {1, 2, 3}</code>.</p></li>
+<li><p>Two bounds on the same variable collapse to an encased range: <code>age &gt;= 18 AND age &lt;= 65</code> reads as <code>18 &lt;= age &lt;= 65</code> (with Unicode math symbols in the actual output).</p></li>
+<li><p>More LimeSurvey constructs are humanized: <code>intval(X.NAOK)</code> is unwrapped, <code>strlen(X.NAOK)</code> predicates map to “is answered” / “is empty”, <code>regexMatch("pat", X.NAOK)</code> becomes <code>X matches "pat"</code>, and <code>that.X</code> (group references) lose the structural prefix.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="table-template-0-1-0">Table template<a class="anchor" aria-label="anchor" href="#table-template-0-1-0"></a></h4>
+<ul><li><p>The language columns now get at least 50 % of the page width. The <code>Mandatory</code> header uses an abbreviation in the dense table layout (<code>Mand.</code> / <code>Oblig.</code> / <code>Pflicht</code> / <code>Obblig.</code>); the cards layout keeps the full localized word.</p></li>
+<li><p>Body font size reduces automatically (8 pt to 7 pt) when rendering 3 or 4 languages so the narrower columns stay readable.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="cards-template-0-1-0">Cards template<a class="anchor" aria-label="anchor" href="#cards-template-0-1-0"></a></h4>
+<ul><li><p>Headers and bodies use a cell-symmetric alignment per column (each column’s header takes the same alignment as its body content), so the dark meta band reads as a coherent ribbon of labels over its content.</p></li>
+<li><p>The meta table, intra-item gap and item table now carry Word’s “keep with next” property so they stay on the same page in the typical case.</p></li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="minor-improvements-0-1-0">Minor improvements<a class="anchor" aria-label="anchor" href="#minor-improvements-0-1-0"></a></h3>
+<ul><li><p><code><a href="../reference/read_lss.html">read_lss()</a></code> validates the <code>.lss</code> <code>DBVersion</code> against the tested window (400 to 799). A version below 400 (pre <code>*_l10ns</code> schema) raises a classed error; a version of 800 or above warns but parses.</p></li>
+<li><p><code>audit_lss(input)</code> and the two renderers all accept either a path to a <code>.lss</code> file or a pre-parsed <code>lss</code> object as <code>input</code>.</p></li>
+<li><p>Large surveys are faster to model: <code>lss_model()</code> now uses an O(1) index for localized lookups instead of a full table scan per question.</p></li>
+<li><p>Codecov coverage badge in the README; <code>.github/workflows/test-coverage.yaml</code> wires the upload.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-0-1-0">Internal<a class="anchor" aria-label="anchor" href="#internal-0-1-0"></a></h3>
+<ul><li>
+<code>R/render_lss_docx.R</code> (3110 lines) is split into three self-contained sub-modules: <code>R/render_filter.R</code> (humanizer), <code>R/render_theme.R</code> (theme and argument validators) and <code>R/render_cover.R</code> (cover orchestration). No functional change.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.0.9000" id="lssdoc-0009000">lssdoc 0.0.0.9000<a class="anchor" aria-label="anchor" href="#lssdoc-0009000"></a></h2>
+<div class="section level3">
+<h3 id="initial-development-scaffolding-0-0-0-9000">Initial development scaffolding<a class="anchor" aria-label="anchor" href="#initial-development-scaffolding-0-0-0-9000"></a></h3>
+<ul><li><p><code><a href="../reference/read_lss.html">read_lss()</a></code> reads a LimeSurvey <code>.lss</code> file into a structured <code>lss</code> object, preserving all user text verbatim.</p></li>
+<li><p><code><a href="../reference/audit_lss.html">audit_lss()</a></code> inspects a parsed survey and reports reviewable anomalies (missing translations, texts empty in every language, duplicate question or answer codes, types missing their required options or subquestions, and orphan references) as a classed <code>lss_audit</code> object with a print method.</p></li>
+<li><p><code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> produces a professional Word questionnaire document from a parsed <code>lss</code> object: cover page with the survey title in every language and a metadata table, table of contents, optional audit section near the top with inline markers on affected questions, group sections, one compact <code>flextable</code> per question with a single meta header (variable code, QID, type, mandatory, filter) and one column per language for the question text, subquestions and answer options. Auto-picks portrait (1-2 languages) or landscape (3+).</p></li>
+<li><p><code><a href="../reference/render_audit.html">render_audit()</a></code> produces a focused audit-only Word document: the same cover page, then one section per severity (errors, warnings, notes) with a table of findings. Use it for QA follow-up, separate from the full review.</p></li>
+<li><p>Cover page shows the LimeSurvey <strong>Survey ID</strong> and the LimeSurvey last-save timestamp for stable traceability.</p></li>
+<li><p>Optional <code>logo</code> argument places a PNG or JPEG image at the top of the cover page (default keeps the cover logo-free, matching the neutral style of survey-methodology references).</p></li>
+<li><p>Optional <code>authors</code> argument supports an unnamed character vector, a named character vector (name = affiliation), or a list of named lists (<code>name</code>, <code>affiliation</code>, <code>orcid</code>). ORCID iDs render as monospace hyperlinks.</p></li>
+<li><p>Optional <code>description</code> argument shown on the cover below the authors block. Line breaks (<code>\n</code>) split into separate centered lines; <code>http://</code> and <code>https://</code> tokens render as clickable hyperlinks.</p></li>
+<li><p>Multilingual <code>welcome</code> text, <code>endtext</code> and <code>description</code> toggleable via <code>show_welcome</code>, <code>show_endtext</code>, <code>show_description</code> (all <code>TRUE</code> by default).</p></li>
+<li><p>Optional <code>show_privacy_settings</code> and <code>show_admin_settings</code> surface LimeSurvey flags (<code>anonymized</code>, <code>save partial</code>, <code>datestamp</code>, <code>ipaddr</code>, <code>refurl</code>, <code>alias</code>, end URL, <code>active</code>) as additional cover metadata rows. Both default to <code>FALSE</code>.</p></li>
+<li><p><code>show_toc</code> (default <code>TRUE</code>) includes a table of contents listing the groups (skipped automatically when there are fewer than two groups).</p></li>
+<li><p><code>show_index</code> (default <code>TRUE</code>) appends a variable index listing every item code with its number, sorted alphabetically.</p></li>
+<li><p><code>show_header_title</code> (default <code>TRUE</code>) shows the survey title on every page top-right. The page footer carries a compact <code>X/Y</code> page counter on the right.</p></li>
+<li>
+<p>Two output templates:</p>
+<ul><li>
+<code>"cards"</code> (default) – one detached meta table + item table pair per question, stacked vertically.</li>
+<li>
+<code>"table"</code> – one dense codebook table covering the whole document, with one tinted Question row per variable and one or more Value rows beneath.</li>
+</ul></li>
+<li><p><code>chrome_lang</code> controls the document chrome (column headers, row labels, audit section labels) independently of the survey content languages. Supported: <code>"en"</code>, <code>"fr"</code>, <code>"de"</code>, <code>"es"</code>, <code>"it"</code>.</p></li>
+<li><p>The filter humanizer translates LimeSurvey’s defensive <code>!is_empty(X.NAOK) &amp;&amp; (X.NAOK OP value)</code> idiom to <code>X OP value</code> for human review.</p></li>
+</ul></div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

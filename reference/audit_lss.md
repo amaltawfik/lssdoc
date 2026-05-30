@@ -41,6 +41,10 @@ Checks performed:
 - **Duplicate codes** – a question variable code repeated in the survey,
   or an answer/subquestion code repeated within one question.
 
+- **Whitespace in codes** – a question, subquestion or answer code
+  containing leading, trailing or interior whitespace (likely a typo;
+  causes subtle bugs in the data export).
+
 - **Missing options for the type** – a question whose type requires
   answer options or subquestions but has none (per the type taxonomy).
 
@@ -68,7 +72,7 @@ audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
 print(audit)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmptfYdBy/temp_libpath1a086c4dd217/lssdoc/extdata/hesav_2026.lss
+#> File: /tmp/RtmpkWYqw8/temp_libpath1a1e5829897/lssdoc/extdata/hesav_2026.lss
 #> Languages: "de" and "fr"
 #> ✔ No anomalies detected.
 ```

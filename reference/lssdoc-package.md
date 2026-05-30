@@ -1,12 +1,15 @@
-# lssdoc: Generate Word Review Documents from LimeSurvey '.lss' Files
+# lssdoc: Render Multilingual Questionnaires from LimeSurvey '.lss' Files
 
-Build a professional Word ('.docx') review document from a LimeSurvey
-'.lss' export, displaying up to four languages side by side. The output
-supports human review of multilingual questionnaires by ethics
-committees, translators, and methodologists: it reproduces the
-questionnaire content faithfully and flags automatically detectable
-anomalies that do not require any AI. Processing is fully local, so no
-questionnaire is uploaded to any third-party service.
+Render LimeSurvey '.lss' survey exports as multilingual questionnaire
+documents in Word ('.docx') or PDF, displaying up to four languages side
+by side with localized chrome in English, French, German, Spanish and
+Italian. Includes a rule-based automated audit that flags missing
+translations, forward filter references, duplicate codes, array-scale
+inconsistencies and orphan structural references. Designed for
+researchers, methodologists, ethics committees and translators reviewing
+multilingual surveys. Processing is fully local: the source file is the
+only input and no questionnaire content is uploaded to a third-party
+service.
 
 ## See also
 
