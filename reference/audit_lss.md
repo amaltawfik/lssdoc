@@ -72,7 +72,7 @@ audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
 print(audit)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpOoXddx/temp_libpath1a0958cfff5c/lssdoc/extdata/hesav_2026.lss
+#> File: /tmp/Rtmp7jmRGq/temp_libpath19db32ee3ac7/lssdoc/extdata/hesav_2026.lss
 #> Languages: "de" and "fr"
 #> ✔ No anomalies detected.
 ```
