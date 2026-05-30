@@ -69,8 +69,11 @@ test_that("lss_methodological_label collapses the LimeSurvey taxonomy", {
   expect_identical(lss_methodological_label("P"), "Multiple choice with comment")
   expect_identical(lss_methodological_label("N"), "Number")
   expect_identical(lss_methodological_label("K"), "Number")
+  # S (short free text) is single-line; T (long) and U (huge) free text
+  # are both multi-line and collapse to one label -- they differ only in
+  # textarea size.
   expect_identical(lss_methodological_label("S"), "Text (short)")
-  expect_identical(lss_methodological_label("T"), "Text")
+  expect_identical(lss_methodological_label("T"), "Text (long)")
   expect_identical(lss_methodological_label("U"), "Text (long)")
   expect_identical(lss_methodological_label("D"), "Date")
   expect_identical(lss_methodological_label("R"), "Ranking")
@@ -81,7 +84,7 @@ test_that("lss_methodological_label collapses the LimeSurvey taxonomy", {
 
 test_that("lss_methodological_label is vectorized and falls back for unknowns", {
   out <- lss_methodological_label(c("L", "M", "N", "T"))
-  expect_identical(out, c("Single choice", "Multiple choice", "Number", "Text"))
+  expect_identical(out, c("Single choice", "Multiple choice", "Number", "Text (long)"))
   # Unknown legacy code falls back to the theme name via the legacy
   # label function -- never drops the question silently.
   expect_identical(

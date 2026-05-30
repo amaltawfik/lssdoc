@@ -874,10 +874,12 @@ lss_value_implicit_row <- function(q, langs, theme) {
     # variable code, not by a parenthetical on Value.
     "N" = chrome$value_numeric_input,
     "K" = chrome$value_numeric_input,
-    # Free-text inputs of varying length.
+    # Free-text inputs. S is single-line (no line breaks in the data);
+    # T and U are both multi-line (U is only a larger textarea), so they
+    # share the multi-line descriptor.
     "S" = chrome$value_free_text_short,
     "T" = chrome$value_free_text,
-    "U" = chrome$value_free_text_long,
+    "U" = chrome$value_free_text,
     # Date / time picker.
     "D" = chrome$value_date_input,
     # Equation: server-computed value, not respondent-entered.

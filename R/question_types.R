@@ -231,9 +231,12 @@ lss_methodological_label <- function(type, theme_name = NULL) {
       "O" = "Single choice with comment",
       # Multiple-choice family.
       "M" = "Multiple choice", "P" = "Multiple choice with comment",
-      # Text variants -- length flag kept because it can hint at the
-      # expected answer length, useful for cognitive testing.
-      "S" = "Text (short)", "T" = "Text", "U" = "Text (long)",
+      # Text variants. S (short free text) is single-line, so it keeps
+      # its own "(short)" label. T (long) and U (huge) free text are both
+      # multi-line and differ only in textarea size, so they collapse to
+      # "Text (long)" -- same response semantics, same data, like
+      # List (radio) / (dropdown) -> Single choice.
+      "S" = "Text (short)", "T" = "Text (long)", "U" = "Text (long)",
       "Q" = "Text",
       # Numeric (single or multi -- both yield numeric variables).
       "N" = "Number", "K" = "Number",

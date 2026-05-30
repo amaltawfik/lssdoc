@@ -631,7 +631,7 @@ lss_table_implicit_value_text <- function(q, theme) {
     "K" = chrome$value_numeric_input,
     "S" = chrome$value_free_text_short,
     "T" = chrome$value_free_text,
-    "U" = chrome$value_free_text_long,
+    "U" = chrome$value_free_text,
     "D" = chrome$value_date_input,
     "*" = chrome$value_computed,
     "R" = chrome$value_ranking,
