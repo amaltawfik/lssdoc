@@ -146,11 +146,13 @@ test_that("a multiple-choice question renders as a single grouped card", {
   # The meta band shows the variable family with the wildcard, not a
   # single column.
   expect_true(grepl("semestrechargetrav_*", txt, fixed = TRUE))
-  # Every option carries its full Yes/No variable code.
+  # Every option's full Yes/No variable code is recoverable: it appears
+  # verbatim in the variable index (the card itself shows the meta
+  # pattern plus the per-option suffix, which compose to the full name).
   for (k in 1:8) {
     code <- sprintf("semestrechargetrav_%d", k)
     expect_true(grepl(code, txt, fixed = TRUE),
-                info = sprintf("expected option variable '%s'", code))
+                info = sprintf("expected option variable '%s' in the index", code))
   }
   # The Options section header and its count are present.
   expect_true(grepl("Options (8)", txt, fixed = TRUE))

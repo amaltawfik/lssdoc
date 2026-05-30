@@ -262,19 +262,38 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
     size = theme$size_meta,
     section_header = TRUE
   )
-  # One row per option: full variable code (monospace, prefix muted +
-  # suffix emphasized) + label per language. The prefix `<parent>_` is
-  # shared by every option; the suffix is the LimeSurvey subquestion code.
+  # One row per option: the option suffix only (the LimeSurvey
+  # subquestion code) in monospace, next to the option label per
+  # language. The shared prefix is announced once in the meta band as
+  # `<parent>_*`, so the full column name is fully determined on the
+  # card (`<parent>_*` + suffix) without repeating the long prefix on
+  # every row, which would wrap the narrow label column. The complete
+  # names `<parent>_<suffix>` are also listed verbatim in the variable
+  # index for direct lookup.
   for (sq in q$subquestions) {
     rows[[length(rows) + 1L]] <- list(
-      label = paste0(q$code, "_", sq$code),
-      code_prefix = paste0(q$code, "_"),
-      code_suffix = sq$code,
+      label = sq$code,
       texts = stats::setNames(
         lapply(langs, function(lg) sq$texts[[lg]]$question), langs
       ),
       size = theme$size_answer,
       code_row = TRUE
+    )
+  }
+  # Exclusive option(s): a subquestion flagged `exclude_all_others`
+  # (e.g. "None of the above") clears every other selection when
+  # checked. Surface it once, naming the option suffix(es) -- the same
+  # information the per-subquestion layout shows on the exclusive item.
+  excl_codes <- lss_exclusive_codes(q)
+  if (length(excl_codes) > 0L) {
+    excl_text <- sprintf(theme$chrome$exclusive_text_fmt,
+                         paste(excl_codes, collapse = ", "))
+    rows[[length(rows) + 1L]] <- list(
+      label = theme$chrome$item_exclusive,
+      texts = stats::setNames(rep(list(excl_text), length(langs)), langs),
+      size = theme$size_meta,
+      color = theme$color_muted,
+      italic = TRUE
     )
   }
   # Coding descriptor as the same "Value" band row every other variable
@@ -745,47 +764,34 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   ft <- flextable::align(ft, j = "Label", align = "left", part = "body")
   # Answer-code rows (label = "1", "2", ...) are centered to match the
   # shared scale convention from earlier renders: the Value section header
-  # stays left, but each value code under it reads as a centered ticker.
+  # Code cells share one treatment across the whole document: answer
+  # values (Value section, `value_row`) and multiple-choice option
+  # suffixes (Options section, `code_row`) are both short LimeSurvey
+  # codes, so both render in the monospace face, right-aligned. Right
+  # alignment is the value-label listing convention (SPSS `label list`,
+  # Stata, GESIS, the Swiss Household Panel): the code is pushed against
+  # the adjacent language column so it sits next to the label it maps
+  # to, and numeric codes line up by units (1, 2, ..., 10). The section
+  # labels (Question, Help, Options, Value) stay left -- they are words,
+  # not codes -- so the column reads "label on the left, code hugging
+  # its meaning on the right".
   for (i in seq_along(rows)) {
-    if (isTRUE(rows[[i]]$value_row)) {
-      ft <- flextable::align(ft, i = i, j = "Label", align = "center", part = "body")
-    }
-  }
-  # Variable-code rows (multiple-choice option lines): the Label cell holds
-  # a full LimeSurvey variable code (e.g. `q5_3`), rendered in the monospace
-  # face, left-aligned. When the row carries a `code_prefix` / `code_suffix`
-  # split, the shared prefix (`q5_`) is muted gray and the option suffix
-  # (`3`) is emphasized in the primary color, so the full, searchable
-  # variable name is shown while the eye scans the varying suffixes.
-  for (i in seq_along(rows)) {
-    if (!isTRUE(rows[[i]]$code_row)) next
-    ft <- flextable::align(ft, i = i, j = "Label", align = "left", part = "body")
-    sz <- if (!is.null(rows[[i]]$size)) rows[[i]]$size else theme$size_answer
-    if (!is.null(rows[[i]]$code_prefix) && !is.null(rows[[i]]$code_suffix)) {
-      ft <- flextable::compose(
-        ft, i = i, j = "Label",
-        value = flextable::as_paragraph(
-          flextable::as_chunk(
-            rows[[i]]$code_prefix,
-            props = officer::fp_text(font.family = theme$font_code,
-                                     font.size = sz, color = theme$color_muted)
-          ),
-          flextable::as_chunk(
-            rows[[i]]$code_suffix,
-            props = officer::fp_text(font.family = theme$font_code,
-                                     font.size = sz, bold = TRUE,
-                                     color = theme$color_primary)
-          )
-        )
-      )
-    } else {
+    if (isTRUE(rows[[i]]$value_row) || isTRUE(rows[[i]]$code_row)) {
       ft <- flextable::font(ft, i = i, j = "Label",
                             fontname = theme$font_code, part = "body")
+      ft <- flextable::align(ft, i = i, j = "Label",
+                             align = "right", part = "body")
     }
   }
-  # Match the meta table total width (theme$content_width_in) so the two
-  # tables align visually. The Label column takes 1.0 in (same as the meta
-  # table's Mandatory column) and the language columns split the rest.
+  # Label column width: a single fixed value, identical for every item
+  # table and every chrome language. It is intentionally NOT derived per
+  # language: the meta band above uses fixed column widths too, and a
+  # width that changed with the chrome language would be unprincipled and
+  # fragile (it would rest on per-character font estimates that can wrap
+  # a long label). 1.0 in is the floor at the 9 pt bold label font -- it
+  # fits the longest row label across all supported languages (French
+  # "Sous-question", Spanish "Opciones (11)") on one line. The language
+  # columns split the remainder.
   label_w <- 1.0
   total_w <- theme$content_width_in
   lang_w <- (total_w - label_w) / length(langs)
@@ -1083,13 +1089,28 @@ lss_format_attr <- function(attr_name, per_lang, langs) {
 #'
 #' @keywords internal
 #' @noRd
-lss_exclusive_row <- function(q, sq, langs, theme) {
-  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return(NULL)
+#' Extract the exclusive subquestion codes of a question
+#'
+#' Returns the subquestion codes listed in the parent's
+#' `exclude_all_others` attribute (a comma-separated list), or an empty
+#' character vector when the question has no exclusive option. Shared by
+#' the per-subquestion path ([lss_exclusive_row()]) and the grouped
+#' multiple-choice card.
+#'
+#' @keywords internal
+#' @noRd
+lss_exclusive_codes <- function(q) {
+  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return(character(0))
   hit <- q$attributes[q$attributes$attribute == "exclude_all_others", , drop = FALSE]
-  if (nrow(hit) == 0L) return(NULL)
+  if (nrow(hit) == 0L) return(character(0))
   raw <- trimws(as.character(hit$value[1L]))
-  if (!nzchar(raw)) return(NULL)
-  targets <- trimws(strsplit(raw, ",", fixed = TRUE)[[1L]])
+  if (!nzchar(raw)) return(character(0))
+  codes <- trimws(strsplit(raw, ",", fixed = TRUE)[[1L]])
+  codes[nzchar(codes)]
+}
+
+lss_exclusive_row <- function(q, sq, langs, theme) {
+  targets <- lss_exclusive_codes(q)
   if (!(sq$code %in% targets)) return(NULL)
   text <- sprintf(theme$chrome$exclusive_text_fmt, q$code)
   list(
