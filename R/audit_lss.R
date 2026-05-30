@@ -513,6 +513,7 @@ lss_audit_orphans <- function(findings, lss) {
 #'
 #' @return The audit object, invisibly.
 #'
+#' @keywords internal
 #' @export
 print.lss_audit <- function(x, ..., n = 20L) {
   cli::cli_h1("lssdoc audit")

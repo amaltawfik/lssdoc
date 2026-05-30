@@ -25,3 +25,4 @@ Pretty-printed audit summary on the console, capped at the first
 notes) mirror what is shown in the audit table inside the
 rendered \code{.docx}.
 }
+\keyword{internal}
