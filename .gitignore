@@ -9,3 +9,6 @@ docs/
 *.docx
 !inst/extdata/*.docx
 dev/references/
+
+# Claude Code harness state (never commit)
+.claude/
