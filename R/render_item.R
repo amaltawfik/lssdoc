@@ -147,6 +147,20 @@ lss_render_compound_question <- function(doc, q, langs, theme,
                                          show_help, show_attrs,
                                          show_technical_attrs, audit_idx,
                                          info, state) {
+  # Multiple-choice questions (types M / P) are question-centric: the
+  # stem appears once and every option is a row carrying its own Yes/No
+  # variable code. Arrays, multiple-numeric and multiple-short-text keep
+  # the variable-centric per-subquestion blocks (each subquestion is a
+  # genuinely distinct input, not one option of a shared battery).
+  if (identical(info$family, "multiple")) {
+    return(lss_render_multiple_choice(
+      doc, q, langs, theme,
+      show_help = show_help,
+      show_attrs = show_attrs,
+      audit_idx = audit_idx,
+      state = state
+    ))
+  }
   for (sq in q$subquestions) {
     item_code <- paste0(q$code, "_", sq$code)
     doc <- lss_render_subq_item(
@@ -159,6 +173,119 @@ lss_render_compound_question <- function(doc, q, langs, theme,
     )
   }
   doc
+}
+
+#' Render a multiple-choice question (M / P) as one grouped card
+#'
+#' Question-centric layout: a single meta band (with the variable family
+#' shown as `parent_*`), the stem once, then an `Options` section listing
+#' every response option as a row -- its full LimeSurvey variable code
+#' (`parent_subqcode`) in monospace next to the option label per language
+#' -- and a single localized coding line (Y = selected, blank = not).
+#' Every individual option variable is still registered in the variable
+#' index, so a reviewer looking up `parent_subqcode` is routed back to
+#' this question. The parent code itself is never a data column, hence the
+#' `parent_*` family notation rather than a bare parent code.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_multiple_choice <- function(doc, q, langs, theme,
+                                       show_help, show_attrs, audit_idx, state) {
+  state$item_no <- state$item_no + 1L
+  item_no <- state$item_no
+  # Register every option variable in the index (lookup preserved).
+  for (sq in q$subquestions) {
+    state$index_entries[[length(state$index_entries) + 1L]] <- list(
+      code = paste0(q$code, "_", sq$code), no = item_no
+    )
+  }
+
+  doc <- lss_render_item_spacer(doc, theme)
+  if (isTRUE(state$show_item_heading)) {
+    audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
+    heading_text <- sprintf("%d. %s", item_no, q$code)
+    if (!is.null(audit_marker)) {
+      heading_text <- paste0(heading_text, "  ", audit_marker$text)
+    }
+    heading_prop <- officer::fp_text(
+      font.family = theme$font_body, font.size = theme$size_heading2,
+      bold = TRUE,
+      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+    )
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(heading_text, prop = heading_prop),
+        fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+      )
+    )
+  }
+
+  # Meta band: the variable FAMILY (parent_*), not a single column -- the
+  # type / mandatory / filter are all question-level and shared by every
+  # option.
+  doc <- lss_render_question_meta_table(
+    doc, theme,
+    item_no = item_no,
+    variable = paste0(q$code, "_*"),
+    type = q$type, type_label = lss_localized_type_label(q, theme),
+    mandatory = q$mandatory, relevance = q$relevance,
+    show_raw_filter = isTRUE(state$show_raw_filter)
+  )
+  doc <- lss_render_intra_item_gap(doc, theme)
+
+  parent_text <- lapply(langs, function(lg) q$texts[[lg]]$question)
+  parent_help <- lapply(langs, function(lg) q$texts[[lg]]$help)
+
+  rows <- list()
+  rows[[length(rows) + 1L]] <- list(
+    label = theme$chrome$item_question,
+    texts = stats::setNames(parent_text, langs),
+    size = theme$size_question
+  )
+  if (isTRUE(show_help) && lss_any_present(parent_help)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = theme$chrome$item_help,
+      texts = stats::setNames(parent_help, langs),
+      size = theme$size_help,
+      color = theme$color_muted,
+      italic = TRUE
+    )
+  }
+  # Parent-level attributes (prefix, suffix, validation, ...).
+  rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
+  # Options section header, with the option count.
+  rows[[length(rows) + 1L]] <- list(
+    label = sprintf("%s (%d)", theme$chrome$item_options,
+                    length(q$subquestions)),
+    texts = stats::setNames(as.list(rep("", length(langs))), langs),
+    size = theme$size_meta,
+    section_header = TRUE
+  )
+  # One row per option: full variable code (monospace, prefix muted +
+  # suffix emphasized) + label per language. The prefix `<parent>_` is
+  # shared by every option; the suffix is the LimeSurvey subquestion code.
+  for (sq in q$subquestions) {
+    rows[[length(rows) + 1L]] <- list(
+      label = paste0(q$code, "_", sq$code),
+      code_prefix = paste0(q$code, "_"),
+      code_suffix = sq$code,
+      texts = stats::setNames(
+        lapply(langs, function(lg) sq$texts[[lg]]$question), langs
+      ),
+      size = theme$size_answer,
+      code_row = TRUE
+    )
+  }
+  # Coding descriptor as the same "Value" band row every other variable
+  # type uses (lss_value_implicit_row), so the multiple-choice card is
+  # consistent with single-choice, Yes/No, numeric, etc. -- one "Value"
+  # row carrying the localized "Y = selected, blank = not selected"
+  # (with the comment-variable note for type P).
+  vrow <- lss_value_implicit_row(q, langs, theme)
+  if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+
+  lss_render_item_table(doc, theme, langs, rows)
 }
 
 #' Render the parent stem of a compound question as a small bordered block
@@ -622,6 +749,38 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   for (i in seq_along(rows)) {
     if (isTRUE(rows[[i]]$value_row)) {
       ft <- flextable::align(ft, i = i, j = "Label", align = "center", part = "body")
+    }
+  }
+  # Variable-code rows (multiple-choice option lines): the Label cell holds
+  # a full LimeSurvey variable code (e.g. `q5_3`), rendered in the monospace
+  # face, left-aligned. When the row carries a `code_prefix` / `code_suffix`
+  # split, the shared prefix (`q5_`) is muted gray and the option suffix
+  # (`3`) is emphasized in the primary color, so the full, searchable
+  # variable name is shown while the eye scans the varying suffixes.
+  for (i in seq_along(rows)) {
+    if (!isTRUE(rows[[i]]$code_row)) next
+    ft <- flextable::align(ft, i = i, j = "Label", align = "left", part = "body")
+    sz <- if (!is.null(rows[[i]]$size)) rows[[i]]$size else theme$size_answer
+    if (!is.null(rows[[i]]$code_prefix) && !is.null(rows[[i]]$code_suffix)) {
+      ft <- flextable::compose(
+        ft, i = i, j = "Label",
+        value = flextable::as_paragraph(
+          flextable::as_chunk(
+            rows[[i]]$code_prefix,
+            props = officer::fp_text(font.family = theme$font_code,
+                                     font.size = sz, color = theme$color_muted)
+          ),
+          flextable::as_chunk(
+            rows[[i]]$code_suffix,
+            props = officer::fp_text(font.family = theme$font_code,
+                                     font.size = sz, bold = TRUE,
+                                     color = theme$color_primary)
+          )
+        )
+      )
+    } else {
+      ft <- flextable::font(ft, i = i, j = "Label",
+                            fontname = theme$font_code, part = "body")
     }
   }
   # Match the meta table total width (theme$content_width_in) so the two

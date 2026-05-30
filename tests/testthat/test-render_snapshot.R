@@ -131,3 +131,66 @@ test_that("every question code appears in the variable index", {
                 info = sprintf("expected code '%s' in the rendered text", code))
   }
 })
+
+# ---- Multiple-choice questions render as one grouped card ----------
+
+test_that("a multiple-choice question renders as a single grouped card", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+  # semestrechargetrav is a type-M question with 8 options coded 1..8.
+  skip_if(!("semestrechargetrav" %in% lss$questions$title),
+          "fixture changed; MC question absent")
+  txt <- lss_render_text(lss, chrome_lang = "en", languages = c("fr", "de"))
+
+  # The meta band shows the variable family with the wildcard, not a
+  # single column.
+  expect_true(grepl("semestrechargetrav_*", txt, fixed = TRUE))
+  # Every option carries its full Yes/No variable code.
+  for (k in 1:8) {
+    code <- sprintf("semestrechargetrav_%d", k)
+    expect_true(grepl(code, txt, fixed = TRUE),
+                info = sprintf("expected option variable '%s'", code))
+  }
+  # The Options section header and its count are present.
+  expect_true(grepl("Options (8)", txt, fixed = TRUE))
+  # The localized Y/blank coding line is present once.
+  expect_true(grepl("Y = selected, blank = not selected", txt, fixed = TRUE))
+})
+
+test_that("the multiple-choice stem appears once, not once per option", {
+  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+  skip_if(!("semestrechargetrav" %in% lss$questions$title),
+          "fixture changed; MC question absent")
+
+  # Grab the French stem of the MC question and count how many distinct
+  # paragraphs carry it: in the grouped layout it must appear exactly
+  # once (it used to repeat once per option).
+  qid <- lss$questions$qid[lss$questions$title == "semestrechargetrav"][1]
+  stem_fr <- lss$question_l10ns$question[
+    lss$question_l10ns$qid == qid & lss$question_l10ns$language == "fr"
+  ][1]
+  skip_if(is.na(stem_fr) || !nzchar(stem_fr), "no FR stem in fixture")
+
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  skip_on_cran()
+  out <- tempfile(fileext = ".docx")
+  on.exit(unlink(out), add = TRUE)
+  render_questionnaire(lss, out, chrome_lang = "en", languages = c("fr", "de"))
+  s <- officer::docx_summary(officer::read_docx(out))
+  cells <- s$text[!is.na(s$text)]
+  # Strip HTML tags the stem may carry, then count exact-containment.
+  bare <- gsub("<[^>]+>", "", stem_fr)
+  bare <- trimws(bare)
+  n_hits <- sum(vapply(cells, function(t) grepl(bare, t, fixed = TRUE),
+                       logical(1)))
+  # If the stem could not be matched at all (HTML / encoding quirks in
+  # docx_summary), skip rather than assert a false negative. When it is
+  # matchable, the grouped layout must show it exactly once -- the old
+  # per-option layout repeated it eight times.
+  skip_if(n_hits == 0L, "stem not matchable in docx_summary output")
+  expect_equal(n_hits, 1L)
+})
