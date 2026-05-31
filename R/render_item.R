@@ -293,7 +293,8 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
       texts = stats::setNames(rep(list(excl_text), length(langs)), langs),
       size = theme$size_meta,
       color = theme$color_muted,
-      italic = TRUE
+      italic = TRUE,
+      span_note = TRUE
     )
   }
   # Coding descriptor as the same "Value" band row every other variable
@@ -806,6 +807,18 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
       ft <- flextable::bg(ft, i = i, bg = theme$color_band, part = "body")
     }
   }
+  # Chrome-note rows (the coding descriptor, the exclusive note) carry
+  # the same chrome-language sentence in every language column -- it is
+  # not a translation but a structural annotation. Merge the language
+  # columns for those rows so the note appears once, spanning the
+  # content width, instead of being repeated per language.
+  if (length(langs) > 1L) {
+    for (i in seq_along(rows)) {
+      if (isTRUE(rows[[i]]$span_note)) {
+        ft <- flextable::merge_at(ft, i = i, j = langs, part = "body")
+      }
+    }
+  }
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
@@ -898,7 +911,10 @@ lss_value_implicit_row <- function(q, langs, theme) {
     texts = stats::setNames(rep(list(text), length(langs)), langs),
     size = theme$size_answer,
     section_header = TRUE,
-    section_with_text = TRUE
+    section_with_text = TRUE,
+    # The descriptor is the same chrome sentence in every language, so
+    # the renderer spans it once across the language columns.
+    span_note = TRUE
   )
 }
 
@@ -1120,7 +1136,8 @@ lss_exclusive_row <- function(q, sq, langs, theme) {
     texts = stats::setNames(rep(list(text), length(langs)), langs),
     size = theme$size_meta,
     color = theme$color_muted,
-    italic = TRUE
+    italic = TRUE,
+    span_note = TRUE
   )
 }
 

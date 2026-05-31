@@ -891,6 +891,17 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   question_idx     <- which(kinds %in% c("leaf", "subq", "other"))
   scale_header_idx <- which(kinds == "scale_header")
   welcome_idx      <- which(kinds %in% c("welcome", "endtext", "description"))
+  exclusive_idx    <- which(kinds == "mc_exclusive")
+
+  # Exclusive-note rows carry the same chrome sentence in every language
+  # column (a structural annotation, not a translation), so merge the
+  # language columns into one spanning cell -- the note shows once across
+  # the content width instead of being repeated per language.
+  if (n_lang > 1L) {
+    for (ei in exclusive_idx) {
+      ft <- flextable::merge_at(ft, i = ei, j = lang_j, part = "body")
+    }
+  }
 
   # Question rows: lighter zebra tint so the eye reads them as
   # "secondary" relative to group banners but still distinct from
