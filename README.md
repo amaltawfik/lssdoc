@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
 
-# lssdoc: Word and PDF questionnaire documents from LimeSurvey `.lss` files
+# lssdoc: Word and PDF questionnaire documents from LimeSurvey `.lss` files <img src="man/figures/logo.png" align="right" height="139" alt="lssdoc logo" />
 
 <!-- badges: start -->
 
