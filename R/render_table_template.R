@@ -57,8 +57,11 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       # Labels per language composed via flextable::compose() below.
     } else if (identical(r$kind, "mc_option")) {
       # Multiple-choice option: the option's full variable code in the
-      # Variable column; the option label per language composed below.
+      # Variable column and its binary coding token in the Value column,
+      # so the row is a self-contained dictionary entry. The option
+      # label per language is composed below.
       df$Variable[i] <- r$variable
+      df$Value[i]    <- r$value_token
     } else if (identical(r$kind, "mc_exclusive")) {
       # Exclusive-option note: a localized sentence in the Field column,
       # spanning nothing else; language cells stay empty.
@@ -397,16 +400,20 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out <- list()
     state$item_no <- state$item_no + 1L
     parent_no <- state$item_no
-    # The parent row is the question header: it carries the stem, type,
-    # filter and the shared "Y/blank" coding, but NO variable code. In
-    # this dense codebook the option rows below already list every full
-    # variable name (difficultesetudes_1, _2, ...), so a `difficultesetudes_*`
-    # family pattern here would just repeat the prefix -- and the bare
-    # parent is not a real data column. Keeping the Variable cell blank
-    # leaves the Variable column a clean list of actual dataset columns.
-    out[[length(out) + 1L]] <- emit_question_row(
-      "leaf", parent_no, "", q = q
-    )
+    # The parent row is a pure question header: stem, type, filter, but
+    # NO variable code and NO value. In this dense codebook every option
+    # row below is a real variable that carries its own name AND its own
+    # value domain, so the header itself documents neither -- it is not a
+    # data column. `mc_parent = TRUE` tells the renderer to leave its
+    # Value cell blank (lss_table_value_paragraph would otherwise emit
+    # the type's implicit token here).
+    prow <- emit_question_row("leaf", parent_no, "", q = q)
+    prow$mc_parent <- TRUE
+    out[[length(out) + 1L]] <- prow
+    # Each option's binary coding token (Y = selected, blank = not).
+    # Documented per option, in the Value column, so every variable row
+    # is a self-contained dictionary entry (name | value domain | label).
+    value_token <- "Y/blank"
     for (sq in q$subquestions) {
       item_code <- paste0(q$code, "_", sq$code)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -415,6 +422,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
       out[[length(out) + 1L]] <- list(
         kind = "mc_option",
         variable = item_code,
+        value_token = value_token,
         labels = stats::setNames(
           lapply(langs, function(lg) sq$texts[[lg]]$question), langs
         )
@@ -535,6 +543,14 @@ lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) 
   # for enumerated types -- only non-enumerated types receive an
   # inline descriptor in the Question row itself.
   if (identical(row$kind, "other")) {
+    return(flextable::as_paragraph(flextable::as_chunk(
+      "", props = descriptor_props
+    )))
+  }
+  # Multiple-choice parent header: not a data column, so it documents no
+  # value domain of its own -- each option row below carries its Y/blank
+  # token instead.
+  if (isTRUE(row$mc_parent)) {
     return(flextable::as_paragraph(flextable::as_chunk(
       "", props = descriptor_props
     )))
