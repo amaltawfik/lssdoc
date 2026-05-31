@@ -105,26 +105,39 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     color = theme$color_muted, italic = TRUE
   )
 
+  # Codes in the dense table use the body font (not the monospace
+  # font): Consolas is wide and pushes the long variable names to wrap,
+  # eating width the language columns need. Bold + primary still mark
+  # these cells as codes. (The cards template keeps the monospace face,
+  # where width is not as constrained.)
   value_code_props <- officer::fp_text(
-    font.family = theme$font_code, font.size = theme$size_meta,
-    color = theme$color_primary, bold = TRUE
+    font.family = theme$font_body, font.size = theme$size_meta,
+    color = theme$color_primary
   )
   value_descriptor_props <- officer::fp_text(
     font.family = theme$font_body, font.size = theme$size_meta,
     color = theme$color_muted, italic = TRUE
   )
 
+  # The dense codebook uses ONE body size everywhere (question stems,
+  # option / answer labels, welcome / end text), matching the meta and
+  # value cells -- a uniform table reads as a data dictionary rather
+  # than prose. The size auto-reduces by 1 pt from three languages on,
+  # the same rule lss_table_template_polish() applies to the meta/value
+  # columns, so composed and non-composed cells stay in lockstep.
+  body_size <- if (length(langs) >= 3L) theme$size_meta - 1L else theme$size_meta
+
   value_label_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_answer,
+    font.family = theme$font_body, font.size = body_size,
     color = theme$color_text
   )
   empty_marker_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_answer,
+    font.family = theme$font_body, font.size = body_size,
     color = theme$color_muted
   )
 
   plain_lang_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_question,
+    font.family = theme$font_body, font.size = body_size,
     color = theme$color_text
   )
   group_name_props <- officer::fp_text(
@@ -151,7 +164,7 @@ lss_render_table_template <- function(doc, rows, langs, theme,
         ft <- flextable::compose(
           ft, i = i, j = paste0("Q_", lg),
           value = lss_compose(r$text_by_lang[[lg]], theme,
-                              size = theme$size_question)
+                              size = body_size)
         )
       }
       next
@@ -240,7 +253,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       ft <- flextable::compose(
         ft, i = i, j = paste0("Q_", lg),
         value = lss_table_question_paragraph(r, lg, theme,
-                                             show_help = show_help)
+                                             show_help = show_help,
+                                             body_size = body_size)
       )
     }
   }
@@ -627,10 +641,14 @@ lss_table_value_codes <- function(answers) {
 #' in body text.
 #' @keywords internal
 #' @noRd
-lss_table_question_paragraph <- function(row, lg, theme, show_help) {
-  size_q  <- theme$size_question
-  size_sq <- theme$size_subq
-  size_h  <- theme$size_help
+lss_table_question_paragraph <- function(row, lg, theme, show_help,
+                                         body_size = theme$size_meta) {
+  # One uniform size for stem, subquestion label and help; the visual
+  # distinction between them is carried by style (italic, muted), not
+  # by size, so the dense codebook stays uniform.
+  size_q  <- body_size
+  size_sq <- body_size
+  size_h  <- body_size
 
   plain <- function(size = size_q, color = theme$color_text,
                     italic = FALSE, bold = FALSE,
@@ -766,18 +784,23 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   ft <- flextable::color(ft, j = "Field", color = theme$color_primary,
                          part = "body")
 
-  # Variable column: monospace, bold, primary color.
-  ft <- flextable::font(ft, j = "Variable", fontname = theme$font_code,
+  # Variable column: body font (Calibri), bold, primary. The dense
+  # codebook deliberately avoids the monospace face here -- Consolas is
+  # wide and wraps the longer parent_subqcode names, stealing width from
+  # the language columns; bold + primary already signal "code". The
+  # cards meta band keeps the monospace face (width is not as tight).
+  ft <- flextable::font(ft, j = "Variable", fontname = theme$font_body,
                         part = "body")
   ft <- flextable::bold(ft, j = "Variable", part = "body")
   ft <- flextable::color(ft, j = "Variable", color = theme$color_primary,
                          part = "body")
 
-  # Value column body: monospace bold primary for the codes that sit
-  # in the dedicated value rows.
-  ft <- flextable::font(ft, j = "Value", fontname = theme$font_code,
+  # Value column body: body font, primary, NOT bold -- the answer codes
+  # / coding tokens are secondary reference (the variable name is the
+  # emphasized identifier), so a regular weight keeps the column light.
+  # The dual-scale "Value (scale N)" header rows are re-bolded below.
+  ft <- flextable::font(ft, j = "Value", fontname = theme$font_body,
                         part = "body")
-  ft <- flextable::bold(ft, j = "Value", part = "body")
   ft <- flextable::color(ft, j = "Value", color = theme$color_primary,
                          part = "body")
 
@@ -818,8 +841,8 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # the top. Header labels sit centered in the tinted band.
   ft <- flextable::valign(ft, valign = "top", part = "body")
   ft <- flextable::valign(ft, valign = "center", part = "header")
-  ft <- flextable::padding(ft, padding.top = 3, padding.bottom = 3,
-                           padding.left = 4, padding.right = 4, part = "all")
+  ft <- flextable::padding(ft, padding.top = 2, padding.bottom = 2,
+                           padding.left = 3, padding.right = 3, part = "all")
 
   # Column widths. Tight on the meta columns to give the language
   # columns >=50% of the total width (the translation paragraphs
