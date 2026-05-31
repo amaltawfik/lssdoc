@@ -100,6 +100,11 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     font.family = theme$font_body, font.size = theme$size_meta,
     color = theme$color_text
   )
+  # Raw expression in the monospace face, muted + italic so it reads as
+  # secondary to the humanized form above it. Held at size_meta - 1 (the
+  # legibility floor for a code expression in this dense table); Consolas
+  # already looks a touch larger than Calibri at an equal size, so this
+  # reads about level with the body rather than larger.
   filter_raw_props <- officer::fp_text(
     font.family = theme$font_code, font.size = theme$size_meta - 1L,
     color = theme$color_muted, italic = TRUE
@@ -140,8 +145,12 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     font.family = theme$font_body, font.size = body_size,
     color = theme$color_text
   )
+  # Group name sits at the table body size (not a heading size): the
+  # bold primary colour and the saturated group banner already mark it
+  # as a section divider, so a larger size would just break the even
+  # rhythm of the dense codebook rows.
   group_name_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_heading2,
+    font.family = theme$font_body, font.size = body_size,
     color = theme$color_primary, bold = TRUE
   )
 

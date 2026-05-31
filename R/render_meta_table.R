@@ -19,10 +19,18 @@ lss_question_meta <- function(q, theme) {
 #' @keywords internal
 #' @noRd
 lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
-                             has_code = meta_header) {
+                             has_code = meta_header,
+                             body_size = theme$size_answer,
+                             header_size = theme$size_lang_header) {
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
-  ft <- flextable::fontsize(ft, size = theme$size_answer, part = "body")
-  ft <- flextable::fontsize(ft, size = theme$size_lang_header, part = "header")
+  # Body fontsize hits the non-composed cells (the left "Label" column
+  # and any plain code column); the composed language cells carry their
+  # own size from lss_compose(). The cards item tables pass
+  # body_size = header_size = size_question so labels, codes and the
+  # language header all sit at the uniform card body size (10 pt);
+  # the variable index keeps the defaults.
+  ft <- flextable::fontsize(ft, size = body_size, part = "body")
+  ft <- flextable::fontsize(ft, size = header_size, part = "header")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_text, part = "body")
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
@@ -153,14 +161,20 @@ lss_render_question_meta_table <- function(doc, theme,
     Mandatory = theme$chrome$meta_mandatory,
     Filter    = theme$chrome$meta_filter
   )
+  # The human-readable filter form sits at the uniform card body size.
   plain_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_meta,
+    font.family = theme$font_body, font.size = theme$size_question,
     color = theme$color_text
   )
   # Raw expression rendered in the monospace face so operators and dots
-  # like `!is_empty(X.NAOK) && (X.NAOK == 1)` stay readable.
+  # like `!is_empty(X.NAOK) && (X.NAOK == 1)` stay readable. It drops TWO
+  # points below the band body (not one): Consolas has a taller x-height
+  # than Calibri (~0.55 vs ~0.47 em), so at an equal point size it looks
+  # larger; -2 nets out to a genuinely secondary, smaller-looking line.
+  # (The variable name, by contrast, keeps the band size on purpose so
+  # the monospace heft makes it stand out as the anchor.)
   raw_props <- officer::fp_text(
-    font.family = theme$font_code, font.size = theme$size_meta - 1L,
+    font.family = theme$font_code, font.size = theme$size_question - 2L,
     color = theme$color_muted, italic = TRUE
   )
   filter_chunks <- list(flextable::as_chunk(filter_plain, props = plain_props))
@@ -178,14 +192,10 @@ lss_render_question_meta_table <- function(doc, theme,
   )
 
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
-  ft <- flextable::fontsize(ft, size = theme$size_meta, part = "all")
-  # No and Variable get a larger font so the start of a new question
-  # stands out at scroll time, and Variable is bold so the variable
-  # code reads as the question's anchor.
-  ft <- flextable::fontsize(
-    ft, j = c("No", "Variable"),
-    size = theme$size_heading2, part = "body"
-  )
+  # The whole meta band sits at the uniform card body size (matching the
+  # item table); the variable code still stands out through weight
+  # (bold) and the monospace face rather than a larger size.
+  ft <- flextable::fontsize(ft, size = theme$size_question, part = "all")
   ft <- flextable::bold(ft, j = "Variable", part = "body")
   # Variable code is an identifier (e.g. `satisfaction_4`); monospace
   # disambiguates l/1/I, 0/O and keeps the underscore visible.
@@ -235,31 +245,31 @@ lss_render_question_meta_table <- function(doc, theme,
   ft <- flextable::align(ft, align = "center", j = "Type",      part = "all")
   ft <- flextable::align(ft, align = "center", j = "Mandatory", part = "all")
   ft <- flextable::align(ft, align = "left",   j = "Filter",    part = "all")
-  # Column widths sum to theme$content_width_in (6.30 in). Calibrated to
-  # the actual content using 11 pt Consolas (~0.092 in/char) for Variable
-  # and 8 pt Calibri (~0.055 in/char) for the others:
-  #   No        0.35  - holds up to 3 digits in 11 pt body font (max #999).
-  #   Variable  2.05  - holds identifiers up to ~22 chars (e.g.
-  #                     `semestrechargetravail_1`) without wrapping;
-  #                     codes >=23 chars still wrap.
-  #   Type      1.00  - holds 8 pt labels up to ~18 chars; common labels
-  #                     ("Single choice", "Multiple choice", "Number")
-  #                     fit on one line. Long localized variants
-  #                     ("Choix multiple avec commentaire", 31 chars)
-  #                     wrap to two lines, which is acceptable for a
-  #                     rare type.
-  #   Mandatory 0.70  - widest localized header is Italian
-  #                     "Obbligatoria" (12 chars at 8 pt bold ~0.66 in);
-  #                     0.70 fits with a thin margin.
-  #   Filter    2.20  - holds the human-readable form on top and the raw
-  #                     LimeSurvey expression in 7 pt italic mono below;
-  #                     widened so 2-3 chained conditions fit on a
-  #                     single line.
+  # Column widths sum to theme$content_width_in (6.30 in). Calibrated at
+  # the uniform 10 pt band font (~0.083 in/char Consolas for Variable,
+  # ~0.066 in/char Calibri for the others):
+  #   No        0.35  - holds up to 3 digits in 10 pt body font (max #999).
+  #   Variable  2.05  - holds identifiers up to ~24 chars in 10 pt
+  #                     Consolas (e.g. `abandonetudesraisons_1`) on one
+  #                     line; longer codes wrap.
+  #   Type      1.10  - holds the common 10 pt labels ("Single choice",
+  #                     "Multiple choice", "Number") on one line; long
+  #                     localized variants ("Choix multiple avec
+  #                     commentaire", 31 chars) wrap, acceptable for a
+  #                     rare type. Widened from 1.00 to absorb the move
+  #                     from 8 pt to 10 pt.
+  #   Mandatory 0.80  - "Mandatory" header (9 chars in 10 pt bold) needs
+  #                     ~0.73 in incl. padding; 0.70 wrapped the final
+  #                     "y", so widened to 0.80. Body holds the short
+  #                     Yes/No/Soft tokens.
+  #   Filter    2.00  - the human-readable form at 10 pt on top and the
+  #                     raw LimeSurvey expression at 8 pt italic mono
+  #                     below; 2-3 chained conditions fit on a line.
   ft <- flextable::width(ft, j = "No", width = 0.35, unit = "in")
   ft <- flextable::width(ft, j = "Variable", width = 2.05, unit = "in")
-  ft <- flextable::width(ft, j = "Type", width = 1.00, unit = "in")
-  ft <- flextable::width(ft, j = "Mandatory", width = 0.70, unit = "in")
-  ft <- flextable::width(ft, j = "Filter", width = 2.20, unit = "in")
+  ft <- flextable::width(ft, j = "Type", width = 1.10, unit = "in")
+  ft <- flextable::width(ft, j = "Mandatory", width = 0.80, unit = "in")
+  ft <- flextable::width(ft, j = "Filter", width = 2.00, unit = "in")
   # keepnext: the meta table is a header for the item table that
   # follows; Word must keep them on the same page so the dark band
   # never floats orphaned at the bottom.

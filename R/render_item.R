@@ -440,7 +440,7 @@ lss_render_shared_scale <- function(doc, q, langs, theme) {
       officer::fpar(officer::ftext(
         title,
         prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_meta,
+          font.family = theme$font_body, font.size = theme$size_question,
           bold = TRUE, color = theme$color_primary
         )
       ))
@@ -472,11 +472,13 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
       ft <- flextable::compose(
         ft, i = i, j = lg,
         value = lss_compose(answers[[i]]$labels[[lg]], theme,
-                            size = theme$size_answer)
+                            size = theme$size_question)
       )
     }
   }
-  ft <- lss_table_polish(ft, theme, lang_cols = langs, has_code = TRUE)
+  ft <- lss_table_polish(ft, theme, lang_cols = langs, has_code = TRUE,
+                         body_size = theme$size_question,
+                         header_size = theme$size_question)
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
@@ -737,7 +739,13 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
     )
   )
   for (i in seq_along(rows)) {
-    sz <- if (!is.null(rows[[i]]$size)) rows[[i]]$size else theme$size_question
+    # The cards item table renders every row at one uniform size (the
+    # content size, theme$size_question), matching the meta band. The
+    # question reads as a questionnaire; the row-type and code
+    # distinctions are carried by weight, italic and colour -- not size.
+    # The per-row `size` field is kept on the row specs for the table
+    # template, which sizes differently.
+    sz <- theme$size_question
     italic <- isTRUE(rows[[i]]$italic)
     color <- if (!is.null(rows[[i]]$color)) rows[[i]]$color else theme$color_text
     is_section <- isTRUE(rows[[i]]$section_header)
@@ -759,7 +767,9 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
       }
     }
   }
-  ft <- lss_table_polish(ft, theme, lang_cols = langs)
+  ft <- lss_table_polish(ft, theme, lang_cols = langs,
+                         body_size = theme$size_question,
+                         header_size = theme$size_question)
   ft <- flextable::bold(ft, j = "Label", part = "body")
   ft <- flextable::color(ft, j = "Label", color = theme$color_primary, part = "body")
   ft <- flextable::align(ft, j = "Label", align = "left", part = "body")
@@ -778,10 +788,20 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   # its meaning on the right".
   for (i in seq_along(rows)) {
     if (isTRUE(rows[[i]]$value_row) || isTRUE(rows[[i]]$code_row)) {
+      # Value / option codes use the body font (NOT the monospace face):
+      # the monospace face is reserved for the variable name and the raw
+      # LimeSurvey filter expression -- the tokens a user copies verbatim.
+      # Answer codes are short data values, read fine in the body font,
+      # and keeping them out of monospace lightens the column.
       ft <- flextable::font(ft, i = i, j = "Label",
-                            fontname = theme$font_code, part = "body")
+                            fontname = theme$font_body, part = "body")
       ft <- flextable::align(ft, i = i, j = "Label",
                              align = "right", part = "body")
+      # Codes / values are a secondary reference, not bold: the row-type
+      # labels (Question, Value, Options) keep the emphasis, the codes
+      # read in a regular weight so the column stays light.
+      ft <- flextable::bold(ft, i = i, j = "Label", bold = FALSE,
+                            part = "body")
     }
   }
   # Label column width: a single fixed value, identical for every item
