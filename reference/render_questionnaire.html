@@ -89,6 +89,7 @@ tie the document together. Rendering uses the suggested packages
 <span>  page_format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"A4-portrait"</span>, <span class="st">"A4-landscape"</span>, <span class="st">"A3"</span><span class="op">)</span>,</span>
 <span>  show_toc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_index <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  show_quotas <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_header_title <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_source <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_item_heading <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -207,6 +208,15 @@ use <code>show_index</code>.</p></dd>
 <dd><p>Logical. If <code>TRUE</code> (default), append a variable
 index at the end of the document listing every item code with
 its number, sorted alphabetically.</p></dd>
+
+
+<dt id="arg-show-quotas">show_quotas<a class="anchor" aria-label="anchor" href="#arg-show-quotas"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), append a quotas
+section (after the end text, before the variable index) listing
+each sampling quota: its localized name, status (active, limit and
+action when full), the membership condition resolved to question
+codes and answer labels, and the localized "quota full" message.
+Skipped when the survey defines no quotas.</p></dd>
 
 
 <dt id="arg-show-header-title">show_header_title<a class="anchor" aria-label="anchor" href="#arg-show-header-title"></a></dt>

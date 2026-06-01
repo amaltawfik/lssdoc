@@ -88,6 +88,8 @@
 <li>Optional <code>show_privacy_settings</code> and <code>show_admin_settings</code> surface LimeSurvey flags (<code>anonymized</code>, save partial, <code>datestamp</code>, <code>ipaddr</code>, <code>refurl</code>, <code>alias</code>, end URL, <code>active</code>) as additional cover metadata rows (both default <code>FALSE</code>).</li>
 <li>
 <code>show_toc</code>, <code>show_index</code> and <code>show_header_title</code> (all <code>TRUE</code>) add a group table of contents (skipped when there are fewer than two groups), an alphabetical variable index listing every item code with its number, and the survey title at the top of every page. The page footer always carries a compact <code>X/Y</code> page counter.</li>
+<li>
+<code>show_quotas</code> (default <code>TRUE</code>) appends a quotas section after the end text: one block per sampling quota with its localized name, status (active, limit, action when full), the membership condition resolved to question codes and answer labels, and the localized “quota full” message. Skipped when the survey defines no quotas.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="filter-rendering-0-1-0">Filter rendering<a class="anchor" aria-label="anchor" href="#filter-rendering-0-1-0"></a></h3>
