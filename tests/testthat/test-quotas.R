@@ -23,7 +23,7 @@ test_that("show_quotas renders a quota section with resolved conditions", {
   )
   expect_true(grepl("Quotas", txt, fixed = TRUE))
   expect_true(grepl("fin2", txt, fixed = TRUE))
-  expect_true(grepl("When full: terminate survey", txt, fixed = TRUE))
+  expect_true(grepl("terminate survey", txt, fixed = TRUE))
   # The membership condition resolves the answer code to its label and
   # joins several members with the localized AND connector.
   expect_true(grepl("ST (Student)", txt, fixed = TRUE))
@@ -45,7 +45,7 @@ test_that("show_quotas = FALSE and quota-less surveys produce no quota section",
   t_off <- paste(
     officer::docx_summary(officer::read_docx(out_off))$text, collapse = " | "
   )
-  expect_false(grepl("When full:", t_off, fixed = TRUE))
+  expect_false(grepl("exceeded a quota", t_off, fixed = TRUE))
 
   hesav <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
   skip_if_not(file.exists(hesav))
@@ -55,5 +55,5 @@ test_that("show_quotas = FALSE and quota-less surveys produce no quota section",
   t_none <- paste(
     officer::docx_summary(officer::read_docx(out_none))$text, collapse = " | "
   )
-  expect_false(grepl("When full:", t_none, fixed = TRUE))
+  expect_false(grepl("exceeded a quota", t_none, fixed = TRUE))
 })

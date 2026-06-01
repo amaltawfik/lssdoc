@@ -19,11 +19,8 @@ lss_render_group <- function(doc, group, langs, theme,
   # hidden -- bookmarks, audit references and the TOC depend on it.
   state$group_index <- state$group_index + 1L
   # Render as a styled paragraph (no Heading 1 style) so Word does NOT
-  # add its own list number on top of ours -- the auto-number Word
-  # injects via the linked numbering definition uses a different font
-  # face/size than our heading text, which looks inconsistent. Doing
-  # the numbering manually keeps the whole heading typographically
-  # uniform.
+  # add its own list number, and the heading stays typographically
+  # uniform (one font face/size/colour for the whole title).
   #
   # The asymmetric padding (24 pt above, 8 pt below) signals "section
   # break" at the right strength: the air above is roughly three times
@@ -35,10 +32,12 @@ lss_render_group <- function(doc, group, langs, theme,
   if (isTRUE(show_groups)) {
     gname <- lss_first_label(group$names, langs)
     if (is.na(gname)) gname <- paste0("Group ", group$gid)
-    # Strip a leading numeric prefix written by the LimeSurvey author so
-    # we do not get a doubled "1. 1. Vos etudes".
+    # Strip a leading numeric prefix written by the LimeSurvey author:
+    # group headings are not numbered (the name carries the meaning, and
+    # forced numbering competed with the section structure), so a
+    # leftover "1." would look like stray text.
     gname <- lss_strip_group_number_prefix(gname)
-    heading_text <- sprintf("%d. %s", state$group_index, gname)
+    heading_text <- gname
     doc <- officer::body_add_fpar(
       doc,
       officer::fpar(

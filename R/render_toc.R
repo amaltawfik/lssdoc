@@ -114,17 +114,22 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
     style = "heading 1"
   )
 
-  name_props <- officer::fp_text(font.family = theme$font_body,
-                                 font.size = theme$size_subq, bold = TRUE,
-                                 color = theme$color_primary)
-  muted_props <- officer::fp_text(font.family = theme$font_body,
-                                  font.size = theme$size_meta,
-                                  color = theme$color_muted)
-  body_props <- officer::fp_text(font.family = theme$font_body,
+  # One row per quota in a single table: name (with active state), limit,
+  # action when full, the membership condition resolved to question codes
+  # and answer labels, and the localized "quota full" message stacked per
+  # language in its cell.
+  n <- nrow(quotas)
+  name_v <- character(n); limit_v <- character(n)
+  action_v <- character(n); cond_v <- character(n)
+  msg_cells <- vector("list", n)
+  cell_props <- officer::fp_text(font.family = theme$font_body,
                                  font.size = theme$size_meta,
                                  color = theme$color_text)
+  lang_props <- officer::fp_text(font.family = theme$font_body,
+                                 font.size = theme$size_meta,
+                                 color = theme$color_muted, bold = TRUE)
 
-  for (qi in seq_len(nrow(quotas))) {
+  for (qi in seq_len(n)) {
     qrow <- quotas[qi, , drop = FALSE]
     qid_q <- qrow$id
 
@@ -135,27 +140,16 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
       if (!is.na(v) && nzchar(trimws(v))) { name <- v; break }
     }
     if (is.na(name) || !nzchar(trimws(name))) name <- qrow$name
-
     active_lbl <- if (identical(qrow$active, "1")) chrome$quota_active else chrome$quota_inactive
-    action_lbl <- switch(as.character(qrow$action),
-                         "1" = chrome$quota_action_terminate,
-                         "2" = chrome$quota_action_confirm,
-                         as.character(qrow$action))
-    status <- sprintf("  —  %s · %s %s · %s: %s",
-                      active_lbl, chrome$quota_limit, qrow$qlimit,
-                      chrome$quota_when_full, action_lbl)
+    name_v[qi] <- sprintf("%s (%s)", name, active_lbl)
 
-    doc <- officer::body_add_fpar(
-      doc,
-      officer::fpar(
-        officer::ftext(name, prop = name_props),
-        officer::ftext(status, prop = muted_props),
-        fp_p = officer::fp_par(padding.top = 6, padding.bottom = 1)
-      )
-    )
+    limit_v[qi] <- as.character(qrow$qlimit)
+    action_v[qi] <- switch(as.character(qrow$action),
+                           "1" = chrome$quota_action_terminate,
+                           "2" = chrome$quota_action_confirm,
+                           as.character(qrow$action))
 
-    # Membership condition.
-    mem <- if (!is.null(members)) members[members$quota_id == qid_q, , drop = FALSE] else members[0, ]
+    mem <- if (!is.null(members)) members[members$quota_id == qid_q, , drop = FALSE] else NULL
     if (!is.null(mem) && nrow(mem) > 0L) {
       conds <- vapply(seq_len(nrow(mem)), function(mi) {
         qc <- q_title(mem$qid[mi]); code <- mem$code[mi]
@@ -166,43 +160,68 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
           sprintf("%s = %s", qc, code)
         }
       }, character(1))
-      cond_str <- paste(conds, collapse = sprintf(" %s ", chrome$filter_and))
-      doc <- officer::body_add_fpar(
-        doc,
-        officer::fpar(
-          officer::ftext(sprintf("%s: ", chrome$quota_condition), prop = muted_props),
-          officer::ftext(cond_str, prop = body_props),
-          fp_p = officer::fp_par(padding.bottom = 1)
-        )
-      )
+      cond_v[qi] <- paste(conds, collapse = sprintf(" %s ", chrome$filter_and))
+    } else {
+      cond_v[qi] <- theme$empty_marker
     }
 
-    # Localized "quota full" message, one muted line per language.
-    msg_lines <- list()
+    # Message cell: one line per language that carries a message.
+    chunks <- list()
     for (lg in langs) {
       m <- qls_field(qid_q, lg, "quotals_message")
       if (is.na(m) || !nzchar(trimws(m))) next
-      m <- trimws(gsub("<[^>]+>", " ", m))
-      m <- gsub("[ \t\r\n]+", " ", m)
-      msg_lines[[length(msg_lines) + 1L]] <- officer::fpar(
-        officer::ftext(sprintf("%s  ", lss_language_label(lg)),
-                       prop = officer::fp_text(font.family = theme$font_body,
-                                               font.size = theme$size_meta,
-                                               color = theme$color_muted, bold = TRUE)),
-        officer::ftext(m, prop = body_props),
-        fp_p = officer::fp_par(padding.bottom = 0)
-      )
+      m <- gsub("[ \t\r\n]+", " ", trimws(gsub("<[^>]+>", " ", m)))
+      if (length(chunks) > 0L) {
+        chunks[[length(chunks) + 1L]] <- flextable::as_chunk("\n", props = cell_props)
+      }
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
+        sprintf("%s  ", lss_language_label(lg)), props = lang_props)
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk(m, props = cell_props)
     }
-    if (length(msg_lines) > 0L) {
-      doc <- officer::body_add_fpar(
-        doc,
-        officer::fpar(officer::ftext(sprintf("%s:", chrome$quota_message),
-                                     prop = muted_props),
-                      fp_p = officer::fp_par(padding.bottom = 0))
-      )
-      for (ln in msg_lines) doc <- officer::body_add_fpar(doc, ln)
+    msg_cells[[qi]] <- if (length(chunks)) {
+      do.call(flextable::as_paragraph, chunks)
+    } else {
+      flextable::as_paragraph(flextable::as_chunk(theme$empty_marker, props = cell_props))
     }
   }
+
+  df <- data.frame(name = name_v, limit = limit_v, action = action_v,
+                   condition = cond_v, message = "",
+                   stringsAsFactors = FALSE, check.names = FALSE)
+  ft <- flextable::flextable(df)
+  ft <- flextable::set_header_labels(
+    ft,
+    name = chrome$quotas_title, limit = chrome$quota_limit,
+    action = chrome$quota_when_full, condition = chrome$quota_condition,
+    message = chrome$quota_message
+  )
+  for (qi in seq_len(n)) {
+    ft <- flextable::compose(ft, i = qi, j = "message", value = msg_cells[[qi]])
+  }
+  ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
+  ft <- flextable::fontsize(ft, size = theme$size_meta, part = "all")
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::color(ft, color = theme$color_primary, part = "header")
+  ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
+  ft <- flextable::bold(ft, j = "name", part = "body")
+  ft <- flextable::color(ft, j = "name", color = theme$color_primary, part = "body")
+  ft <- flextable::border_remove(ft)
+  thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
+  ft <- flextable::hline(ft, border = thin, part = "all")
+  ft <- flextable::vline(ft, border = thin, part = "all")
+  ft <- flextable::vline_left(ft, border = thin, part = "all")
+  ft <- flextable::vline_right(ft, border = thin, part = "all")
+  ft <- flextable::valign(ft, valign = "top", part = "body")
+  ft <- flextable::valign(ft, valign = "center", part = "header")
+  ft <- flextable::padding(ft, padding = 3, part = "all")
+  ft <- flextable::align(ft, align = "left", part = "all")
+  ft <- flextable::align(ft, j = "limit", align = "center", part = "all")
+  ft <- flextable::width(ft, j = "name", width = 1.00, unit = "in")
+  ft <- flextable::width(ft, j = "limit", width = 0.55, unit = "in")
+  ft <- flextable::width(ft, j = "action", width = 1.15, unit = "in")
+  ft <- flextable::width(ft, j = "condition", width = 1.70, unit = "in")
+  ft <- flextable::width(ft, j = "message", width = 1.90, unit = "in")
+  doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }
 
@@ -272,7 +291,7 @@ lss_render_consent <- function(doc, lss, langs, theme) {
       lab <- getf("surveyls_policy_notice_label", lg)
       lab <- if (is.na(lab)) "" else trimws(gsub("<[^>]+>", " ", lab))
       flextable::as_paragraph(flextable::as_chunk(
-        if (nzchar(lab)) paste0("☐  ", lab) else "",
+        if (nzchar(lab)) paste0("\u2610  ", lab) else "",
         props = officer::fp_text(font.family = theme$font_body,
                                  font.size = theme$size_question,
                                  bold = TRUE, color = theme$color_text)
