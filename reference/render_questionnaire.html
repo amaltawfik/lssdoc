@@ -154,9 +154,9 @@ languages displayed side-by-side in the item table.</p></li>
 document: every variable is one tinted Question row carrying
 <code>No | Variable | Type | Mand. | Filter</code>, followed by one or
 more white Value rows. Group banners become merged section
-rows; the column header repeats on every page. Auto-promotes
-the page format to A4 landscape for 2+ languages (override
-via <code>page_format</code>).</p></li>
+rows; the column header repeats on every page. The body font
+steps down for three or four languages so the columns stay
+within the portrait content width.</p></li>
 </ul></dd>
 
 
@@ -192,10 +192,11 @@ default) hides them.</p></dd>
 
 <dt id="arg-page-format">page_format<a class="anchor" aria-label="anchor" href="#arg-page-format"></a></dt>
 <dd><p>Page format. One of <code>"auto"</code> (the default),
-<code>"A4-portrait"</code>, <code>"A4-landscape"</code>, or <code>"A3"</code>. <code>"auto"</code> picks
-portrait for one or two languages and landscape from three. The
-<code>table</code> template auto-promotes to A4 landscape from two
-languages – pass an explicit value to override.</p></dd>
+<code>"A4-portrait"</code>, <code>"A4-landscape"</code>, or <code>"A3"</code>. <code>"auto"</code> resolves to
+A4 portrait for every language count: all panels are sized to the
+portrait content width and the bundled four-language surveys fit,
+so landscape would only add empty margin. Pass <code>"A4-landscape"</code> or
+<code>"A3"</code> explicitly if you prefer a wider page.</p></dd>
 
 
 <dt id="arg-show-toc">show_toc<a class="anchor" aria-label="anchor" href="#arg-show-toc"></a></dt>
