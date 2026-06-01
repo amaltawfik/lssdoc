@@ -35,6 +35,7 @@ render_questionnaire(
   show_welcome = TRUE,
   show_endtext = TRUE,
   show_description = TRUE,
+  show_consent = TRUE,
   show_privacy_settings = FALSE,
   show_admin_settings = FALSE,
   title = NULL,
@@ -206,6 +207,15 @@ render_questionnaire(
   description (`surveyls_description`) – the "what this survey is about"
   intro that LimeSurvey shows above the welcome text on the landing
   page.
+
+- show_consent:
+
+  Logical. If `TRUE` (default), render a data protection and consent
+  block in the front matter (before the welcome text): the survey's
+  privacy policy notice (`surveyls_policy_notice`) and its consent
+  checkbox label (`surveyls_policy_notice_label`), side by side across
+  languages, with the checkbox drawn as an empty box. Skipped when the
+  survey turns the policy notice off or carries no notice text.
 
 - show_privacy_settings:
 
