@@ -102,10 +102,14 @@ surveys, both templates (`cards` and `table`), the five chrome languages
   `refurl`, `alias`, end URL, `active`) as additional cover metadata
   rows (both default `FALSE`).
 - `show_toc`, `show_index` and `show_header_title` (all `TRUE`) add a
-  group table of contents (skipped when there are fewer than two
-  groups), an alphabetical variable index listing every item code with
-  its number, and the survey title at the top of every page. The page
-  footer always carries a compact `X/Y` page counter.
+  table of contents, an alphabetical variable index listing every item
+  code with its number, and the survey title at the top of every page.
+  The table of contents is comprehensive: it lists the document’s
+  sections – audit, data protection, the questionnaire with its groups
+  indented beneath it, quotas, variable index – each a clickable link to
+  the matching heading, rather than only the question groups. Group
+  headings themselves are not numbered. The page footer always carries a
+  compact `X/Y` page counter.
 - `show_quotas` (default `TRUE`) appends a quotas section after the end
   text: one block per sampling quota with its localized name, status
   (active, limit, action when full), the membership condition resolved
