@@ -591,8 +591,13 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   if (length(q$answers) > 0L) {
     rows <- c(rows, lss_answer_rows(q, langs, theme))
   } else {
-    vrow <- lss_value_implicit_row(q, langs, theme)
-    if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+    pre <- lss_predefined_value_rows(q, langs, theme)
+    if (!is.null(pre)) {
+      rows <- c(rows, pre)
+    } else {
+      vrow <- lss_value_implicit_row(q, langs, theme)
+      if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+    }
   }
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
@@ -668,11 +673,42 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   if (length(q$answers) > 0L) {
     rows <- c(rows, lss_answer_rows(q, langs, theme))
   } else {
-    vrow <- lss_value_implicit_row(q, langs, theme)
-    if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+    pre <- lss_predefined_value_rows(q, langs, theme)
+    if (!is.null(pre)) {
+      rows <- c(rows, pre)
+    } else {
+      vrow <- lss_value_implicit_row(q, langs, theme)
+      if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+    }
   }
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
+}
+
+#' Per-language header text for one scale of a dual-scale array (type 1)
+#'
+#' Reads `dualscale_headerA` (scale 1) or `dualscale_headerB` (scale 2)
+#' from the question attributes and returns a list named by language, or
+#' `NULL` when the question defines no header for that scale.
+#'
+#' @keywords internal
+#' @noRd
+lss_dualscale_header <- function(q, scale_idx, langs) {
+  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return(NULL)
+  attr_name <- if (scale_idx == 1L) "dualscale_headerA" else "dualscale_headerB"
+  rows <- q$attributes[q$attributes$attribute == attr_name, , drop = FALSE]
+  if (nrow(rows) == 0L) return(NULL)
+  pick <- function(lg) {
+    v <- rows$value[rows$language == lg]
+    if (length(v) && !is.na(v[1]) && nzchar(trimws(v[1]))) return(v[1])
+    ev <- rows$value[is.na(rows$language) | !nzchar(rows$language)]
+    if (length(ev) && !is.na(ev[1]) && nzchar(trimws(ev[1]))) ev[1] else NA_character_
+  }
+  vals <- stats::setNames(lapply(langs, pick), langs)
+  if (all(vapply(vals, function(v) is.na(v) || !nzchar(trimws(v)), logical(1)))) {
+    return(NULL)
+  }
+  vals
 }
 
 #' Build the rows that document the answer scale of a (sub)question
@@ -694,17 +730,27 @@ lss_answer_rows <- function(q, langs, theme) {
   for (si in seq_along(bundles)) {
     answers <- bundles[[si]]
     if (length(answers) == 0L) next
-    header_label <- if (multi_scale) {
-      sprintf(theme$chrome$item_value_scale_fmt, si)
+    if (multi_scale) {
+      # Dual-scale array: label the scale and, when the question defines
+      # them, show the per-scale header (dualscale_headerA / _headerB),
+      # translated across the language columns.
+      hdr <- lss_dualscale_header(q, si, langs)
+      out[[length(out) + 1L]] <- if (!is.null(hdr)) {
+        list(label = sprintf(theme$chrome$item_value_scale_fmt, si),
+             texts = hdr, size = theme$size_meta,
+             section_header = TRUE, section_with_text = TRUE)
+      } else {
+        list(label = sprintf(theme$chrome$item_value_scale_fmt, si),
+             texts = stats::setNames(as.list(rep("", length(langs))), langs),
+             size = theme$size_meta, section_header = TRUE)
+      }
     } else {
-      theme$chrome$item_value
+      out[[length(out) + 1L]] <- list(
+        label = theme$chrome$item_value,
+        texts = stats::setNames(as.list(rep("", length(langs))), langs),
+        size = theme$size_meta, section_header = TRUE
+      )
     }
-    out[[length(out) + 1L]] <- list(
-      label = header_label,
-      texts = stats::setNames(as.list(rep("", length(langs))), langs),
-      size = theme$size_meta,
-      section_header = TRUE
-    )
     for (a in answers) {
       out[[length(out) + 1L]] <- list(
         label = a$code,
@@ -764,10 +810,13 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
     color <- if (!is.null(rows[[i]]$color)) rows[[i]]$color else theme$color_text
     is_section <- isTRUE(rows[[i]]$section_header)
     section_with_text <- isTRUE(rows[[i]]$section_with_text)
+    is_blank <- isTRUE(rows[[i]]$blank)
     for (lg in langs) {
-      if (is_section && !section_with_text) {
-        # Section header row: language cells stay truly blank (no em-dash
-        # placeholder), so the row reads as a category label.
+      if ((is_section && !section_with_text) || is_blank) {
+        # Section header row, or a value row with no stored label (an
+        # N-point numeric scale): language cells stay truly blank (no
+        # em-dash placeholder), so the absent label is not mistaken for
+        # a missing translation.
         ft <- flextable::compose(
           ft, i = i, j = lg,
           value = flextable::as_paragraph(flextable::as_chunk(""))
@@ -927,6 +976,12 @@ lss_value_implicit_row <- function(q, langs, theme) {
     "S" = chrome$value_free_text_short,
     "T" = chrome$value_free_text,
     "U" = chrome$value_free_text,
+    "Q" = chrome$value_free_text_short,
+    # Array (Texts): one free-text cell per subquestion (multi-line
+    # textarea like T). Array (Numbers): one numeric cell per
+    # subquestion. The structural fan-out is in the Type cell.
+    ";" = chrome$value_free_text,
+    ":" = chrome$value_numeric_input,
     # Date / time picker.
     "D" = chrome$value_date_input,
     # Equation: server-computed value, not respondent-entered.
@@ -950,6 +1005,76 @@ lss_value_implicit_row <- function(q, langs, theme) {
     # the renderer spans it once across the language columns.
     span_note = TRUE
   )
+}
+
+#' Value rows for question types whose response scale is predefined by
+#' LimeSurvey and therefore NOT stored in the `.lss`
+#'
+#' Some array / choice types carry a fixed scale that LimeSurvey builds
+#' in (so `q$answers` is empty): Yes/No/Uncertain (C), Increase/Same/
+#' Decrease (E), Yes/No (Y), and the 5- and 10-point arrays (A, B) and
+#' the 5-point single choice (5). For the labelled scales we list each
+#' code with its localized label, like a stored answer scale. For the
+#' numeric N-point scales LimeSurvey stores no labels at all, so we put
+#' a "%d-point scale (1 to %d)" descriptor on the Value header and list
+#' the bare points 1..N (their language cells are intentionally blank).
+#' Returns `NULL` for any other type, so the caller falls back to the
+#' implicit single-line descriptor.
+#'
+#' @keywords internal
+#' @noRd
+lss_predefined_value_rows <- function(q, langs, theme) {
+  chrome <- theme$chrome
+  blank <- stats::setNames(as.list(rep("", length(langs))), langs)
+  header <- function(text = NULL) {
+    if (is.null(text)) {
+      list(label = chrome$item_value, texts = blank, size = theme$size_meta,
+           section_header = TRUE)
+    } else {
+      list(label = chrome$item_value,
+           texts = stats::setNames(rep(list(text), length(langs)), langs),
+           size = theme$size_meta, section_header = TRUE,
+           section_with_text = TRUE, span_note = TRUE)
+    }
+  }
+  value_row <- function(code, label) {
+    list(label = code,
+         texts = stats::setNames(rep(list(label), length(langs)), langs),
+         size = theme$size_answer, value_row = TRUE)
+  }
+
+  # Labelled predefined scales: list each code with its localized label.
+  labelled <- switch(
+    q$type,
+    "C" = list(c("Y", "value_array_yes"), c("U", "value_array_uncertain"),
+               c("N", "value_array_no")),
+    "E" = list(c("I", "value_array_increase"), c("S", "value_array_same"),
+               c("D", "value_array_decrease")),
+    "Y" = list(c("Y", "value_array_yes"), c("N", "value_array_no")),
+    NULL
+  )
+  if (!is.null(labelled)) {
+    rows <- list(header())
+    for (cl in labelled) {
+      rows[[length(rows) + 1L]] <- value_row(cl[1], chrome[[cl[2]]])
+    }
+    return(rows)
+  }
+
+  # Numeric N-point scales (no stored labels): descriptor on the header,
+  # then the bare points 1..N with blank language cells.
+  npoint <- switch(q$type, "5" = 5L, "A" = 5L, "B" = 10L, NA_integer_)
+  if (!is.na(npoint)) {
+    rows <- list(header(sprintf(chrome$value_npoint_fmt, npoint, npoint)))
+    for (i in seq_len(npoint)) {
+      rows[[length(rows) + 1L]] <- list(
+        label = as.character(i), texts = blank,
+        size = theme$size_answer, value_row = TRUE, blank = TRUE
+      )
+    }
+    return(rows)
+  }
+  NULL
 }
 
 #' Insert a small vertical spacer before each item so consecutive

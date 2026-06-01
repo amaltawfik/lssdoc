@@ -32,3 +32,25 @@ test_that("demo_survey renders both templates across its question types", {
     unlink(out)
   }
 })
+
+test_that("predefined-scale and structural types document their Value", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  out <- tempfile(fileext = ".docx")
+  on.exit(unlink(out), add = TRUE)
+  render_questionnaire(read_lss(path), out, chrome_lang = "en")
+  txt <- paste(
+    officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
+  )
+  # C / E list their predefined codes' labels; the 5/10-point arrays show
+  # an N-point descriptor; the dual-scale array shows both scales. These
+  # types store no answers in the .lss, so before this they had no Value.
+  for (lbl in c("Uncertain", "Increase", "Decrease",
+                "5-point scale (1 to 5)", "10-point scale (1 to 10)",
+                "Value (scale 1)", "Value (scale 2)")) {
+    expect_true(grepl(lbl, txt, fixed = TRUE), info = lbl)
+  }
+})

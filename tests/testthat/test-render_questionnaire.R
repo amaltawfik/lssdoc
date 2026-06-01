@@ -22,22 +22,20 @@ test_that("render_questionnaire produces a non-empty .docx for hesav (2 langs)",
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
 
-  res <- render_questionnaire(read_lss(path), out)
+  res <- render_questionnaire(read_lss(path), out, chrome_lang = "en")
   expect_identical(res, out)
   expect_true(file.exists(out))
   expect_true(file.size(out) > 10000)
 
-  # Inspect the produced document.
-  s <- officer::docx_summary(officer::read_docx(out))
-  # Groups now use Heading 1 (one per group, in the TOC); items use a
-  # styled paragraph with our manual sequential number. We verify the
-  # group H1 count plus the item expansion via the total number of table
-  # cells produced (each item has its own meta table; arrays add a
+  # Inspect the produced document. Section and group headings are the
+  # package's own styled paragraphs (not Word's "heading 1" style, which
+  # we dropped for a template-independent, uniform look), so we verify
+  # structure by a section heading's text plus the item expansion via the
+  # number of table cells (each item has its own meta table; arrays add a
   # shared answer scale on top).
-  h1 <- sum(
-    !is.na(s$style_name) & s$style_name == "heading 1", na.rm = TRUE
-  )
-  expect_gt(h1, 0L)
+  s <- officer::docx_summary(officer::read_docx(out))
+  txt <- paste(s$text[!is.na(s$text)], collapse = " | ")
+  expect_true(grepl("Variable index", txt, fixed = TRUE))
   expect_true(sum(s$content_type == "table cell") > 200L)
 })
 
