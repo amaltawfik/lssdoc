@@ -231,9 +231,26 @@
 <span><span class="fu"><a href="reference/render_audit.html">render_audit</a></span><span class="op">(</span><span class="va">lss</span>, <span class="st">"qa_followup.docx"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="see-the-audit-in-action">See the audit in action<a class="anchor" aria-label="anchor" href="#see-the-audit-in-action"></a>
+</h3>
+<p>A deliberately flawed survey ships with the package, so you can see what <code><a href="reference/audit_lss.html">audit_lss()</a></code> catches without supplying your own file:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">demo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"audit_demo.lss"</span>, package <span class="op">=</span> <span class="st">"lssdoc"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="fu"><a href="reference/read_lss.html">read_lss</a></span><span class="op">(</span><span class="va">demo</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; -- lssdoc audit ----------------------------------------------------</span></span>
+<span><span class="co">#&gt; 11 findings: 4 errors, 7 warnings, 0 notes.</span></span>
+<span><span class="co">#&gt; x Question 'age': filter references 'income', asked later (forward reference)</span></span>
+<span><span class="co">#&gt; x Survey: duplicate question code 'age'</span></span>
+<span><span class="co">#&gt; x Subquestion 'orphan_sq': points to a question id that does not exist</span></span>
+<span><span class="co">#&gt; ! Question 'satisf': expects answer options, but none are defined</span></span>
+<span><span class="co">#&gt; ! Question 'income': text missing in 'fr'</span></span>
+<span><span class="co">#&gt; ! Question 'comment ': code carries whitespace</span></span>
+<span><span class="co">#&gt; ... plus empty texts, missing subquestions and an array-scale mismatch.</span></span></code></pre></div>
+</div>
+<div class="section level3">
 <h3 id="pdf-output">PDF output<a class="anchor" aria-label="anchor" href="#pdf-output"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Same call, just pass a .pdf path. The package writes the .docx</span></span>
 <span><span class="co"># into a temp file and converts it locally via LibreOffice</span></span>
 <span><span class="co"># (must be installed and on PATH).</span></span>
@@ -250,9 +267,9 @@
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
 <p>Use <code>citation("lssdoc")</code> once the package is on CRAN, or cite the GitHub repository in the meantime:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>Tawfik <span class="fu">A.</span> (<span class="dv">2026</span>). lssdoc<span class="sc">:</span> Word codebook documents from LimeSurvey</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>.lss files. R package version <span class="dv">0</span>.<span class="dv">0</span>.<span class="dv">0</span>.<span class="fl">9000.</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>amaltawfik<span class="sc">/</span>lssdoc</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>Tawfik <span class="fu">A.</span> (<span class="dv">2026</span>). lssdoc<span class="sc">:</span> Word codebook documents from LimeSurvey</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>.lss files. R package version <span class="dv">0</span>.<span class="dv">0</span>.<span class="dv">0</span>.<span class="fl">9000.</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>amaltawfik<span class="sc">/</span>lssdoc</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
