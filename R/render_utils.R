@@ -28,6 +28,14 @@ lss_group_bookmark <- function(index) {
   sprintf("lssdoc_group_%d", as.integer(index))
 }
 
+#' Bookmark name for a top-level section (audit, consent, questionnaire,
+#' quotas, index), used to wire the static TOC entries to the headings.
+#' @keywords internal
+#' @noRd
+lss_section_bookmark <- function(name) {
+  paste0("lssdoc_section_", name)
+}
+
 lss_language_label <- function(code) {
   map <- c(
     fr = "Fran\u00e7ais",

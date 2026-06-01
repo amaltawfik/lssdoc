@@ -24,6 +24,7 @@ lss_render_index <- function(doc, entries, theme) {
     )),
     style = "heading 1"
   )
+  doc <- officer::body_bookmark(doc, lss_section_bookmark("index"))
   codes <- vapply(entries, function(e) e$code, character(1))
   nos <- vapply(entries, function(e) as.integer(e$no), integer(1))
   ord <- order(tolower(codes))
@@ -113,6 +114,7 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
     )),
     style = "heading 1"
   )
+  doc <- officer::body_bookmark(doc, lss_section_bookmark("quotas"))
 
   # One row per quota in a single table: name (with active state), limit,
   # action when full, the membership condition resolved to question codes
@@ -225,6 +227,33 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
   doc
 }
 
+#' TRUE when the survey carries a data-protection / consent notice worth
+#' rendering (policy notice not turned off, and a notice or label present
+#' in at least one displayed language). Shared by the consent renderer
+#' and the table of contents so both agree on whether the section shows.
+#' @keywords internal
+#' @noRd
+lss_consent_present <- function(lss, langs) {
+  ls <- lss$survey_language_settings
+  if (is.null(ls) || !("surveyls_language" %in% names(ls))) return(FALSE)
+  show <- if (!is.null(lss$surveys) &&
+              "showsurveypolicynotice" %in% names(lss$surveys)) {
+    as.character(lss$surveys$showsurveypolicynotice[1])
+  } else {
+    NA_character_
+  }
+  if (!is.na(show) && identical(show, "0")) return(FALSE)
+  getf <- function(field, lang) {
+    if (!(field %in% names(ls))) return(NA_character_)
+    i <- which(ls$surveyls_language == lang)
+    if (length(i)) ls[[field]][i[1]] else NA_character_
+  }
+  has <- function(field) any(vapply(langs, function(lg) {
+    v <- getf(field, lg); !is.na(v) && nzchar(trimws(v))
+  }, logical(1)))
+  has("surveyls_policy_notice") || has("surveyls_policy_notice_label")
+}
+
 #' Render the data-protection / consent block as front matter
 #'
 #' Surfaces the survey's privacy policy notice and its consent checkbox
@@ -239,16 +268,8 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
 #' @keywords internal
 #' @noRd
 lss_render_consent <- function(doc, lss, langs, theme) {
+  if (!lss_consent_present(lss, langs)) return(doc)
   ls <- lss$survey_language_settings
-  if (is.null(ls) || !("surveyls_language" %in% names(ls))) return(doc)
-  show <- if (!is.null(lss$surveys) &&
-              "showsurveypolicynotice" %in% names(lss$surveys)) {
-    as.character(lss$surveys$showsurveypolicynotice[1])
-  } else {
-    NA_character_
-  }
-  if (!is.na(show) && identical(show, "0")) return(doc)
-
   getf <- function(field, lang) {
     if (!(field %in% names(ls))) return(NA_character_)
     i <- which(ls$surveyls_language == lang)
@@ -257,9 +278,6 @@ lss_render_consent <- function(doc, lss, langs, theme) {
   has <- function(field) any(vapply(langs, function(lg) {
     v <- getf(field, lg); !is.na(v) && nzchar(trimws(v))
   }, logical(1)))
-  if (!has("surveyls_policy_notice") && !has("surveyls_policy_notice_label")) {
-    return(doc)
-  }
 
   doc <- officer::body_add_par(doc, "", style = "Normal")
   doc <- officer::body_add_fpar(
@@ -270,8 +288,10 @@ lss_render_consent <- function(doc, lss, langs, theme) {
         font.family = theme$font_body, font.size = theme$size_heading1,
         bold = TRUE, color = theme$color_primary
       )
-    ))
+    )),
+    style = "heading 1"
   )
+  doc <- officer::body_bookmark(doc, lss_section_bookmark("consent"))
 
   mk_ft <- function(cell_fun) {
     df <- as.data.frame(matrix("", nrow = 1, ncol = length(langs)),
@@ -323,30 +343,55 @@ lss_render_consent <- function(doc, lss, langs, theme) {
 #'
 #' @keywords internal
 #' @noRd
-lss_render_toc <- function(doc, model, theme) {
+lss_render_toc <- function(doc, model, theme, sections = list()) {
+  chrome <- theme$chrome
   doc <- officer::body_add_fpar(
     doc,
-    officer::fpar(
-      officer::ftext(
-        theme$chrome$toc_title,
-        prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_heading1,
-          bold = TRUE, color = theme$color_primary
-        )
+    officer::fpar(officer::ftext(
+      chrome$toc_title,
+      prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_heading1,
+        bold = TRUE, color = theme$color_primary
+      )
+    ))
+  )
+
+  # Clickable entries in the accent colour. Top-level sections are bold;
+  # the questionnaire's groups are indented and regular weight. Each
+  # entry points to the bookmark anchored on the matching heading.
+  top_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_accent, bold = TRUE
+  )
+  grp_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_accent
+  )
+  entry <- function(doc, label, bookmark, props, indent = 0) {
+    officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::hyperlink_ftext(
+          href = paste0("#", bookmark), text = label, prop = props
+        ),
+        fp_p = officer::fp_par(padding.top = 2, padding.bottom = 2,
+                               padding.left = indent)
       )
     )
-  )
-  if (length(model$groups) == 0L) {
-    return(doc)
   }
+
+  if (isTRUE(sections$audit)) {
+    doc <- entry(doc, chrome$audit_findings_title,
+                 lss_section_bookmark("audit"), top_props)
+  }
+  if (isTRUE(sections$consent)) {
+    doc <- entry(doc, chrome$consent_title,
+                 lss_section_bookmark("consent"), top_props)
+  }
+  # Questionnaire section, then its groups indented beneath it.
+  doc <- entry(doc, chrome$cover_subtitle_review,
+               lss_section_bookmark("questionnaire"), top_props)
   primary <- model$languages[1]
-  # TOC entries: clickable, in the accent color so the reader sees they
-  # are hyperlinks. Each entry points to the bookmark we add on the
-  # corresponding group heading in lss_render_group().
-  link_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_question,
-    color = theme$color_accent, underlined = FALSE
-  )
   for (i in seq_along(model$groups)) {
     group <- model$groups[[i]]
     gname <- if (!is.null(group$names[[primary]])) group$names[[primary]] else NA
@@ -354,19 +399,15 @@ lss_render_toc <- function(doc, model, theme) {
       gname <- paste0("Group ", group$gid)
     }
     gname <- lss_strip_group_number_prefix(gname)
-    entry_text <- sprintf("%d.  %s", i, gname)
-    bookmark <- lss_group_bookmark(i)
-    doc <- officer::body_add_fpar(
-      doc,
-      officer::fpar(
-        officer::hyperlink_ftext(
-          href = paste0("#", bookmark),
-          text = entry_text,
-          prop = link_props
-        ),
-        fp_p = officer::fp_par(padding.top = 2, padding.bottom = 2)
-      )
-    )
+    doc <- entry(doc, gname, lss_group_bookmark(i), grp_props, indent = 18)
+  }
+  if (isTRUE(sections$quotas)) {
+    doc <- entry(doc, chrome$quotas_title,
+                 lss_section_bookmark("quotas"), top_props)
+  }
+  if (isTRUE(sections$index)) {
+    doc <- entry(doc, chrome$variable_index_title,
+                 lss_section_bookmark("index"), top_props)
   }
   doc
 }

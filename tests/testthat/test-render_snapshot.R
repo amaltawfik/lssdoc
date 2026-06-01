@@ -93,6 +93,21 @@ test_that("chrome_lang = 'fr' surfaces French labels and not their EN counterpar
   expect_false(grepl("\\bMandatory\\b", txt))
 })
 
+# ---- Comprehensive table of contents ---------------------------------
+
+test_that("the table of contents lists the document sections, not only groups", {
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  txt <- lss_render_text(read_lss(path), chrome_lang = "en")
+  # The static TOC names the major sections (audit, consent,
+  # questionnaire, quotas, variable index), each anchored to a heading.
+  for (lbl in c("Table of contents", "Audit findings",
+                "Data protection and consent", "Questionnaire",
+                "Quotas", "Variable index")) {
+    expect_true(grepl(lbl, txt, fixed = TRUE), info = lbl)
+  }
+})
+
 # ---- Audit summary section --------------------------------------------
 
 test_that("show_audit = TRUE places the audit findings heading near the top", {

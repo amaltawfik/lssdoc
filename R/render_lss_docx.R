@@ -149,8 +149,20 @@
     description = description
   )
   doc <- officer::body_add_break(doc)
+  # Which top-level sections the table of contents should list (and link
+  # to). Computed up front so the early TOC agrees with what is rendered
+  # later; the bookmarks it links to are added on each section heading.
+  toc_sections <- list(
+    audit = isTRUE(show_audit) && !is.null(audit_idx) &&
+      nrow(audit_idx$findings) > 0,
+    consent = isTRUE(show_consent) && lss_consent_present(lss, langs),
+    quotas = isTRUE(show_quotas) && !is.null(lss$quotas) &&
+      nrow(lss$quotas) > 0,
+    index = isTRUE(show_index) &&
+      any(vapply(model$groups, function(g) length(g$questions) > 0L, logical(1)))
+  )
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
-    doc <- lss_render_toc(doc, model, theme)
+    doc <- lss_render_toc(doc, model, theme, sections = toc_sections)
     doc <- officer::body_add_break(doc)
   }
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
@@ -163,6 +175,21 @@
   if (isTRUE(show_consent)) {
     doc <- lss_render_consent(doc, lss, langs, theme)
   }
+
+  # Questionnaire section heading: anchors the TOC "Questionnaire" entry;
+  # the group headings follow as styled sub-headings of this section.
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(
+      theme$chrome$cover_subtitle_review,
+      prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_heading1,
+        bold = TRUE, color = theme$color_primary
+      )
+    )),
+    style = "heading 1"
+  )
+  doc <- officer::body_bookmark(doc, lss_section_bookmark("questionnaire"))
 
   if (identical(template, "table")) {
     # Dense codebook layout: description / welcome / group / question /

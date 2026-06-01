@@ -64,6 +64,7 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
     )),
     style = "heading 1"
   )
+  doc <- officer::body_bookmark(doc, lss_section_bookmark("audit"))
   summary_line <- sprintf(
     theme$chrome$audit_summary_fmt,
     audit$n_findings, audit$n_errors, audit$n_warnings, audit$n_notes
