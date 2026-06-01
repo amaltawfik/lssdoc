@@ -425,6 +425,13 @@ lss_audit_array_scales <- function(findings, model) {
     for (q in group$questions) {
       if (is.null(q$subquestions) || length(q$subquestions) == 0L) next
       if (is.null(q$answers) || length(q$answers) == 0L) next
+      # Dual-scale arrays (type "1") legitimately carry two answer
+      # scales (0 and 1) while their subquestions live on scale 0 only:
+      # the two scales are the two answer sets, not mirrored subquestion
+      # groups. The subquestion/answer scale correspondence this check
+      # verifies does not apply to them, so skip to avoid a false
+      # positive ("answer scale 1 has no subquestions").
+      if (identical(q$type, "1")) next
 
       ans_scales <- unique(vapply(q$answers,
                                   function(a) as.character(a$scale_id),

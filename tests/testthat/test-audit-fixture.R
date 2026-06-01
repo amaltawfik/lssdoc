@@ -30,6 +30,17 @@ test_that("audit_demo.lss triggers every audit detector", {
   expect_gt(au$n_warnings, 0L)
 })
 
+test_that("a dual-scale array does not raise a false array-scale warning", {
+  # demo_survey.lss contains a dual-scale array (type "1") whose answers
+  # span scales 0 and 1 while its subquestions live on scale 0 only --
+  # the normal dual-scale layout. The array-scale audit must NOT flag it
+  # as "answer scale 1 has no subquestions".
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  au <- audit_lss(read_lss(path))
+  expect_false("array_scale_missing_subquestions" %in% au$findings$check)
+})
+
 test_that("audit_demo.lss parses and renders in both modes without error", {
   skip_on_cran()
   skip_if_not_installed("officer")
