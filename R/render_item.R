@@ -419,6 +419,18 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
     texts = texts_by_lang,
     size = theme$size_question
   ))
+  # The "Other:" field is a single-line free-text input, so document its
+  # response shape in the Value section like any other free-text item.
+  rows[[length(rows) + 1L]] <- list(
+    label = theme$chrome$item_value,
+    texts = stats::setNames(
+      rep(list(theme$chrome$value_free_text_short), length(langs)), langs
+    ),
+    size = theme$size_answer,
+    section_header = TRUE,
+    section_with_text = TRUE,
+    span_note = TRUE
+  )
   lss_render_item_table(doc, theme, langs, rows)
 }
 

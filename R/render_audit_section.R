@@ -116,11 +116,15 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   # centered (the two-letter atoms `fr`, `de`, `en`).
   ft <- flextable::align(ft, align = "left",   part = "all")
   ft <- flextable::align(ft, align = "center", j = "language", part = "body")
-  ft <- flextable::width(ft, j = "severity", width = 0.8, unit = "in")
-  ft <- flextable::width(ft, j = "check", width = 1.5, unit = "in")
-  ft <- flextable::width(ft, j = "location", width = 2.0, unit = "in")
-  ft <- flextable::width(ft, j = "language", width = 0.5, unit = "in")
-  ft <- flextable::width(ft, j = "message", width = 3.5, unit = "in")
+  # Column widths sum to theme$content_width_in (6.30 in) so the audit
+  # table matches the body width instead of overflowing the page. The
+  # `language` column is wide enough for the full "Language" header
+  # (it was 0.5 in, which wrapped the final letter).
+  ft <- flextable::width(ft, j = "severity", width = 0.70, unit = "in")
+  ft <- flextable::width(ft, j = "check", width = 1.25, unit = "in")
+  ft <- flextable::width(ft, j = "location", width = 1.55, unit = "in")
+  ft <- flextable::width(ft, j = "language", width = 0.70, unit = "in")
+  ft <- flextable::width(ft, j = "message", width = 2.10, unit = "in")
   doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }
