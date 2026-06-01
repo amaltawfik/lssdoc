@@ -9,8 +9,9 @@ Description: Render LimeSurvey '.lss' survey exports as multilingual
     German, Spanish and Italian. Includes a rule-based automated audit
     that flags missing translations, forward filter references, duplicate
     codes, array-scale inconsistencies and orphan structural references.
-    Designed for researchers, methodologists, ethics committees and
-    translators reviewing multilingual surveys. Processing is fully
+    Designed for anyone working with a LimeSurvey survey: researchers,
+    methodologists, ethics committees, translators and reviewers.
+    Processing is fully
     local: the source file is the only input and no questionnaire content
     is uploaded to a third-party service.
 License: MIT + file LICENSE
