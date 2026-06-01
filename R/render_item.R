@@ -52,7 +52,10 @@ lss_render_group <- function(doc, group, langs, theme,
           padding.top = 24, padding.bottom = 8,
           border.bottom = officer::fp_border(
             color = theme$color_primary, width = 1
-          )
+          ),
+          # Keep the group title with the content that follows so it is
+          # never stranded alone at the foot of a page.
+          keep_with_next = TRUE
         )
       )
     )

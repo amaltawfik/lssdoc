@@ -53,18 +53,10 @@ lss_audit_marker <- function(qcode, audit_idx, theme) {
 #' @noRd
 lss_render_audit_section <- function(doc, audit_idx, theme) {
   audit <- audit_idx$audit
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      theme$chrome$audit_findings_title,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
-      )
-    )),
-    style = "heading 1"
+  doc <- lss_render_section_heading(
+    doc, theme, theme$chrome$audit_findings_title,
+    lss_section_bookmark("audit")
   )
-  doc <- officer::body_bookmark(doc, lss_section_bookmark("audit"))
   summary_line <- sprintf(
     theme$chrome$audit_summary_fmt,
     audit$n_findings, audit$n_errors, audit$n_warnings, audit$n_notes
@@ -79,12 +71,14 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
       )
     ))
   )
-  fdf <- audit$findings[, c("severity", "check", "location", "language", "message"), drop = FALSE]
+  # The machine-readable `check` id (e.g. "array_scale_missing_answers")
+  # is dropped from the table: the message already states the issue in
+  # plain language, so the id was reviewer-facing jargon eating width.
+  fdf <- audit$findings[, c("severity", "location", "language", "message"), drop = FALSE]
   ft <- flextable::flextable(fdf)
   ft <- flextable::set_header_labels(
     ft,
     severity = theme$chrome$audit_col_severity,
-    check    = theme$chrome$audit_col_check,
     location = theme$chrome$audit_col_location,
     language = theme$chrome$audit_col_language,
     message  = theme$chrome$audit_col_message
@@ -107,6 +101,9 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::border_remove(ft)
   thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
   ft <- flextable::hline(ft, border = thin, part = "all")
+  ft <- flextable::vline(ft, border = thin, part = "all")
+  ft <- flextable::vline_left(ft, border = thin, part = "all")
+  ft <- flextable::vline_right(ft, border = thin, part = "all")
   ft <- flextable::valign(ft, valign = "top", part = "body")
   ft <- flextable::valign(ft, valign = "center", part = "header")
   ft <- flextable::padding(ft, padding = 2, part = "all")
@@ -122,10 +119,9 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   # `language` column is wide enough for the full "Language" header
   # (it was 0.5 in, which wrapped the final letter).
   ft <- flextable::width(ft, j = "severity", width = 0.70, unit = "in")
-  ft <- flextable::width(ft, j = "check", width = 1.25, unit = "in")
-  ft <- flextable::width(ft, j = "location", width = 1.55, unit = "in")
+  ft <- flextable::width(ft, j = "location", width = 1.85, unit = "in")
   ft <- flextable::width(ft, j = "language", width = 0.70, unit = "in")
-  ft <- flextable::width(ft, j = "message", width = 2.10, unit = "in")
+  ft <- flextable::width(ft, j = "message", width = 3.05, unit = "in")
   doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }

@@ -13,18 +13,10 @@
 #' @noRd
 lss_render_index <- function(doc, entries, theme) {
   doc <- officer::body_add_break(doc)
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      theme$chrome$variable_index_title,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
-      )
-    )),
-    style = "heading 1"
+  doc <- lss_render_section_heading(
+    doc, theme, theme$chrome$variable_index_title,
+    lss_section_bookmark("index")
   )
-  doc <- officer::body_bookmark(doc, lss_section_bookmark("index"))
   codes <- vapply(entries, function(e) e$code, character(1))
   nos <- vapply(entries, function(e) as.integer(e$no), integer(1))
   ord <- order(tolower(codes))
@@ -103,18 +95,9 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
   }
 
   doc <- officer::body_add_break(doc)
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      chrome$quotas_title,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
-      )
-    )),
-    style = "heading 1"
+  doc <- lss_render_section_heading(
+    doc, theme, chrome$quotas_title, lss_section_bookmark("quotas")
   )
-  doc <- officer::body_bookmark(doc, lss_section_bookmark("quotas"))
 
   # One row per quota in a single table: name (with active state), limit,
   # action when full, the membership condition resolved to question codes
@@ -280,18 +263,9 @@ lss_render_consent <- function(doc, lss, langs, theme) {
   }, logical(1)))
 
   doc <- officer::body_add_par(doc, "", style = "Normal")
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      theme$chrome$consent_title,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
-      )
-    )),
-    style = "heading 1"
+  doc <- lss_render_section_heading(
+    doc, theme, theme$chrome$consent_title, lss_section_bookmark("consent")
   )
-  doc <- officer::body_bookmark(doc, lss_section_bookmark("consent"))
 
   mk_ft <- function(cell_fun) {
     df <- as.data.frame(matrix("", nrow = 1, ncol = length(langs)),
@@ -305,17 +279,24 @@ lss_render_consent <- function(doc, lss, langs, theme) {
     lss_table_polish(ft, theme, lang_cols = langs)
   }
 
-  # The consent checkbox: an empty box glyph before the localized label.
+  # The consent checkbox: an empty square (equal borders) rendered a few
+  # points larger than the label so it reads as a real, tickable box
+  # rather than a tiny glyph.
   if (has("surveyls_policy_notice_label")) {
+    box_props <- officer::fp_text(font.family = theme$font_body,
+                                  font.size = theme$size_heading1 + 2L,
+                                  color = theme$color_text)
+    lab_props <- officer::fp_text(font.family = theme$font_body,
+                                  font.size = theme$size_question,
+                                  bold = TRUE, color = theme$color_text)
     ft1 <- mk_ft(function(lg) {
       lab <- getf("surveyls_policy_notice_label", lg)
       lab <- if (is.na(lab)) "" else trimws(gsub("<[^>]+>", " ", lab))
-      flextable::as_paragraph(flextable::as_chunk(
-        if (nzchar(lab)) paste0("\u2610  ", lab) else "",
-        props = officer::fp_text(font.family = theme$font_body,
-                                 font.size = theme$size_question,
-                                 bold = TRUE, color = theme$color_text)
-      ))
+      if (!nzchar(lab)) return(flextable::as_paragraph(flextable::as_chunk("")))
+      flextable::as_paragraph(
+        flextable::as_chunk("\u25a1  ", props = box_props),
+        flextable::as_chunk(lab, props = lab_props)
+      )
     })
     doc <- flextable::body_add_flextable(doc, ft1, align = "left")
   }

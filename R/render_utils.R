@@ -36,6 +36,38 @@ lss_section_bookmark <- function(name) {
   paste0("lssdoc_section_", name)
 }
 
+#' Render a top-level section heading (audit, consent, questionnaire,
+#' quotas, index)
+#'
+#' A self-contained styled paragraph -- the package's own look (body
+#' font, heading size, bold, primary colour, a thin primary underline)
+#' rather than Word's "heading 1" style, so the rendering is identical
+#' across Word, LibreOffice and the headless PDF path and does not
+#' depend on the reference template's heading definition. The same look
+#' as the group headings keeps the document typographically uniform.
+#' `keep_with_next` stops the title from being stranded at the foot of a
+#' page, and the bookmark anchors the matching static-TOC entry.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_section_heading <- function(doc, theme, text, bookmark) {
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(
+      officer::ftext(text, prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_heading1,
+        bold = TRUE, color = theme$color_primary
+      )),
+      fp_p = officer::fp_par(
+        padding.top = 18, padding.bottom = 6,
+        border.bottom = officer::fp_border(color = theme$color_primary, width = 1),
+        keep_with_next = TRUE
+      )
+    )
+  )
+  officer::body_bookmark(doc, bookmark)
+}
+
 lss_language_label <- function(code) {
   map <- c(
     fr = "Fran\u00e7ais",

@@ -166,7 +166,9 @@
     doc <- officer::body_add_break(doc)
   }
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
-    doc <- officer::body_add_break(doc)
+    # The table of contents already inserts a page break after itself, so
+    # the audit section starts on a fresh page without a second break
+    # (which produced an empty page between them).
     doc <- lss_render_audit_section(doc, audit_idx, theme)
   }
 
@@ -178,18 +180,10 @@
 
   # Questionnaire section heading: anchors the TOC "Questionnaire" entry;
   # the group headings follow as styled sub-headings of this section.
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      theme$chrome$cover_subtitle_review,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
-      )
-    )),
-    style = "heading 1"
+  doc <- lss_render_section_heading(
+    doc, theme, theme$chrome$cover_subtitle_review,
+    lss_section_bookmark("questionnaire")
   )
-  doc <- officer::body_bookmark(doc, lss_section_bookmark("questionnaire"))
 
   if (identical(template, "table")) {
     # Dense codebook layout: description / welcome / group / question /

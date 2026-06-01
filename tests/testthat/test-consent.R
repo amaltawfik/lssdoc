@@ -14,7 +14,7 @@ test_that("show_consent renders the policy notice and consent checkbox", {
   )
   expect_true(grepl("Data protection and consent", txt, fixed = TRUE))
   # The consent checkbox glyph precedes the localized label.
-  expect_true(grepl("☐", txt))
+  expect_true(grepl("□", txt))
   expect_true(grepl("I have read and accept", txt, fixed = TRUE))
   # The notice text itself is surfaced.
   expect_true(grepl("does not collect any real data", txt, fixed = TRUE))
