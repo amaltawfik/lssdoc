@@ -28,6 +28,7 @@
   show_welcome = TRUE,
   show_endtext = TRUE,
   show_description = TRUE,
+  show_consent = TRUE,
   show_privacy_settings = FALSE,
   show_admin_settings = FALSE,
   title = NULL,
@@ -159,6 +160,12 @@
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
     doc <- officer::body_add_break(doc)
     doc <- lss_render_audit_section(doc, audit_idx, theme)
+  }
+
+  # Front matter: the data-protection / consent gate the respondent
+  # meets before the questions, rendered once for both templates.
+  if (isTRUE(show_consent)) {
+    doc <- lss_render_consent(doc, lss, langs, theme)
   }
 
   if (identical(template, "table")) {

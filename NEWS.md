@@ -82,6 +82,11 @@ both output formats.
 * Multilingual `welcome` text, `endtext` and `description` are
   toggleable via `show_welcome`, `show_endtext`, `show_description`
   (all `TRUE` by default).
+* `show_consent` (default `TRUE`) renders a data-protection and consent
+  block in the front matter (before the welcome text): the survey's
+  privacy policy notice and its consent checkbox label, side by side
+  across languages, with the checkbox drawn as an empty box. Skipped
+  when the survey turns the policy notice off or carries no notice.
 * Optional `show_privacy_settings` and `show_admin_settings` surface
   LimeSurvey flags (`anonymized`, save partial, `datestamp`, `ipaddr`,
   `refurl`, `alias`, end URL, `active`) as additional cover metadata

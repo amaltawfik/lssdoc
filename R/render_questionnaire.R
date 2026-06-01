@@ -108,6 +108,13 @@
 #'   survey's multilingual description (`surveyls_description`) --
 #'   the "what this survey is about" intro that LimeSurvey shows
 #'   above the welcome text on the landing page.
+#' @param show_consent Logical. If `TRUE` (default), render a data
+#'   protection and consent block in the front matter (before the
+#'   welcome text): the survey's privacy policy notice
+#'   (`surveyls_policy_notice`) and its consent checkbox label
+#'   (`surveyls_policy_notice_label`), side by side across languages,
+#'   with the checkbox drawn as an empty box. Skipped when the survey
+#'   turns the policy notice off or carries no notice text.
 #' @param show_privacy_settings Logical. If `FALSE` (the default),
 #'   omit the survey-level privacy / tracking flags from the cover.
 #'   Set to `TRUE` to surface `anonymized`, `save` partial,
@@ -303,6 +310,7 @@ render_questionnaire <- function(
   show_welcome = TRUE,
   show_endtext = TRUE,
   show_description = TRUE,
+  show_consent = TRUE,
   show_privacy_settings = FALSE,
   show_admin_settings = FALSE,
   title = NULL,

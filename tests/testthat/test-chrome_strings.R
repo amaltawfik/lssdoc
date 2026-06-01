@@ -5,6 +5,7 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "cover_groups", "cover_questions", "cover_subquestions",
     "cover_answer_options", "cover_last_modified", "cover_generated",
     "toc_title", "welcome_text_title", "end_text_title", "variable_index_title",
+    "consent_title",
     "quotas_title", "quota_limit", "quota_when_full", "quota_active",
     "quota_inactive", "quota_condition", "quota_message",
     "quota_action_terminate", "quota_action_confirm",

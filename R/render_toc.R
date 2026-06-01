@@ -206,6 +206,90 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
   doc
 }
 
+#' Render the data-protection / consent block as front matter
+#'
+#' Surfaces the survey's privacy policy notice and its consent checkbox
+#' label (`surveyls_policy_notice` / `surveyls_policy_notice_label`),
+#' side by side across the displayed languages, with the consent
+#' checkbox drawn as an empty box glyph before its label. This is the
+#' gate the respondent meets before the questions, and the text an
+#' ethics committee reviews most closely. Skipped when the survey turns
+#' the policy notice off (`showsurveypolicynotice = 0`) or carries no
+#' notice / label content.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_consent <- function(doc, lss, langs, theme) {
+  ls <- lss$survey_language_settings
+  if (is.null(ls) || !("surveyls_language" %in% names(ls))) return(doc)
+  show <- if (!is.null(lss$surveys) &&
+              "showsurveypolicynotice" %in% names(lss$surveys)) {
+    as.character(lss$surveys$showsurveypolicynotice[1])
+  } else {
+    NA_character_
+  }
+  if (!is.na(show) && identical(show, "0")) return(doc)
+
+  getf <- function(field, lang) {
+    if (!(field %in% names(ls))) return(NA_character_)
+    i <- which(ls$surveyls_language == lang)
+    if (length(i)) ls[[field]][i[1]] else NA_character_
+  }
+  has <- function(field) any(vapply(langs, function(lg) {
+    v <- getf(field, lg); !is.na(v) && nzchar(trimws(v))
+  }, logical(1)))
+  if (!has("surveyls_policy_notice") && !has("surveyls_policy_notice_label")) {
+    return(doc)
+  }
+
+  doc <- officer::body_add_par(doc, "", style = "Normal")
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(
+      theme$chrome$consent_title,
+      prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_heading1,
+        bold = TRUE, color = theme$color_primary
+      )
+    ))
+  )
+
+  mk_ft <- function(cell_fun) {
+    df <- as.data.frame(matrix("", nrow = 1, ncol = length(langs)),
+                        stringsAsFactors = FALSE)
+    names(df) <- langs
+    ft <- flextable::flextable(df)
+    ft <- flextable::set_header_labels(
+      ft, values = stats::setNames(lss_language_label(langs), langs)
+    )
+    for (lg in langs) ft <- flextable::compose(ft, i = 1L, j = lg, value = cell_fun(lg))
+    lss_table_polish(ft, theme, lang_cols = langs)
+  }
+
+  # The consent checkbox: an empty box glyph before the localized label.
+  if (has("surveyls_policy_notice_label")) {
+    ft1 <- mk_ft(function(lg) {
+      lab <- getf("surveyls_policy_notice_label", lg)
+      lab <- if (is.na(lab)) "" else trimws(gsub("<[^>]+>", " ", lab))
+      flextable::as_paragraph(flextable::as_chunk(
+        if (nzchar(lab)) paste0("☐  ", lab) else "",
+        props = officer::fp_text(font.family = theme$font_body,
+                                 font.size = theme$size_question,
+                                 bold = TRUE, color = theme$color_text)
+      ))
+    })
+    doc <- flextable::body_add_flextable(doc, ft1, align = "left")
+  }
+  # The data-protection notice text (HTML preserved via lss_compose).
+  if (has("surveyls_policy_notice")) {
+    ft2 <- mk_ft(function(lg) {
+      lss_compose(getf("surveyls_policy_notice", lg), theme, size = theme$size_subq)
+    })
+    doc <- flextable::body_add_flextable(doc, ft2, align = "left")
+  }
+  doc
+}
+
 #' Render a static, always-populated table of contents
 #'
 #' Lists the survey groups, one per line, with their sequential index.
