@@ -102,7 +102,10 @@ read_lss <- function(file) {
       answers = lss_section(doc, "answers"),
       answer_l10ns = lss_section(doc, "answer_l10ns"),
       question_attributes = lss_section(doc, "question_attributes"),
-      conditions = lss_section(doc, "conditions")
+      conditions = lss_section(doc, "conditions"),
+      quotas = lss_section(doc, "quota"),
+      quota_members = lss_section(doc, "quota_members"),
+      quota_languagesettings = lss_section(doc, "quota_languagesettings")
     ),
     class = "lss"
   )

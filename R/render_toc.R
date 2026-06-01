@@ -65,6 +65,147 @@ lss_render_index <- function(doc, entries, theme) {
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
+#' Render the quotas section (sampling caps) as back matter
+#'
+#' One block per quota: the localized name, a status line (active /
+#' limit / action when full), the membership condition resolved to
+#' question codes and answer labels, and the localized "quota full"
+#' message. Skipped entirely when the survey defines no quotas, so a
+#' survey without quotas gets no empty section.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_quotas <- function(doc, lss, langs, theme) {
+  quotas <- lss$quotas
+  if (is.null(quotas) || nrow(quotas) == 0L) return(doc)
+  chrome <- theme$chrome
+  members <- lss$quota_members
+  qls <- lss$quota_languagesettings
+
+  # qid -> question code; (qid, code) -> localized answer label.
+  q_title <- function(qid) {
+    i <- which(lss$questions$qid == qid)
+    if (length(i)) lss$questions$title[i[1]] else qid
+  }
+  ans_label <- function(qid, code, lang) {
+    if (is.null(lss$answers) || is.null(lss$answer_l10ns)) return(NA_character_)
+    ai <- which(lss$answers$qid == qid & lss$answers$code == code)
+    if (!length(ai)) return(NA_character_)
+    aid <- lss$answers$aid[ai[1]]
+    li <- which(lss$answer_l10ns$aid == aid & lss$answer_l10ns$language == lang)
+    if (length(li)) lss$answer_l10ns$answer[li[1]] else NA_character_
+  }
+  qls_field <- function(quota_id, lang, field) {
+    if (is.null(qls)) return(NA_character_)
+    li <- which(qls$quotals_quota_id == quota_id & qls$quotals_language == lang)
+    if (length(li) && field %in% names(qls)) qls[[field]][li[1]] else NA_character_
+  }
+
+  doc <- officer::body_add_break(doc)
+  doc <- officer::body_add_fpar(
+    doc,
+    officer::fpar(officer::ftext(
+      chrome$quotas_title,
+      prop = officer::fp_text(
+        font.family = theme$font_body, font.size = theme$size_heading1,
+        bold = TRUE, color = theme$color_primary
+      )
+    )),
+    style = "heading 1"
+  )
+
+  name_props <- officer::fp_text(font.family = theme$font_body,
+                                 font.size = theme$size_subq, bold = TRUE,
+                                 color = theme$color_primary)
+  muted_props <- officer::fp_text(font.family = theme$font_body,
+                                  font.size = theme$size_meta,
+                                  color = theme$color_muted)
+  body_props <- officer::fp_text(font.family = theme$font_body,
+                                 font.size = theme$size_meta,
+                                 color = theme$color_text)
+
+  for (qi in seq_len(nrow(quotas))) {
+    qrow <- quotas[qi, , drop = FALSE]
+    qid_q <- qrow$id
+
+    # Localized name: first non-empty quotals_name, else the structural name.
+    name <- NA_character_
+    for (lg in langs) {
+      v <- qls_field(qid_q, lg, "quotals_name")
+      if (!is.na(v) && nzchar(trimws(v))) { name <- v; break }
+    }
+    if (is.na(name) || !nzchar(trimws(name))) name <- qrow$name
+
+    active_lbl <- if (identical(qrow$active, "1")) chrome$quota_active else chrome$quota_inactive
+    action_lbl <- switch(as.character(qrow$action),
+                         "1" = chrome$quota_action_terminate,
+                         "2" = chrome$quota_action_confirm,
+                         as.character(qrow$action))
+    status <- sprintf("  —  %s · %s %s · %s: %s",
+                      active_lbl, chrome$quota_limit, qrow$qlimit,
+                      chrome$quota_when_full, action_lbl)
+
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(name, prop = name_props),
+        officer::ftext(status, prop = muted_props),
+        fp_p = officer::fp_par(padding.top = 6, padding.bottom = 1)
+      )
+    )
+
+    # Membership condition.
+    mem <- if (!is.null(members)) members[members$quota_id == qid_q, , drop = FALSE] else members[0, ]
+    if (!is.null(mem) && nrow(mem) > 0L) {
+      conds <- vapply(seq_len(nrow(mem)), function(mi) {
+        qc <- q_title(mem$qid[mi]); code <- mem$code[mi]
+        lbl <- ans_label(mem$qid[mi], code, langs[1])
+        if (!is.na(lbl) && nzchar(lbl)) {
+          sprintf("%s = %s (%s)", qc, code, lbl)
+        } else {
+          sprintf("%s = %s", qc, code)
+        }
+      }, character(1))
+      cond_str <- paste(conds, collapse = sprintf(" %s ", chrome$filter_and))
+      doc <- officer::body_add_fpar(
+        doc,
+        officer::fpar(
+          officer::ftext(sprintf("%s: ", chrome$quota_condition), prop = muted_props),
+          officer::ftext(cond_str, prop = body_props),
+          fp_p = officer::fp_par(padding.bottom = 1)
+        )
+      )
+    }
+
+    # Localized "quota full" message, one muted line per language.
+    msg_lines <- list()
+    for (lg in langs) {
+      m <- qls_field(qid_q, lg, "quotals_message")
+      if (is.na(m) || !nzchar(trimws(m))) next
+      m <- trimws(gsub("<[^>]+>", " ", m))
+      m <- gsub("[ \t\r\n]+", " ", m)
+      msg_lines[[length(msg_lines) + 1L]] <- officer::fpar(
+        officer::ftext(sprintf("%s  ", lss_language_label(lg)),
+                       prop = officer::fp_text(font.family = theme$font_body,
+                                               font.size = theme$size_meta,
+                                               color = theme$color_muted, bold = TRUE)),
+        officer::ftext(m, prop = body_props),
+        fp_p = officer::fp_par(padding.bottom = 0)
+      )
+    }
+    if (length(msg_lines) > 0L) {
+      doc <- officer::body_add_fpar(
+        doc,
+        officer::fpar(officer::ftext(sprintf("%s:", chrome$quota_message),
+                                     prop = muted_props),
+                      fp_p = officer::fp_par(padding.bottom = 0))
+      )
+      for (ln in msg_lines) doc <- officer::body_add_fpar(doc, ln)
+    }
+  }
+  doc
+}
+
 #' Render a static, always-populated table of contents
 #'
 #' Lists the survey groups, one per line, with their sequential index.

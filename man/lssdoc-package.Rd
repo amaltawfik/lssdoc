@@ -6,7 +6,9 @@
 \alias{lssdoc-package}
 \title{lssdoc: Render Multilingual Questionnaires from LimeSurvey '.lss' Files}
 \description{
-Render LimeSurvey '.lss' survey exports as multilingual questionnaire documents in Word ('.docx') or PDF, displaying up to four languages side by side with localized chrome in English, French, German, Spanish and Italian. Includes a rule-based automated audit that flags missing translations, forward filter references, duplicate codes, array-scale inconsistencies and orphan structural references. Designed for researchers, methodologists, ethics committees and translators reviewing multilingual surveys. Processing is fully local: the source file is the only input and no questionnaire content is uploaded to a third-party service.
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
+
+Render LimeSurvey '.lss' survey exports as multilingual questionnaire documents in Word ('.docx') or PDF, displaying up to four languages side by side with localized chrome in English, French, German, Spanish and Italian. Includes a rule-based automated audit that flags missing translations, forward filter references, duplicate codes, array-scale inconsistencies and orphan structural references. Designed for anyone working with a LimeSurvey survey: researchers, methodologists, ethics committees, translators and reviewers. Processing is fully local: the source file is the only input and no questionnaire content is uploaded to a third-party service.
 }
 \seealso{
 Useful links:

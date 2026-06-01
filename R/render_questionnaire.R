@@ -67,6 +67,12 @@
 #' @param show_index Logical. If `TRUE` (default), append a variable
 #'   index at the end of the document listing every item code with
 #'   its number, sorted alphabetically.
+#' @param show_quotas Logical. If `TRUE` (default), append a quotas
+#'   section (after the end text, before the variable index) listing
+#'   each sampling quota: its localized name, status (active, limit and
+#'   action when full), the membership condition resolved to question
+#'   codes and answer labels, and the localized "quota full" message.
+#'   Skipped when the survey defines no quotas.
 #' @param show_header_title Logical. If `TRUE` (default), show the
 #'   survey title at the top right of every page (one line per
 #'   displayed language, truncated to 80 characters). `FALSE` keeps
@@ -288,6 +294,7 @@ render_questionnaire <- function(
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,
   show_index = TRUE,
+  show_quotas = TRUE,
   show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,

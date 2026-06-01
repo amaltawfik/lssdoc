@@ -19,6 +19,7 @@
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,
   show_index = TRUE,
+  show_quotas = TRUE,
   show_header_title = TRUE,
   show_source = TRUE,
   show_item_heading = FALSE,
@@ -238,6 +239,12 @@
   # has not opted out via `show_endtext = FALSE`.
   if (!identical(template, "table") && isTRUE(show_endtext)) {
     doc <- lss_render_endtext(doc, lss, langs, theme)
+  }
+  # Back matter: quotas (sampling caps) then the variable index. Both are
+  # reference material about the survey structure, not part of the
+  # respondent flow, so they follow the end text.
+  if (isTRUE(show_quotas)) {
+    doc <- lss_render_quotas(doc, lss, langs, theme)
   }
   if (isTRUE(show_index) && length(state$index_entries) > 0L) {
     doc <- lss_render_index(doc, state$index_entries, theme)

@@ -91,6 +91,11 @@ both output formats.
   groups), an alphabetical variable index listing every item code with
   its number, and the survey title at the top of every page. The page
   footer always carries a compact `X/Y` page counter.
+* `show_quotas` (default `TRUE`) appends a quotas section after the end
+  text: one block per sampling quota with its localized name, status
+  (active, limit, action when full), the membership condition resolved
+  to question codes and answer labels, and the localized "quota full"
+  message. Skipped when the survey defines no quotas.
 
 ## Filter rendering
 
