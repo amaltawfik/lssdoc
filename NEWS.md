@@ -50,7 +50,9 @@ both output formats.
   language for the question text, subquestions and answer options. The
   output format (`.docx` or `.pdf`) is inferred from the `output`
   extension; PDF is produced locally via LibreOffice. The page
-  orientation auto-picks portrait (1-2 languages) or landscape (3+).
+  document is laid out in A4 portrait by default for every language
+  count (the table template steps its font down for 3-4 languages to
+  fit); `page_format` can force `"A4-landscape"` or `"A3"`.
 * `render_audit()` produces a focused audit-only document: the same
   cover page, then one section per severity (errors, warnings, notes)
   with a table of findings. Use it for QA follow-up, separate from the

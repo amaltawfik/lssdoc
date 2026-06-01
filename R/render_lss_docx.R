@@ -57,15 +57,11 @@
   template <- rlang::arg_match(template)
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
-  # The dense `table` template needs landscape width for 2+ content
-  # languages so the side-by-side Question columns do not collapse.
-  # Auto-promote unless the caller pinned the format explicitly.
-  effective_langs <- if (is.null(languages)) lss$languages else languages
-  if (identical(template, "table") &&
-      identical(page_format, "auto") &&
-      length(effective_langs) >= 2L) {
-    page_format <- "A4-landscape"
-  }
+  # "auto" resolves to A4 portrait for every language count: all tables
+  # are calibrated to the 6.30 in portrait content width (the table
+  # template steps its body font down for 3-4 languages), and the four
+  # bundled languages fit. Landscape / A3 stay available as explicit
+  # opt-ins via `page_format`.
   lss_validate_logo(logo)
   lss_validate_font(font, "font")
   lss_validate_font(font_code, "font_code")

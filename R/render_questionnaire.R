@@ -37,9 +37,9 @@
 #'     document: every variable is one tinted Question row carrying
 #'     `No | Variable | Type | Mand. | Filter`, followed by one or
 #'     more white Value rows. Group banners become merged section
-#'     rows; the column header repeats on every page. Auto-promotes
-#'     the page format to A4 landscape for 2+ languages (override
-#'     via `page_format`).
+#'     rows; the column header repeats on every page. The body font
+#'     steps down for three or four languages so the columns stay
+#'     within the portrait content width.
 #' @param layout Reserved for future use. Currently `"auto"` only.
 #' @param show_audit Logical. If `TRUE` (default), include an audit
 #'   summary section near the top and inline markers on questions
@@ -56,10 +56,11 @@
 #'   attributes such as `answer_order` and `location_*`. `FALSE` (the
 #'   default) hides them.
 #' @param page_format Page format. One of `"auto"` (the default),
-#'   `"A4-portrait"`, `"A4-landscape"`, or `"A3"`. `"auto"` picks
-#'   portrait for one or two languages and landscape from three. The
-#'   `table` template auto-promotes to A4 landscape from two
-#'   languages -- pass an explicit value to override.
+#'   `"A4-portrait"`, `"A4-landscape"`, or `"A3"`. `"auto"` resolves to
+#'   A4 portrait for every language count: all panels are sized to the
+#'   portrait content width and the bundled four-language surveys fit,
+#'   so landscape would only add empty margin. Pass `"A4-landscape"` or
+#'   `"A3"` explicitly if you prefer a wider page.
 #' @param show_toc Logical. If `TRUE` (default), include a table of
 #'   contents listing the groups (skipped automatically when the
 #'   survey has fewer than two groups). For per-variable navigation,

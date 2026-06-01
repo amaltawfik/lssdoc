@@ -73,9 +73,9 @@ languages displayed side-by-side in the item table.
 document: every variable is one tinted Question row carrying
 \code{No | Variable | Type | Mand. | Filter}, followed by one or
 more white Value rows. Group banners become merged section
-rows; the column header repeats on every page. Auto-promotes
-the page format to A4 landscape for 2+ languages (override
-via \code{page_format}).
+rows; the column header repeats on every page. The body font
+steps down for three or four languages so the columns stay
+within the portrait content width.
 }}
 
 \item{layout}{Reserved for future use. Currently \code{"auto"} only.}
@@ -99,10 +99,11 @@ attributes such as \code{answer_order} and \verb{location_*}. \code{FALSE} (the
 default) hides them.}
 
 \item{page_format}{Page format. One of \code{"auto"} (the default),
-\code{"A4-portrait"}, \code{"A4-landscape"}, or \code{"A3"}. \code{"auto"} picks
-portrait for one or two languages and landscape from three. The
-\code{table} template auto-promotes to A4 landscape from two
-languages -- pass an explicit value to override.}
+\code{"A4-portrait"}, \code{"A4-landscape"}, or \code{"A3"}. \code{"auto"} resolves to
+A4 portrait for every language count: all panels are sized to the
+portrait content width and the bundled four-language surveys fit,
+so landscape would only add empty margin. Pass \code{"A4-landscape"} or
+\code{"A3"} explicitly if you prefer a wider page.}
 
 \item{show_toc}{Logical. If \code{TRUE} (default), include a table of
 contents listing the groups (skipped automatically when the

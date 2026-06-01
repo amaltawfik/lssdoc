@@ -148,7 +148,10 @@ lss_render_section_props <- function(page_format, n_langs,
                                      theme = lss_render_theme(),
                                      header_titles = character(0)) {
   if (identical(page_format, "auto")) {
-    page_format <- if (n_langs <= 2L) "A4-portrait" else "A4-landscape"
+    # Portrait for every language count: the body panels are all sized
+    # to the 6.30 in portrait content width, so landscape would only add
+    # empty right margin. Callers wanting landscape pass it explicitly.
+    page_format <- "A4-portrait"
   }
   size <- switch(
     page_format,
