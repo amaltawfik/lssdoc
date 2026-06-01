@@ -209,6 +209,25 @@ render_questionnaire(lss, "review_fr.docx", languages = "fr")
 render_audit(lss, "qa_followup.docx")
 ```
 
+### See the audit in action
+
+A deliberately flawed survey ships with the package, so you can see
+what `audit_lss()` catches without supplying your own file:
+
+```r
+demo <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
+audit_lss(read_lss(demo))
+#> -- lssdoc audit ----------------------------------------------------
+#> 11 findings: 4 errors, 7 warnings, 0 notes.
+#> x Question 'age': filter references 'income', asked later (forward reference)
+#> x Survey: duplicate question code 'age'
+#> x Subquestion 'orphan_sq': points to a question id that does not exist
+#> ! Question 'satisf': expects answer options, but none are defined
+#> ! Question 'income': text missing in 'fr'
+#> ! Question 'comment ': code carries whitespace
+#> ... plus empty texts, missing subquestions and an array-scale mismatch.
+```
+
 ### PDF output
 
 ```r

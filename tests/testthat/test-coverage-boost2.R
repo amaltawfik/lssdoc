@@ -1,34 +1,9 @@
-# A second wave of targeted tests, aimed at the audit detectors that
-# only fire on malformed surveys, the audit printer's two terminal
+# A second wave of targeted tests: the audit printer's two terminal
 # branches, the output-extension guard, and the audit-marker /
-# URL-splitting helpers. These lift audit_lss.R, render_audit_section.R,
+# URL-splitting helpers. (The audit detectors that only fire on
+# malformed surveys are covered by test-audit-fixture.R, which audits
+# the bundled audit_demo.lss.) These lift render_audit_section.R,
 # render_cover.R and render_questionnaire.R toward full coverage.
-
-# ---- Audit detectors that require a broken survey ------------------
-
-test_that("audit_lss flags orphan references and missing required parts", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
-  skip_if_not(file.exists(path))
-  lss <- read_lss(path)
-  skip_if(is.null(lss$answers) || nrow(lss$answers) == 0, "no answers in fixture")
-  skip_if(is.null(lss$subquestions) || nrow(lss$subquestions) == 0,
-          "no subquestions in fixture")
-
-  b <- lss
-  # Point one answer and one subquestion at a question id that does not
-  # exist -> orphan_answer / orphan_subquestion.
-  b$answers$qid[1] <- "999999"
-  b$subquestions$parent_qid[1] <- "999999"
-  # Strip every answer of one question that has answers -> missing_options.
-  qa <- setdiff(unique(lss$answers$qid), "999999")[1]
-  b$answers <- b$answers[b$answers$qid != qa, , drop = FALSE]
-
-  au <- audit_lss(b)
-  checks <- au$findings$check
-  expect_true("orphan_answer" %in% checks)
-  expect_true("orphan_subquestion" %in% checks)
-  expect_true("missing_options" %in% checks)
-})
 
 # ---- print.lss_audit: the clean and the capped/overflow branches ---
 
