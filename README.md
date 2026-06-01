@@ -17,8 +17,9 @@ License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://
 <!-- badges: end -->
 
 **lssdoc** turns a LimeSurvey `.lss` export into a polished Word
-(`.docx`) or PDF questionnaire document for ethics committees, survey
-methodologists, and translators. It renders the questionnaire content
+(`.docx`) or PDF questionnaire document for anyone working with a
+LimeSurvey survey: researchers, survey methodologists, ethics committees,
+translators and reviewers. It renders the questionnaire content
 side by side in up to four languages, runs an automated integrity audit,
 and produces a layout that reads as a published instrument – not a
 developer dump.
