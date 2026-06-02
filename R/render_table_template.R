@@ -66,6 +66,11 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       # Exclusive-option note: a localized sentence in the Field column,
       # spanning nothing else; language cells stay empty.
       df$Field[i] <- chrome$item_exclusive
+    } else if (identical(r$kind, "order_note")) {
+      # Answer / option order note: a chrome annotation spanning the
+      # language columns (composed below), under a "Value" / "Options"
+      # Field label carried on the row.
+      df$Field[i] <- r$field_label
     } else {
       # Question row (leaf / subq / other).
       df$Field[i]     <- chrome$item_question
@@ -221,10 +226,12 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       next
     }
 
-    if (identical(kind, "mc_exclusive")) {
-      # Exclusive-option note: the localized sentence in each language
-      # column, muted italic, mirroring the cards layout. The Field
-      # column already carries the "Exclusive" label.
+    if (identical(kind, "mc_exclusive") || identical(kind, "order_note")) {
+      # Chrome annotation rows (exclusive-option note; answer / option
+      # order note): the localized sentence in each language column,
+      # muted italic, mirroring the cards layout. The Field column
+      # already carries the row label ("Exclusive" / "Value" / "Options").
+      # Polish merges the language columns so it shows once.
       for (lg in langs) {
         ft <- flextable::compose(
           ft, i = i, j = paste0("Q_", lg),
@@ -411,6 +418,16 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out
   }
 
+  # An answer / option order annotation row, or NULL when the order is
+  # the (silent) default. `attr` is answer_order (leaf single choice) or
+  # subquestion_order (multiple choice); `field_label` is the row label
+  # shown in the Field column ("Value" / "Options").
+  order_note_row <- function(q, attr, field_label) {
+    note <- lss_answer_order_note(q, theme, attr = attr)
+    if (is.null(note)) return(NULL)
+    list(kind = "order_note", text = note, field_label = field_label)
+  }
+
   # One grouped block for a multiple-choice question: a parent
   # Question row (stem once, Variable = parent_*, the implicit
   # "Y/blank" coding in the Value cell) followed by one row per option
@@ -458,6 +475,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         text = sprintf(chrome$exclusive_text_fmt, paste(excl, collapse = ", "))
       )
     }
+    onr <- order_note_row(q, "subquestion_order", chrome$item_options)
+    if (!is.null(onr)) out[[length(out) + 1L]] <- onr
     if (identical(q$other, "Y")) {
       state$item_no <- state$item_no + 1L
       item_code <- paste0(q$code, "_other")
@@ -507,6 +526,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           "leaf", state$item_no, q$code, q = q
         )
         rows <- c(rows, emit_value_rows_for(q))
+        onr <- order_note_row(q, "answer_order", chrome$item_value)
+        if (!is.null(onr)) rows[[length(rows) + 1L]] <- onr
       }
   }
   rows
@@ -901,13 +922,15 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   scale_header_idx <- which(kinds == "scale_header")
   welcome_idx      <- which(kinds %in% c("welcome", "endtext", "description"))
   exclusive_idx    <- which(kinds == "mc_exclusive")
+  order_note_idx   <- which(kinds == "order_note")
 
-  # Exclusive-note rows carry the same chrome sentence in every language
-  # column (a structural annotation, not a translation), so merge the
-  # language columns into one spanning cell -- the note shows once across
-  # the content width instead of being repeated per language.
+  # Annotation rows (exclusive-option note, answer / option order note)
+  # carry the same chrome sentence in every language column (a structural
+  # annotation, not a translation), so merge the language columns into one
+  # spanning cell -- the note shows once across the content width instead
+  # of being repeated per language.
   if (n_lang > 1L) {
-    for (ei in exclusive_idx) {
+    for (ei in c(exclusive_idx, order_note_idx)) {
       ft <- flextable::merge_at(ft, i = ei, j = lang_j, part = "body")
     }
   }

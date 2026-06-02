@@ -54,3 +54,28 @@ test_that("predefined-scale and structural types document their Value", {
     expect_true(grepl(lbl, txt, fixed = TRUE), info = lbl)
   }
 })
+
+test_that("a non-default answer / option order is noted, normal is silent", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
+  skip_if_not(file.exists(path))
+  lss <- read_lss(path)
+  # demo_survey carries answer_order = alphabetical / random /
+  # random_alphabetical (the last reported as random) and a multiple
+  # choice with subquestion_order = random, so both notes must surface in
+  # both templates; the order is annotated consistently in each layout.
+  for (tmpl in c("cards", "table")) {
+    out <- tempfile(fileext = ".docx")
+    render_questionnaire(lss, out, template = tmpl, chrome_lang = "en")
+    txt <- paste(
+      officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
+    )
+    expect_true(grepl("(random order)", txt, fixed = TRUE),
+                info = tmpl)
+    expect_true(grepl("(alphabetical order)", txt, fixed = TRUE),
+                info = tmpl)
+    unlink(out)
+  }
+})

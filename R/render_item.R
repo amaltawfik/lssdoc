@@ -256,13 +256,24 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   }
   # Parent-level attributes (prefix, suffix, validation, ...).
   rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
-  # Options section header, with the option count.
+  # Options section header, with the option count. A non-default
+  # presentation order of the options (subquestion_order = random /
+  # alphabetical) is noted in the language-column area of this header.
+  opt_note <- lss_answer_order_note(q, theme, attr = "subquestion_order")
   rows[[length(rows) + 1L]] <- list(
     label = sprintf("%s (%d)", theme$chrome$item_options,
                     length(q$subquestions)),
-    texts = stats::setNames(as.list(rep("", length(langs))), langs),
+    texts = if (is.null(opt_note)) {
+      stats::setNames(as.list(rep("", length(langs))), langs)
+    } else {
+      stats::setNames(rep(list(opt_note), length(langs)), langs)
+    },
     size = theme$size_meta,
-    section_header = TRUE
+    section_header = TRUE,
+    section_with_text = !is.null(opt_note),
+    span_note = !is.null(opt_note),
+    color = if (!is.null(opt_note)) theme$color_muted else NULL,
+    italic = !is.null(opt_note)
   )
   # One row per option: the option suffix only (the LimeSurvey
   # subquestion code) in monospace, next to the option label per
@@ -671,16 +682,22 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   # response shape (Y "Y = Yes, N = No", N "Numeric input", T "Free
   # text", ...). Skips entirely for X (boilerplate).
   if (length(q$answers) > 0L) {
-    rows <- c(rows, lss_answer_rows(q, langs, theme))
+    vrows <- lss_answer_rows(q, langs, theme)
   } else {
     pre <- lss_predefined_value_rows(q, langs, theme)
     if (!is.null(pre)) {
-      rows <- c(rows, pre)
+      vrows <- pre
     } else {
       vrow <- lss_value_implicit_row(q, langs, theme)
-      if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
+      vrows <- if (!is.null(vrow)) list(vrow) else list()
     }
   }
+  # Note a non-default answer order ("(random order)" / "(alphabetical
+  # order)") on the Value header. Leaf single-choice only -- arrays are
+  # handled through the subquestion branch and intentionally left aside.
+  vrows <- lss_apply_order_note(vrows, lss_answer_order_note(q, theme),
+                                langs, theme)
+  rows <- c(rows, vrows)
   doc <- lss_render_item_table(doc, theme, langs, rows)
   doc
 }
@@ -1075,6 +1092,85 @@ lss_predefined_value_rows <- function(q, langs, theme) {
     return(rows)
   }
   NULL
+}
+
+#' First non-empty value of a question-level attribute
+#'
+#' `answer_order` / `subquestion_order` are stored without a language
+#' (one global value per question), so this returns the first non-blank
+#' `value` across all rows for `attr_name`, or `NULL` when absent.
+#'
+#' @keywords internal
+#' @noRd
+lss_question_attr_value <- function(q, attr_name) {
+  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return(NULL)
+  hit <- q$attributes[q$attributes$attribute == attr_name, , drop = FALSE]
+  if (nrow(hit) == 0L) return(NULL)
+  v <- hit$value[!is.na(hit$value) & nzchar(trimws(hit$value))]
+  if (length(v) == 0L) return(NULL)
+  v[1]
+}
+
+#' Localized "(random order)" / "(alphabetical order)" note for a
+#' randomized or alphabetized answer / option order
+#'
+#' Reads the `answer_order` (leaf single choice) or `subquestion_order`
+#' (multiple choice) attribute and maps it to a chrome note. Only
+#' non-default orders produce a note: `normal` (and any unknown value)
+#' returns `NULL`, so the document stays quiet about the default. The
+#' combined `random_alphabetical` mode (randomize, then keep alphabetical
+#' as fallback) is reported as random -- the randomization is what a
+#' reviewer needs to know about.
+#'
+#' @keywords internal
+#' @noRd
+lss_answer_order_note <- function(q, theme, attr = "answer_order") {
+  val <- lss_question_attr_value(q, attr)
+  if (is.null(val)) return(NULL)
+  switch(
+    tolower(trimws(val)),
+    "random"              = theme$chrome$value_order_random,
+    "random_alphabetical" = theme$chrome$value_order_random,
+    "alphabetical"        = theme$chrome$value_order_alphabetical,
+    NULL
+  )
+}
+
+#' Attach the answer-order note to a block of Value rows
+#'
+#' Places the note on the "Value" section header, in the language-column
+#' area (spanning the columns as a single annotation, like the other
+#' chrome notes). When that header already carries an implicit-format
+#' descriptor (e.g. "Numeric input"), the note is appended to it; when
+#' the header is otherwise blank (enumerated or labelled scales), the
+#' note becomes its text, rendered muted and italic. Returns the rows
+#' unchanged when there is no note or no section header to attach to.
+#'
+#' @keywords internal
+#' @noRd
+lss_apply_order_note <- function(value_rows, note, langs, theme) {
+  if (is.null(note) || length(value_rows) == 0L) return(value_rows)
+  idx <- NULL
+  for (i in seq_along(value_rows)) {
+    if (isTRUE(value_rows[[i]]$section_header)) { idx <- i; break }
+  }
+  if (is.null(idx)) return(value_rows)
+  row <- value_rows[[idx]]
+  if (isTRUE(row$section_with_text)) {
+    # Append to the existing descriptor, keeping its styling.
+    row$texts <- stats::setNames(lapply(langs, function(lg) {
+      base <- row$texts[[lg]]
+      if (is.null(base) || !nzchar(trimws(base))) note else paste0(base, " ", note)
+    }), langs)
+  } else {
+    row$texts <- stats::setNames(rep(list(note), length(langs)), langs)
+    row$section_with_text <- TRUE
+    row$span_note <- TRUE
+    row$color <- theme$color_muted
+    row$italic <- TRUE
+  }
+  value_rows[[idx]] <- row
+  value_rows
 }
 
 #' Insert a small vertical spacer before each item so consecutive
