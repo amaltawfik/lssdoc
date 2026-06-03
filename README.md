@@ -55,8 +55,9 @@ Other things lssdoc takes care of for you:
   real variable code (`parent_subq`) on the meta row – not the parent
   code, which never appears in the data export. Dual-scale arrays go one
   step further: each subquestion is split into one single-choice block
-  per scale (`parent_subq_0` / `parent_subq_1`), so every column of the
-  data export is documented on its own.
+  per scale (`parent_subq_1` / `parent_subq_2`, the 1-based scale index
+  LimeSurvey uses in its data export), so every column of the data
+  export is documented on its own.
 - **Methodological type labels.** UI distinctions like “List (radio)” vs
   “List (dropdown)” collapse into “Single choice”, because the response
   semantics are identical and the actual codes appear in the Value

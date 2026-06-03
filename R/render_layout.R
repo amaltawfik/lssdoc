@@ -250,11 +250,12 @@ lss_build_header <- function(theme, header_titles = character(0)) {
 #' @keywords internal
 #' @noRd
 lss_build_footer <- function(theme) {
-  # One point larger than the running header (size_meta) so the X/Y page
-  # counter stays legible without competing with the body.
+  # Two points larger than the running header (size_meta) so the X/Y page
+  # counter stays legible -- 9 pt read a touch small for the footer, 10 pt
+  # gives it presence without competing with the body.
   muted <- officer::fp_text(
     font.family = theme$font_body,
-    font.size = theme$size_meta + 1L,
+    font.size = theme$size_meta + 2L,
     color = theme$color_muted
   )
   officer::block_list(

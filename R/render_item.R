@@ -169,14 +169,16 @@ lss_render_compound_question <- function(doc, q, langs, theme,
   # (subquestion x scale), exactly like a plain array decomposes into one
   # single-choice block per subquestion -- with a "Scale" row naming the
   # scale (the dualscale header) and the real per-scale variable name
-  # (`<q>_<subq>_<0|1>`). The dual-scale grouping is a presentation detail
-  # with no methodological weight, so we do not preserve it specially.
+  # (`<q>_<subq>_<1|2>`, the 1-based scale index LimeSurvey uses in its
+  # data export, e.g. `trustinstitutions[PARL][1]`). The dual-scale
+  # grouping is a presentation detail with no methodological weight, so we
+  # do not preserve it specially.
   dual_scale <- isTRUE(info$has_scales) &&
     !is.null(q$scales) && length(q$scales) > 1L
   for (sq in q$subquestions) {
     if (dual_scale) {
       for (si in seq_along(q$scales)) {
-        item_code <- paste0(q$code, "_", sq$code, "_", si - 1L)
+        item_code <- paste0(q$code, "_", sq$code, "_", si)
         doc <- lss_render_subq_item(
           doc, q, sq, langs, theme,
           item_code = item_code,
@@ -1115,6 +1117,31 @@ lss_value_implicit_row <- function(q, langs, theme) {
   )
 }
 
+#' Code/label pairs for the labelled predefined scales LimeSurvey builds
+#' in (and therefore does not store in the `.lss`)
+#'
+#' Yes/No/Uncertain (C), Increase/Same/Decrease (E), Yes/No (Y) and
+#' gender (G) carry fixed, localizable labels. Returns a list of
+#' `c(code, chrome_key)` pairs (the chrome key resolves to the localized
+#' label via `theme$chrome[[key]]`), or `NULL` for any other type. Shared
+#' by the cards Value rows ([lss_predefined_value_rows()]) and the table
+#' codebook so both document the same mapping.
+#'
+#' @keywords internal
+#' @noRd
+lss_predefined_labelled <- function(type) {
+  switch(
+    type,
+    "C" = list(c("Y", "value_array_yes"), c("U", "value_array_uncertain"),
+               c("N", "value_array_no")),
+    "E" = list(c("I", "value_array_increase"), c("S", "value_array_same"),
+               c("D", "value_array_decrease")),
+    "Y" = list(c("Y", "value_array_yes"), c("N", "value_array_no")),
+    "G" = list(c("M", "value_gender_male"), c("F", "value_gender_female")),
+    NULL
+  )
+}
+
 #' Value rows for question types whose response scale is predefined by
 #' LimeSurvey and therefore NOT stored in the `.lss`
 #'
@@ -1152,16 +1179,7 @@ lss_predefined_value_rows <- function(q, langs, theme) {
   }
 
   # Labelled predefined scales: list each code with its localized label.
-  labelled <- switch(
-    q$type,
-    "C" = list(c("Y", "value_array_yes"), c("U", "value_array_uncertain"),
-               c("N", "value_array_no")),
-    "E" = list(c("I", "value_array_increase"), c("S", "value_array_same"),
-               c("D", "value_array_decrease")),
-    "Y" = list(c("Y", "value_array_yes"), c("N", "value_array_no")),
-    "G" = list(c("M", "value_gender_male"), c("F", "value_gender_female")),
-    NULL
-  )
+  labelled <- lss_predefined_labelled(q$type)
   if (!is.null(labelled)) {
     rows <- list(header())
     for (cl in labelled) {

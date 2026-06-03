@@ -115,27 +115,32 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     color = theme$color_muted, italic = TRUE
   )
 
+  # The dense codebook uses ONE body size everywhere (question stems,
+  # option / answer labels, welcome / end text, the value descriptors and
+  # the chrome annotation rows), matching the meta and value cells -- a
+  # uniform table reads as a data dictionary rather than prose. The size
+  # auto-reduces by 1 pt from three languages on, the same rule
+  # lss_table_template_polish() applies to the meta/value columns, so
+  # composed and non-composed cells stay in lockstep.
+  body_size <- if (length(langs) >= 3L) theme$size_meta - 1L else theme$size_meta
+
   # Codes in the dense table use the body font (not the monospace
   # font): Consolas is wide and pushes the long variable names to wrap,
   # eating width the language columns need. Bold + primary still mark
   # these cells as codes. (The cards template keeps the monospace face,
   # where width is not as constrained.)
   value_code_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_meta,
+    font.family = theme$font_body, font.size = body_size,
     color = theme$color_primary
   )
+  # Value-cell descriptors ([num], [text], ...) and the chrome annotation
+  # rows (exclusive note, answer/option order note) share the body size so
+  # they never read a point larger than the surrounding cells, including
+  # when the table steps down to 7 pt for three or four languages.
   value_descriptor_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_meta,
+    font.family = theme$font_body, font.size = body_size,
     color = theme$color_muted, italic = TRUE
   )
-
-  # The dense codebook uses ONE body size everywhere (question stems,
-  # option / answer labels, welcome / end text), matching the meta and
-  # value cells -- a uniform table reads as a data dictionary rather
-  # than prose. The size auto-reduces by 1 pt from three languages on,
-  # the same rule lss_table_template_polish() applies to the meta/value
-  # columns, so composed and non-composed cells stay in lockstep.
-  body_size <- if (length(langs) >= 3L) theme$size_meta - 1L else theme$size_meta
 
   value_label_props <- officer::fp_text(
     font.family = theme$font_body, font.size = body_size,
@@ -387,9 +392,24 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   }
 
   emit_value_rows_for <- function(q) {
-    # No value rows for non-enumerated types; the implicit descriptor
-    # sits in the Question row's Value cell.
-    if (length(q$answers) == 0L) return(list())
+    # Predefined labelled scales (C/E/Y/G) store no answers in the .lss but
+    # carry fixed localizable codes -- list them like a stored scale so the
+    # dense codebook documents the value domain instead of leaving it blank.
+    if (length(q$answers) == 0L) {
+      labelled <- lss_predefined_labelled(q$type)
+      if (is.null(labelled)) return(list())
+      out <- list()
+      for (cl in labelled) {
+        out[[length(out) + 1L]] <- list(
+          kind = "value",
+          code = cl[1],
+          labels = stats::setNames(
+            rep(list(chrome[[cl[2]]]), length(langs)), langs
+          )
+        )
+      }
+      return(out)
+    }
     multi_scale <- !is.null(q$scales) && length(q$scales) > 1L
     bundles <- if (multi_scale) q$scales else list(q$answers)
     out <- list()
@@ -492,7 +512,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         text = sprintf(chrome$exclusive_text_fmt, paste(excl, collapse = ", "))
       )
     }
-    onr <- order_note_row(q, "subquestion_order", chrome$item_options)
+    onr <- order_note_row(q, "subquestion_order", chrome$item_order)
     if (!is.null(onr)) out[[length(out) + 1L]] <- onr
     if (identical(q$other, "Y")) {
       state$item_no <- state$item_no + 1L
@@ -523,7 +543,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           if (dual_scale) {
             for (si in seq_along(q$scales)) {
               state$item_no <- state$item_no + 1L
-              item_code <- paste0(q$code, "_", sq$code, "_", si - 1L)
+              item_code <- paste0(q$code, "_", sq$code, "_", si)
               state$index_entries[[length(state$index_entries) + 1L]] <- list(
                 code = item_code, no = state$item_no
               )
@@ -571,7 +591,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           "leaf", state$item_no, q$code, q = q
         )
         rows <- c(rows, emit_value_rows_for(q))
-        onr <- order_note_row(q, "answer_order", chrome$item_value)
+        onr <- order_note_row(q, "answer_order", chrome$item_order)
         if (!is.null(onr)) rows[[length(rows) + 1L]] <- onr
       }
   }
@@ -645,19 +665,25 @@ lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) 
     )))
   }
   q <- row$q
-  if (length(q$answers) > 0L) {
+  # Enumerated stored answers, and the labelled predefined scales
+  # (C/E/Y/G), are documented in their own Value rows below, so the
+  # Question row's Value cell stays empty for them.
+  if (length(q$answers) > 0L || !is.null(lss_predefined_labelled(q$type))) {
     return(flextable::as_paragraph(flextable::as_chunk(
       "", props = descriptor_props
     )))
   }
-  # Implicit codings: short mono token.
+  # Implicit codings: short mono token. The numeric N-point scales carry
+  # no labels, so a compact range token in the Value cell is the dense
+  # equivalent of the cards "%d-point scale" descriptor: 5-point single
+  # choice (5) and 5-point array (A) -> "1-5"; 10-point array (B) -> "1-10".
   short_code <- switch(
     EXPR = q$type,
     "M" = "Y/blank",
     "P" = "Y/blank",
-    "Y" = "Y/N",
-    "G" = "M/F",
     "5" = "1-5",
+    "A" = "1-5",
+    "B" = "1-10",
     NULL
   )
   if (!is.null(short_code)) {

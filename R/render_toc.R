@@ -329,26 +329,24 @@ lss_render_consent <- function(doc, lss, langs, theme) {
 #' @noRd
 lss_render_toc <- function(doc, model, theme, sections = list()) {
   chrome <- theme$chrome
-  doc <- officer::body_add_fpar(
-    doc,
-    officer::fpar(officer::ftext(
-      chrome$toc_title,
-      prop = officer::fp_text(
-        font.family = theme$font_body, font.size = theme$size_heading1,
-        bold = TRUE, color = theme$color_primary
-      )
-    ))
+  # Same styled heading as every other section (14 pt bold primary with a
+  # bottom filet and space above), so the table of contents is not glued
+  # flush to the top-left corner and reads as part of the same document.
+  doc <- lss_render_section_heading(
+    doc, theme, chrome$toc_title, lss_section_bookmark("toc")
   )
 
-  # Clickable entries in the accent colour. Top-level sections are bold;
-  # the questionnaire's groups are indented and regular weight. Each
+  # Clickable entries in the accent colour, one step above the body size so
+  # the contents list stays comfortably legible. Top-level sections are
+  # bold; the questionnaire's groups are indented and regular weight. Each
   # entry points to the bookmark anchored on the matching heading.
+  entry_size <- theme$size_question + 1L
   top_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_question,
+    font.family = theme$font_body, font.size = entry_size,
     color = theme$color_accent, bold = TRUE
   )
   grp_props <- officer::fp_text(
-    font.family = theme$font_body, font.size = theme$size_question,
+    font.family = theme$font_body, font.size = entry_size,
     color = theme$color_accent
   )
   entry <- function(doc, label, bookmark, props, indent = 0) {
