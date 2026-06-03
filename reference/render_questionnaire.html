@@ -110,7 +110,8 @@ tie the document together. Rendering uses the suggested packages
 <span>  colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  authors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  description <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  chrome_lang <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  chrome_lang <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  variable_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"brackets"</span>, <span class="st">"underscore"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -409,6 +410,23 @@ e.g. <code>chrome_lang = "en"</code> with <code>languages = c("fr", "en")</code>
 produces an English-labelled document with French and English
 content. Spanish and Italian translations should be reviewed
 by a native speaker before publishing an official document.</p></dd>
+
+
+<dt id="arg-variable-names">variable_names<a class="anchor" aria-label="anchor" href="#arg-variable-names"></a></dt>
+<dd><p>How response-variable names are written, so the
+document matches the data file the reader holds. One of:</p><ul><li><p><code>"brackets"</code> (default) – the exact column names of the
+<strong>CSV / Excel data export</strong>, so the variable index reproduces the
+raw data file column for column: <code>parent[subq]</code>,
+<code>parent[subq][1]</code> (dual scale), <code>parent[CH]</code> / <code>parent[other]</code>
+(multiple choice), <code>parent[59842]</code> (ranking, by answer id),
+<code>parent[_Ccomment]</code> (list-with-comment).</p></li>
+<li><p><code>"underscore"</code> – the sanitized code form used by the Expression
+Manager / relevance equations and the SPSS / Stata / R exports
+(<code>parent_subq</code>, <code>parent_subq_1</code>).
+The two-dimensional arrays (array of numbers / texts with a second
+axis) and ranking questions are expanded so every produced column
+appears as its own entry either way.</p></li>
+</ul></dd>
 
 </dl></div>
     <div class="section level2">

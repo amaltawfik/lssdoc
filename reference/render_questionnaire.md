@@ -47,7 +47,8 @@ render_questionnaire(
   colors = NULL,
   authors = NULL,
   description = NULL,
-  chrome_lang = NULL
+  chrome_lang = NULL,
+  variable_names = c("brackets", "underscore")
 )
 ```
 
@@ -332,6 +333,24 @@ render_questionnaire(
   `languages = c("fr", "en")` produces an English-labelled document with
   French and English content. Spanish and Italian translations should be
   reviewed by a native speaker before publishing an official document.
+
+- variable_names:
+
+  How response-variable names are written, so the document matches the
+  data file the reader holds. One of:
+
+  - `"brackets"` (default) – the exact column names of the **CSV / Excel
+    data export**, so the variable index reproduces the raw data file
+    column for column: `parent[subq]`, `parent[subq][1]` (dual scale),
+    `parent[CH]` / `parent[other]` (multiple choice), `parent[59842]`
+    (ranking, by answer id), `parent[_Ccomment]` (list-with-comment).
+
+  - `"underscore"` – the sanitized code form used by the Expression
+    Manager / relevance equations and the SPSS / Stata / R exports
+    (`parent_subq`, `parent_subq_1`). The two-dimensional arrays (array
+    of numbers / texts with a second axis) and ranking questions are
+    expanded so every produced column appears as its own entry either
+    way.
 
 ## Value
 
