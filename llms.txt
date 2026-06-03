@@ -41,10 +41,13 @@ Other things lssdoc takes care of for you:
   Independent from the survey’s content languages, so you can keep your
   FR/DE questionnaire and switch the document scaffolding to English (or
   vice versa) with a single argument.
-- **Variable-centric compound rendering.** Array, multiple-choice,
-  multiple-numerical and dual-scale array questions are documented per
-  subquestion, with the real variable code (`parent_subq`) on the meta
-  row – not the parent code which never appears in the data export.
+- **Variable-centric compound rendering.** Array, multiple-choice and
+  multiple-numerical questions are documented per subquestion, with the
+  real variable code (`parent_subq`) on the meta row – not the parent
+  code, which never appears in the data export. Dual-scale arrays go one
+  step further: each subquestion is split into one single-choice block
+  per scale (`parent_subq_0` / `parent_subq_1`), so every column of the
+  data export is documented on its own.
 - **Methodological type labels.** UI distinctions like “List (radio)” vs
   “List (dropdown)” collapse into “Single choice”, because the response
   semantics are identical and the actual codes appear in the Value
@@ -147,9 +150,12 @@ render_questionnaire(
   show_privacy_settings  = TRUE,   # anonymized / save partial / IP / referrer / timestamp
   show_admin_settings    = TRUE,   # alias / end URL / active
   authors = list(
-    list(name        = "Amal Tawfik",
-         affiliation = "HES-SO Valais-Wallis",
-         orcid       = "0009-0006-2422-1555")
+    list(name        = "Jane Doe",
+         affiliation = "HESAV",
+         orcid       = "0009-0001-2345-6789"),
+    list(name        = "John Doe",
+         affiliation = "HESAV",
+         orcid       = "0009-0002-3456-7890")
   ),
   description = paste0(
     "Validated as part of the SNSF project XYZ. ",
@@ -209,14 +215,16 @@ catches without supplying your own file:
 demo <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
 audit_lss(read_lss(demo))
 #> -- lssdoc audit ----------------------------------------------------
-#> 11 findings: 4 errors, 7 warnings, 0 notes.
-#> x Question 'age': filter references 'income', asked later (forward reference)
+#> 12 findings: 5 errors, 7 warnings, 0 notes.
 #> x Survey: duplicate question code 'age'
+#> x Question 'age': filter references 'income', asked later (forward reference)
+#> x Answer 'X': points to a question id that does not exist
 #> x Subquestion 'orphan_sq': points to a question id that does not exist
+#> x Question 'blank_q': text empty in every language
 #> ! Question 'satisf': expects answer options, but none are defined
 #> ! Question 'income': text missing in 'fr'
 #> ! Question 'comment ': code carries whitespace
-#> ... plus empty texts, missing subquestions and an array-scale mismatch.
+#> ... plus an empty group name, missing subquestions and an array-scale mismatch.
 ```
 
 ### PDF output

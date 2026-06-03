@@ -57,10 +57,11 @@ surveys, both templates (`cards` and `table`), the five chrome languages
   code, type, mandatory, filter) and one column per language for the
   question text, subquestions and answer options. The output format
   (`.docx` or `.pdf`) is inferred from the `output` extension; PDF is
-  produced locally via LibreOffice. The page document is laid out in A4
-  portrait by default for every language count (the table template steps
-  its font down for 3-4 languages to fit); `page_format` can force
-  `"A4-landscape"` or `"A3"`.
+  produced locally via LibreOffice. Page orientation follows the
+  template, not the language count: the `cards` template is laid out in
+  A4 portrait and the dense `table` template in A4 landscape by default;
+  `page_format` overrides this with `"A4-portrait"`, `"A4-landscape"` or
+  `"A3"`, and every panel scales to the chosen width.
 - [`render_audit()`](https://amaltawfik.github.io/lssdoc/reference/render_audit.md)
   produces a focused audit-only document: the same cover page, then one
   section per severity (errors, warnings, notes) with a table of

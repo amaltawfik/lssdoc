@@ -97,7 +97,7 @@
 <li>
 <strong>Multilingual chrome.</strong> Column headers, row labels, type labels (Single choice / Multiple choice / Text / Number …), Value descriptors, the audit section – everything outside the survey content – is translated to English, French, German, Spanish or Italian. Independent from the survey’s content languages, so you can keep your FR/DE questionnaire and switch the document scaffolding to English (or vice versa) with a single argument.</li>
 <li>
-<strong>Variable-centric compound rendering.</strong> Array, multiple-choice, multiple-numerical and dual-scale array questions are documented per subquestion, with the real variable code (<code>parent_subq</code>) on the meta row – not the parent code which never appears in the data export.</li>
+<strong>Variable-centric compound rendering.</strong> Array, multiple-choice and multiple-numerical questions are documented per subquestion, with the real variable code (<code>parent_subq</code>) on the meta row – not the parent code, which never appears in the data export. Dual-scale arrays go one step further: each subquestion is split into one single-choice block per scale (<code>parent_subq_0</code> / <code>parent_subq_1</code>), so every column of the data export is documented on its own.</li>
 <li>
 <strong>Methodological type labels.</strong> UI distinctions like “List (radio)” vs “List (dropdown)” collapse into “Single choice”, because the response semantics are identical and the actual codes appear in the Value section. The Type cell reads in the methodologist’s vocabulary, not LimeSurvey’s.</li>
 <li>
@@ -187,9 +187,12 @@
 <span>  show_privacy_settings  <span class="op">=</span> <span class="cn">TRUE</span>,   <span class="co"># anonymized / save partial / IP / referrer / timestamp</span></span>
 <span>  show_admin_settings    <span class="op">=</span> <span class="cn">TRUE</span>,   <span class="co"># alias / end URL / active</span></span>
 <span>  authors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name        <span class="op">=</span> <span class="st">"Amal Tawfik"</span>,</span>
-<span>         affiliation <span class="op">=</span> <span class="st">"HES-SO Valais-Wallis"</span>,</span>
-<span>         orcid       <span class="op">=</span> <span class="st">"0009-0006-2422-1555"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name        <span class="op">=</span> <span class="st">"Jane Doe"</span>,</span>
+<span>         affiliation <span class="op">=</span> <span class="st">"HESAV"</span>,</span>
+<span>         orcid       <span class="op">=</span> <span class="st">"0009-0001-2345-6789"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name        <span class="op">=</span> <span class="st">"John Doe"</span>,</span>
+<span>         affiliation <span class="op">=</span> <span class="st">"HESAV"</span>,</span>
+<span>         orcid       <span class="op">=</span> <span class="st">"0009-0002-3456-7890"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  description <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
 <span>    <span class="st">"Validated as part of the SNSF project XYZ. "</span>,</span>
@@ -238,14 +241,16 @@
 <code class="sourceCode R"><span><span class="va">demo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"audit_demo.lss"</span>, package <span class="op">=</span> <span class="st">"lssdoc"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="fu"><a href="reference/read_lss.html">read_lss</a></span><span class="op">(</span><span class="va">demo</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; -- lssdoc audit ----------------------------------------------------</span></span>
-<span><span class="co">#&gt; 11 findings: 4 errors, 7 warnings, 0 notes.</span></span>
-<span><span class="co">#&gt; x Question 'age': filter references 'income', asked later (forward reference)</span></span>
+<span><span class="co">#&gt; 12 findings: 5 errors, 7 warnings, 0 notes.</span></span>
 <span><span class="co">#&gt; x Survey: duplicate question code 'age'</span></span>
+<span><span class="co">#&gt; x Question 'age': filter references 'income', asked later (forward reference)</span></span>
+<span><span class="co">#&gt; x Answer 'X': points to a question id that does not exist</span></span>
 <span><span class="co">#&gt; x Subquestion 'orphan_sq': points to a question id that does not exist</span></span>
+<span><span class="co">#&gt; x Question 'blank_q': text empty in every language</span></span>
 <span><span class="co">#&gt; ! Question 'satisf': expects answer options, but none are defined</span></span>
 <span><span class="co">#&gt; ! Question 'income': text missing in 'fr'</span></span>
 <span><span class="co">#&gt; ! Question 'comment ': code carries whitespace</span></span>
-<span><span class="co">#&gt; ... plus empty texts, missing subquestions and an array-scale mismatch.</span></span></code></pre></div>
+<span><span class="co">#&gt; ... plus an empty group name, missing subquestions and an array-scale mismatch.</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pdf-output">PDF output<a class="anchor" aria-label="anchor" href="#pdf-output"></a>

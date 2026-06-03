@@ -192,11 +192,14 @@ default) hides them.</p></dd>
 
 <dt id="arg-page-format">page_format<a class="anchor" aria-label="anchor" href="#arg-page-format"></a></dt>
 <dd><p>Page format. One of <code>"auto"</code> (the default),
-<code>"A4-portrait"</code>, <code>"A4-landscape"</code>, or <code>"A3"</code>. <code>"auto"</code> resolves to
-A4 portrait for every language count: all panels are sized to the
-portrait content width and the bundled four-language surveys fit,
-so landscape would only add empty margin. Pass <code>"A4-landscape"</code> or
-<code>"A3"</code> explicitly if you prefer a wider page.</p></dd>
+<code>"A4-portrait"</code>, <code>"A4-landscape"</code>, or <code>"A3"</code>. <code>"auto"</code> is
+template-aware and never follows the language count (four languages
+fit on A4 portrait): the <code>"cards"</code> template gets A4 portrait, while
+the dense <code>"table"</code> template gets A4 landscape, which it needs to
+stay readable. Pass an explicit value to override; selecting a wider
+page makes every panel (meta table, item table, audit/quota tables
+and the dense codebook table) expand automatically to fill the
+content width, in both templates.</p></dd>
 
 
 <dt id="arg-show-toc">show_toc<a class="anchor" aria-label="anchor" href="#arg-show-toc"></a></dt>
@@ -373,14 +376,14 @@ Each author is shown centered on its own line as
 <code>Name -- Affiliation</code>; when an ORCID iD is provided, a smaller
 monospace line below shows <code>ORCID 0000-0000-0000-0000</code> as a
 hyperlink to <code>https://orcid.org/&lt;id&gt;</code>. Accepts:</p><ul><li><p><code>NULL</code> (default): no authorship block.</p></li>
-<li><p>An <strong>unnamed character vector</strong> (<code>c("Amal Tawfik", "John Doe")</code>):
+<li><p>An <strong>unnamed character vector</strong> (<code>c("Jane Doe", "John Doe")</code>):
 each entry becomes a line with no affiliation.</p></li>
 <li><p>A <strong>named character vector</strong>
-(<code>c("Amal Tawfik" = "HES-SO Valais")</code>): names are authors,
+(<code>c("Jane Doe" = "HESAV")</code>): names are authors,
 values are affiliations. Use <code>""</code> to render an author without
 affiliation.</p></li>
 <li><p>A <strong>list of named lists</strong> for the full form, e.g.
-<code>list(list(name = "Amal Tawfik", affiliation = "HES-SO Valais", orcid = "0009-0006-2422-1555"), list(name = "John Doe", affiliation = "UNIL"))</code>. The <code>name</code> field is required;
+<code>list(list(name = "Jane Doe", affiliation = "HESAV", orcid = "0009-0001-2345-6789"), list(name = "John Doe", affiliation = "HESAV"))</code>. The <code>name</code> field is required;
 <code>affiliation</code> and <code>orcid</code> are optional.</p></li>
 </ul></dd>
 
@@ -500,11 +503,12 @@ render multiple variants.</p></div>
 <span class="r-in"><span>  template    <span class="op">=</span> <span class="st">"table"</span>,</span></span>
 <span class="r-in"><span>  chrome_lang <span class="op">=</span> <span class="st">"en"</span>,</span></span>
 <span class="r-in"><span>  colors      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>primary <span class="op">=</span> <span class="st">"#5C9F1A"</span>, accent <span class="op">=</span> <span class="st">"#7FA82E"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  authors     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    name        <span class="op">=</span> <span class="st">"Amal Tawfik"</span>,</span></span>
-<span class="r-in"><span>    affiliation <span class="op">=</span> <span class="st">"HES-SO Valais-Wallis"</span>,</span></span>
-<span class="r-in"><span>    orcid       <span class="op">=</span> <span class="st">"0009-0006-2422-1555"</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  authors     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Jane Doe"</span>, affiliation <span class="op">=</span> <span class="st">"HESAV"</span>,</span></span>
+<span class="r-in"><span>         orcid <span class="op">=</span> <span class="st">"0009-0001-2345-6789"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"John Doe"</span>, affiliation <span class="op">=</span> <span class="st">"HESAV"</span>,</span></span>
+<span class="r-in"><span>         orcid <span class="op">=</span> <span class="st">"0009-0002-3456-7890"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
