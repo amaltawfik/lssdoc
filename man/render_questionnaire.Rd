@@ -99,11 +99,14 @@ attributes such as \code{answer_order} and \verb{location_*}. \code{FALSE} (the
 default) hides them.}
 
 \item{page_format}{Page format. One of \code{"auto"} (the default),
-\code{"A4-portrait"}, \code{"A4-landscape"}, or \code{"A3"}. \code{"auto"} resolves to
-A4 portrait for every language count: all panels are sized to the
-portrait content width and the bundled four-language surveys fit,
-so landscape would only add empty margin. Pass \code{"A4-landscape"} or
-\code{"A3"} explicitly if you prefer a wider page.}
+\code{"A4-portrait"}, \code{"A4-landscape"}, or \code{"A3"}. \code{"auto"} is
+template-aware and never follows the language count (four languages
+fit on A4 portrait): the \code{"cards"} template gets A4 portrait, while
+the dense \code{"table"} template gets A4 landscape, which it needs to
+stay readable. Pass an explicit value to override; selecting a wider
+page makes every panel (meta table, item table, audit/quota tables
+and the dense codebook table) expand automatically to fill the
+content width, in both templates.}
 
 \item{show_toc}{Logical. If \code{TRUE} (default), include a table of
 contents listing the groups (skipped automatically when the
@@ -240,14 +243,14 @@ monospace line below shows \verb{ORCID 0000-0000-0000-0000} as a
 hyperlink to \verb{https://orcid.org/<id>}. Accepts:
 \itemize{
 \item \code{NULL} (default): no authorship block.
-\item An \strong{unnamed character vector} (\code{c("Amal Tawfik", "John Doe")}):
+\item An \strong{unnamed character vector} (\code{c("Jane Doe", "John Doe")}):
 each entry becomes a line with no affiliation.
 \item A \strong{named character vector}
-(\code{c("Amal Tawfik" = "HES-SO Valais")}): names are authors,
+(\code{c("Jane Doe" = "HESAV")}): names are authors,
 values are affiliations. Use \code{""} to render an author without
 affiliation.
 \item A \strong{list of named lists} for the full form, e.g.
-\code{list(list(name = "Amal Tawfik", affiliation = "HES-SO Valais", orcid = "0009-0006-2422-1555"), list(name = "John Doe", affiliation = "UNIL"))}. The \code{name} field is required;
+\code{list(list(name = "Jane Doe", affiliation = "HESAV", orcid = "0009-0001-2345-6789"), list(name = "John Doe", affiliation = "HESAV"))}. The \code{name} field is required;
 \code{affiliation} and \code{orcid} are optional.
 }}
 
@@ -360,11 +363,12 @@ render_questionnaire(
   template    = "table",
   chrome_lang = "en",
   colors      = list(primary = "#5C9F1A", accent = "#7FA82E"),
-  authors     = list(list(
-    name        = "Amal Tawfik",
-    affiliation = "HES-SO Valais-Wallis",
-    orcid       = "0009-0006-2422-1555"
-  ))
+  authors     = list(
+    list(name = "Jane Doe", affiliation = "HESAV",
+         orcid = "0009-0001-2345-6789"),
+    list(name = "John Doe", affiliation = "HESAV",
+         orcid = "0009-0002-3456-7890")
+  )
 )
 }
 }

@@ -34,11 +34,14 @@ lss_render_theme <- function() {
     color_error   = "#9E1B1B",
     color_note    = "#5B5B5B",
 
-    # Single source of truth for the printable body width. Page margins of
-    # 2.5 cm on A4 leave 6.30 in for content; the meta table, item table,
-    # welcome/end-text blocks, and shared-scale table all use this width so
-    # that group headings, the TOC, and every table land on the same left
-    # and right edges. Changing this value alone re-aligns the whole document.
+    # Single source of truth for the printable body width. This is the
+    # A4-portrait default (8.27 in page - 2x0.98 in margins ~= 6.30 in); the
+    # meta table, item table, audit/quota tables, welcome/end-text blocks,
+    # and shared-scale table all use this width so group headings, the TOC,
+    # and every table land on the same left and right edges. render_lss_docx()
+    # overrides it per page orientation via lss_content_width_in() (9.72 in
+    # for A4 landscape, 14.56 in for A3), so landscape widens every panel
+    # automatically. Changing this value alone re-aligns the whole document.
     content_width_in = 6.30,
 
     # Body font: Calibri is pre-installed on Windows (and metric-substituted

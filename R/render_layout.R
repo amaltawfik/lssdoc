@@ -135,6 +135,38 @@ lss_header_titles <- function(lss, langs) {
   }, character(1))
 }
 
+# Side margins (in) applied on every page, both orientations. The usable
+# content width derives from this, so it is defined once and shared by
+# lss_content_width_in() and lss_render_section_props().
+lss_margin_side_in <- 0.98
+
+#' Usable body width (in) for a page format
+#'
+#' The meta table, item table, audit table, quota table and the dense
+#' codebook table are all laid out to this width so they sit flush
+#' between the margins instead of overflowing the page or leaving an
+#' empty band. It depends ONLY on the page orientation (never on the
+#' language count): portrait fits 6.30 in, A4 landscape 9.72 in, A3
+#' landscape 14.56 in. `"auto"` resolves to portrait, matching
+#' [lss_render_section_props()].
+#'
+#' Anchored on the canonical 6.30 in portrait width (the theme default)
+#' plus the page-width delta of the wider format, so the portrait number
+#' stays exactly 6.30 and the landscape / A3 widths land just inside the
+#' real printable width (page width - 2 x 0.98 in margin), never over it.
+#'
+#' @keywords internal
+#' @noRd
+lss_content_width_in <- function(page_format) {
+  extra <- switch(
+    if (identical(page_format, "auto")) "A4-portrait" else page_format,
+    "A4-portrait"  = 0,
+    "A4-landscape" = 11.69 - 8.27,
+    "A3"           = 16.53 - 8.27
+  )
+  6.30 + extra
+}
+
 #' Pick page-section properties for the given format and language count
 #'
 #' Also installs the default footer with a centered "Page X of Y" field so
@@ -166,7 +198,7 @@ lss_render_section_props <- function(page_format, n_langs,
   # (1.0 in) than the sides so the running header and body keep some air
   # between them; otherwise the first line of body content lands right
   # under the title strip.
-  margin_side <- 0.98
+  margin_side <- lss_margin_side_in
   margin_vert <- 1.0
   officer::prop_section(
     page_size = size,

@@ -56,11 +56,14 @@
 #'   attributes such as `answer_order` and `location_*`. `FALSE` (the
 #'   default) hides them.
 #' @param page_format Page format. One of `"auto"` (the default),
-#'   `"A4-portrait"`, `"A4-landscape"`, or `"A3"`. `"auto"` resolves to
-#'   A4 portrait for every language count: all panels are sized to the
-#'   portrait content width and the bundled four-language surveys fit,
-#'   so landscape would only add empty margin. Pass `"A4-landscape"` or
-#'   `"A3"` explicitly if you prefer a wider page.
+#'   `"A4-portrait"`, `"A4-landscape"`, or `"A3"`. `"auto"` is
+#'   template-aware and never follows the language count (four languages
+#'   fit on A4 portrait): the `"cards"` template gets A4 portrait, while
+#'   the dense `"table"` template gets A4 landscape, which it needs to
+#'   stay readable. Pass an explicit value to override; selecting a wider
+#'   page makes every panel (meta table, item table, audit/quota tables
+#'   and the dense codebook table) expand automatically to fill the
+#'   content width, in both templates.
 #' @param show_toc Logical. If `TRUE` (default), include a table of
 #'   contents listing the groups (skipped automatically when the
 #'   survey has fewer than two groups). For per-variable navigation,
@@ -175,16 +178,16 @@
 #'   monospace line below shows `ORCID 0000-0000-0000-0000` as a
 #'   hyperlink to `https://orcid.org/<id>`. Accepts:
 #'   * `NULL` (default): no authorship block.
-#'   * An **unnamed character vector** (`c("Amal Tawfik", "John Doe")`):
+#'   * An **unnamed character vector** (`c("Jane Doe", "John Doe")`):
 #'     each entry becomes a line with no affiliation.
 #'   * A **named character vector**
-#'     (`c("Amal Tawfik" = "HES-SO Valais")`): names are authors,
+#'     (`c("Jane Doe" = "HESAV")`): names are authors,
 #'     values are affiliations. Use `""` to render an author without
 #'     affiliation.
 #'   * A **list of named lists** for the full form, e.g.
-#'     `list(list(name = "Amal Tawfik", affiliation = "HES-SO Valais",
-#'     orcid = "0009-0006-2422-1555"), list(name = "John Doe",
-#'     affiliation = "UNIL"))`. The `name` field is required;
+#'     `list(list(name = "Jane Doe", affiliation = "HESAV",
+#'     orcid = "0009-0001-2345-6789"), list(name = "John Doe",
+#'     affiliation = "HESAV"))`. The `name` field is required;
 #'     `affiliation` and `orcid` are optional.
 #' @param description Optional free-form text (single string) shown
 #'   on the cover page below the authors block. `NULL` (default)
@@ -281,11 +284,12 @@
 #'   template    = "table",
 #'   chrome_lang = "en",
 #'   colors      = list(primary = "#5C9F1A", accent = "#7FA82E"),
-#'   authors     = list(list(
-#'     name        = "Amal Tawfik",
-#'     affiliation = "HES-SO Valais-Wallis",
-#'     orcid       = "0009-0006-2422-1555"
-#'   ))
+#'   authors     = list(
+#'     list(name = "Jane Doe", affiliation = "HESAV",
+#'          orcid = "0009-0001-2345-6789"),
+#'     list(name = "John Doe", affiliation = "HESAV",
+#'          orcid = "0009-0002-3456-7890")
+#'   )
 #' )
 #' }
 #' @export

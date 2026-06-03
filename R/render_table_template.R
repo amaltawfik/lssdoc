@@ -418,6 +418,23 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out
   }
 
+  # Value rows for a plain answer list (one scale of a dual-scale array),
+  # without the "Value (scale N)" separators that emit_value_rows_for adds
+  # for the combined view -- here each scale is its own single-choice row.
+  emit_values <- function(ans) {
+    out <- list()
+    for (a in ans) {
+      out[[length(out) + 1L]] <- list(
+        kind = "value",
+        code = a$code,
+        labels = stats::setNames(
+          lapply(langs, function(lg) a$labels[[lg]]), langs
+        )
+      )
+    }
+    out
+  }
+
   # An answer / option order annotation row, or NULL when the order is
   # the (silent) default. `attr` is answer_order (leaf single choice) or
   # subquestion_order (multiple choice); `field_label` is the row label
@@ -496,16 +513,44 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           length(q$subquestions) > 0L) {
         rows <- c(rows, emit_multiple_choice(q))
       } else if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
+        # Dual-scale arrays (type 1): one row per (subquestion x scale),
+        # each a single-choice variable named `<q>_<subq>_<0|1>`, with the
+        # scale (dualscale header) shown in the Question cell and just that
+        # scale's answers below -- mirroring the cards layout.
+        dual_scale <- isTRUE(info$has_scales) &&
+          !is.null(q$scales) && length(q$scales) > 1L
         for (sq in q$subquestions) {
-          state$item_no <- state$item_no + 1L
-          item_code <- paste0(q$code, "_", sq$code)
-          state$index_entries[[length(state$index_entries) + 1L]] <- list(
-            code = item_code, no = state$item_no
-          )
-          rows[[length(rows) + 1L]] <- emit_question_row(
-            "subq", state$item_no, item_code, q = q, sq = sq
-          )
-          rows <- c(rows, emit_value_rows_for(q))
+          if (dual_scale) {
+            for (si in seq_along(q$scales)) {
+              state$item_no <- state$item_no + 1L
+              item_code <- paste0(q$code, "_", sq$code, "_", si - 1L)
+              state$index_entries[[length(state$index_entries) + 1L]] <- list(
+                code = item_code, no = state$item_no
+              )
+              qr <- emit_question_row("subq", state$item_no, item_code,
+                                      q = q, sq = sq)
+              hdr <- lss_dualscale_header(q, si, langs)
+              qr$scale_header <- if (!is.null(hdr)) {
+                hdr
+              } else {
+                stats::setNames(
+                  rep(list(paste(chrome$item_scale, si)), length(langs)), langs
+                )
+              }
+              rows[[length(rows) + 1L]] <- qr
+              rows <- c(rows, emit_values(q$scales[[si]]))
+            }
+          } else {
+            state$item_no <- state$item_no + 1L
+            item_code <- paste0(q$code, "_", sq$code)
+            state$index_entries[[length(state$index_entries) + 1L]] <- list(
+              code = item_code, no = state$item_no
+            )
+            rows[[length(rows) + 1L]] <- emit_question_row(
+              "subq", state$item_no, item_code, q = q, sq = sq
+            )
+            rows <- c(rows, emit_value_rows_for(q))
+          }
         }
         if (identical(q$other, "Y")) {
           state$item_no <- state$item_no + 1L
@@ -721,6 +766,14 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
              plain(size = size_sq, italic = TRUE))
   }
 
+  # Dual-scale arrays: the scale (dualscale header) this row measures,
+  # bold, so it reads as the dimension that distinguishes the two
+  # `_0` / `_1` variables sharing the same subquestion.
+  if (!is.null(row$scale_header)) {
+    add_line(lss_html_to_text(row$scale_header[[lg]]),
+             plain(size = size_sq, bold = TRUE))
+  }
+
   # Help (optional), small muted italic.
   if (isTRUE(show_help) && !identical(row$kind, "other")) {
     help_text <- lss_html_to_text(row$help[[lg]])
@@ -898,10 +951,17 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   #                     longer chained conditions wrap.
   #   Value     0.55  - 1-3 digit codes in 11 pt Consolas bold
   #                     ("1", "12", "999").
-  # Total meta = 4.47; languages get ~5.26 in (54.1% of 9.73 in).
+  # Total meta = 4.47; the language columns split the remaining width.
+  # The total follows the page orientation (theme$content_width_in: 6.30 in
+  # portrait, 9.72 in A4 landscape, 14.56 in A3) and NEVER the language
+  # count -- four languages fit on an A4 portrait page; reach for landscape
+  # via page_format when the columns get too tight, not automatically. The
+  # 0.40 in floor is a hard legibility minimum (the body font already steps
+  # down to 7 pt from three languages on); if it binds, the page format is
+  # too narrow for that many languages and landscape is the fix.
   meta_w <- 0.62 + 0.30 + 1.30 + 0.55 + 0.50 + 0.65 + 0.55
-  total_w <- if (n_lang >= 2L) 9.73 else theme$content_width_in
-  lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 1.3)
+  total_w <- theme$content_width_in
+  lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 0.40)
   ft <- flextable::width(ft, j = "Field",     width = 0.62, unit = "in")
   ft <- flextable::width(ft, j = "No",        width = 0.30, unit = "in")
   ft <- flextable::width(ft, j = "Variable",  width = 1.30, unit = "in")

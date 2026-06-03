@@ -269,7 +269,10 @@ lss_render_question_meta_table <- function(doc, theme,
   ft <- flextable::width(ft, j = "Variable", width = 2.05, unit = "in")
   ft <- flextable::width(ft, j = "Type", width = 1.10, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.80, unit = "in")
-  ft <- flextable::width(ft, j = "Filter", width = 2.00, unit = "in")
+  # Filter absorbs the surplus so the band always spans the full body
+  # width: 2.00 in in portrait (6.30 total), wider in landscape / A3.
+  ft <- flextable::width(ft, j = "Filter",
+                         width = theme$content_width_in - 4.30, unit = "in")
   # keepnext: the meta table is a header for the item table that
   # follows; Word must keep them on the same page so the dark band
   # never floats orphaned at the bottom.

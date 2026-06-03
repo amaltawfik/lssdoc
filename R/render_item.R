@@ -163,16 +163,44 @@ lss_render_compound_question <- function(doc, q, langs, theme,
       state = state
     ))
   }
+  # Dual-scale arrays (type 1): each subquestion yields TWO data columns,
+  # one per scale, and each column is a single-choice variable in its own
+  # right. We therefore render one self-contained block per
+  # (subquestion x scale), exactly like a plain array decomposes into one
+  # single-choice block per subquestion -- with a "Scale" row naming the
+  # scale (the dualscale header) and the real per-scale variable name
+  # (`<q>_<subq>_<0|1>`). The dual-scale grouping is a presentation detail
+  # with no methodological weight, so we do not preserve it specially.
+  dual_scale <- isTRUE(info$has_scales) &&
+    !is.null(q$scales) && length(q$scales) > 1L
   for (sq in q$subquestions) {
-    item_code <- paste0(q$code, "_", sq$code)
-    doc <- lss_render_subq_item(
-      doc, q, sq, langs, theme,
-      item_code = item_code,
-      show_help = show_help,
-      show_attrs = show_attrs,
-      audit_idx = audit_idx,
-      state = state
-    )
+    if (dual_scale) {
+      for (si in seq_along(q$scales)) {
+        item_code <- paste0(q$code, "_", sq$code, "_", si - 1L)
+        doc <- lss_render_subq_item(
+          doc, q, sq, langs, theme,
+          item_code = item_code,
+          show_help = show_help,
+          show_attrs = show_attrs,
+          audit_idx = audit_idx,
+          state = state,
+          scale = list(
+            answers = q$scales[[si]],
+            header = lss_dualscale_header(q, si, langs),
+            index = si
+          )
+        )
+      }
+    } else {
+      doc <- lss_render_subq_item(
+        doc, q, sq, langs, theme,
+        item_code = paste0(q$code, "_", sq$code),
+        show_help = show_help,
+        show_attrs = show_attrs,
+        audit_idx = audit_idx,
+        state = state
+      )
+    }
   }
   doc
 }
@@ -524,7 +552,7 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
 #' @noRd
 lss_render_subq_item <- function(doc, q, sq, langs, theme,
                                  item_code, show_help, show_attrs,
-                                 audit_idx, state) {
+                                 audit_idx, state, scale = NULL) {
   state$item_no <- state$item_no + 1L
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
@@ -576,6 +604,12 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
       size = theme$size_subq
     )
   }
+  # Dual-scale arrays: a "Scale" row naming this scale (the dualscale
+  # header, or "1"/"2" when the author left it blank) -- the sole element
+  # that binds the `_0` / `_1` variable suffix to its meaning.
+  if (!is.null(scale)) {
+    rows[[length(rows) + 1L]] <- lss_scale_row(scale, langs, theme)
+  }
   if (isTRUE(show_help) && lss_any_present(parent_help)) {
     rows[[length(rows) + 1L]] <- list(
       label = theme$chrome$item_help,
@@ -596,10 +630,13 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
   exclusive <- lss_exclusive_row(q, sq, langs, theme)
   if (!is.null(exclusive)) rows[[length(rows) + 1L]] <- exclusive
-  # Value section: enumerated codes (F, 1) or a single implicit-format
-  # row describing the response shape (M/P "Y selected", K "Numeric",
-  # ...).
-  if (length(q$answers) > 0L) {
+  # Value section. For a dual-scale block this is THIS scale's answers
+  # only (the block is a single-choice variable). Otherwise: enumerated
+  # codes (F, 1) or a single implicit-format row describing the response
+  # shape (M/P "Y selected", K "Numeric", ...).
+  if (!is.null(scale)) {
+    rows <- c(rows, lss_value_section_rows(scale$answers, langs, theme))
+  } else if (length(q$answers) > 0L) {
     rows <- c(rows, lss_answer_rows(q, langs, theme))
   } else {
     pre <- lss_predefined_value_rows(q, langs, theme)
@@ -692,8 +729,8 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
       vrows <- if (!is.null(vrow)) list(vrow) else list()
     }
   }
-  # Note a non-default answer order ("(random order)" / "(alphabetical
-  # order)") on the Value header. Leaf single-choice only -- arrays are
+  # Note a non-default answer order ("Labels shown in random / alphabetical
+  # order") on the Value header. Leaf single-choice only -- arrays are
   # handled through the subquestion branch and intentionally left aside.
   vrows <- lss_apply_order_note(vrows, lss_answer_order_note(q, theme),
                                 langs, theme)
@@ -728,14 +765,68 @@ lss_dualscale_header <- function(q, scale_idx, langs) {
   vals
 }
 
+#' "Scale" row for one scale of a dual-scale array block
+#'
+#' Names the scale this single-choice block measures: the translated
+#' `dualscale_header` across the language columns when the author defined
+#' it, or the bare scale index ("1" / "2", spanning the columns as a
+#' chrome annotation) when they left it blank. This row is what binds the
+#' `_0` / `_1` variable suffix to its meaning.
+#'
+#' @keywords internal
+#' @noRd
+lss_scale_row <- function(scale, langs, theme) {
+  hdr <- scale$header
+  if (!is.null(hdr)) {
+    texts <- stats::setNames(lapply(langs, function(lg) {
+      v <- hdr[[lg]]
+      if (is.null(v) || is.na(v)) "" else v
+    }), langs)
+    list(label = theme$chrome$item_scale, texts = texts,
+         size = theme$size_subq)
+  } else {
+    n <- as.character(scale$index)
+    list(label = theme$chrome$item_scale,
+         texts = stats::setNames(rep(list(n), length(langs)), langs),
+         size = theme$size_subq, span_note = TRUE)
+  }
+}
+
+#' "Value" section header plus one row per answer for a plain answer list
+#'
+#' The single-scale core of [lss_answer_rows()]: a "Value" section header
+#' followed by one row per code (code on the left, label per language on
+#' the right). Used directly for one scale of a dual-scale array, where
+#' each scale is rendered as its own single-choice block.
+#'
+#' @keywords internal
+#' @noRd
+lss_value_section_rows <- function(answers, langs, theme) {
+  out <- list(list(
+    label = theme$chrome$item_value,
+    texts = stats::setNames(as.list(rep("", length(langs))), langs),
+    size = theme$size_meta, section_header = TRUE
+  ))
+  for (a in answers) {
+    out[[length(out) + 1L]] <- list(
+      label = a$code,
+      texts = stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs),
+      size = theme$size_answer, value_row = TRUE
+    )
+  }
+  out
+}
+
 #' Build the rows that document the answer scale of a (sub)question
 #'
 #' Emits a "Value" section header followed by one row per answer option,
-#' code on the left, label per language on the right. Splits into
-#' "Value (scale 1)" / "Value (scale 2)" for dual-scale arrays (type 1).
-#' Returns an empty list when the question carries no enumerated answers
-#' (e.g. multiple-choice M, free numeric input K) -- in those cases the
-#' coding row already documents the response value mapping.
+#' code on the left, label per language on the right. Returns an empty
+#' list when the question carries no enumerated answers (e.g.
+#' multiple-choice M, free numeric input K) -- in those cases the coding
+#' row already documents the response value mapping. Dual-scale arrays
+#' (type 1) no longer reach this helper: each scale is rendered as its
+#' own single-choice block via [lss_value_section_rows()] upstream, so
+#' the multi-scale branch here is retained only as a defensive fallback.
 #'
 #' @keywords internal
 #' @noRd
@@ -1068,6 +1159,7 @@ lss_predefined_value_rows <- function(q, langs, theme) {
     "E" = list(c("I", "value_array_increase"), c("S", "value_array_same"),
                c("D", "value_array_decrease")),
     "Y" = list(c("Y", "value_array_yes"), c("N", "value_array_no")),
+    "G" = list(c("M", "value_gender_male"), c("F", "value_gender_female")),
     NULL
   )
   if (!is.null(labelled)) {
@@ -1111,7 +1203,7 @@ lss_question_attr_value <- function(q, attr_name) {
   v[1]
 }
 
-#' Localized "(random order)" / "(alphabetical order)" note for a
+#' Localized "Labels shown in random / alphabetical order" note for a
 #' randomized or alphabetized answer / option order
 #'
 #' Reads the `answer_order` (leaf single choice) or `subquestion_order`

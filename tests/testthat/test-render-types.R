@@ -46,13 +46,23 @@ test_that("predefined-scale and structural types document their Value", {
     officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
   )
   # C / E list their predefined codes' labels; the 5/10-point arrays show
-  # an N-point descriptor; the dual-scale array shows both scales. These
-  # types store no answers in the .lss, so before this they had no Value.
+  # an N-point descriptor. These types store no answers in the .lss, so
+  # before this they had no Value. The dual-scale array decomposes into one
+  # single-choice block per (subquestion x scale): its real per-scale
+  # variable names and the scale headers (dualscale_headerA/B) surface.
   for (lbl in c("Uncertain", "Increase", "Decrease",
                 "5-point scale (1 to 5)", "10-point scale (1 to 10)",
-                "Value (scale 1)", "Value (scale 2)")) {
+                "trustinstitutions_PARL_0", "trustinstitutions_PARL_1",
+                "Trust", "Importance")) {
     expect_true(grepl(lbl, txt, fixed = TRUE), info = lbl)
   }
+  # The old combined "Value (scale N)" view is gone.
+  expect_false(grepl("Value (scale 1)", txt, fixed = TRUE))
+  # Gender (type G) lists its codes as Value rows (M -> Male, F -> Female)
+  # like the other predefined scales, not as an inline "M = Male" note.
+  expect_true(grepl("Male", txt, fixed = TRUE))
+  expect_true(grepl("Female", txt, fixed = TRUE))
+  expect_false(grepl("M = Male", txt, fixed = TRUE))
 })
 
 test_that("a non-default answer / option order is noted, normal is silent", {
@@ -72,9 +82,9 @@ test_that("a non-default answer / option order is noted, normal is silent", {
     txt <- paste(
       officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
     )
-    expect_true(grepl("(random order)", txt, fixed = TRUE),
+    expect_true(grepl("in random order", txt, fixed = TRUE),
                 info = tmpl)
-    expect_true(grepl("(alphabetical order)", txt, fixed = TRUE),
+    expect_true(grepl("in alphabetical order", txt, fixed = TRUE),
                 info = tmpl)
     unlink(out)
   }

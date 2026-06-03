@@ -57,11 +57,22 @@
   template <- rlang::arg_match(template)
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
-  # "auto" resolves to A4 portrait for every language count: all tables
-  # are calibrated to the 6.30 in portrait content width (the table
-  # template steps its body font down for 3-4 languages), and the four
-  # bundled languages fit. Landscape / A3 stay available as explicit
-  # opt-ins via `page_format`.
+  # "auto" is template-aware: the dense codebook ("table") is too wide to
+  # read in portrait, so it defaults to A4 landscape; the spacious "cards"
+  # layout stacks comfortably in portrait. An explicit page_format is always
+  # honored as given, for either template.
+  if (identical(page_format, "auto")) {
+    page_format <- if (identical(template, "table")) {
+      "A4-landscape"
+    } else {
+      "A4-portrait"
+    }
+  }
+  # Page orientation follows the template, never the language count: "auto"
+  # gives cards A4 portrait and the dense table A4 landscape (resolved just
+  # above). Landscape / A3 stay available as explicit opt-ins via
+  # `page_format`; selecting one widens every panel through
+  # lss_content_width_in() (see below).
   lss_validate_logo(logo)
   lss_validate_font(font, "font")
   lss_validate_font(font_code, "font_code")
@@ -85,6 +96,11 @@
   model <- lss_model(lss, languages = languages)
   langs <- model$languages
   theme <- lss_render_theme()
+  # The usable body width follows the chosen page orientation (never the
+  # language count): every full-width panel (meta table, item table, audit
+  # and quota tables, the dense codebook table) lays out to this width, so
+  # passing page_format = "A4-landscape" / "A3" widens them automatically.
+  theme$content_width_in <- lss_content_width_in(page_format)
   if (!is.null(font)) theme$font_body <- font
   if (!is.null(font_code)) theme$font_code <- font_code
   if (!is.null(colors)) theme <- utils::modifyList(theme, colors)

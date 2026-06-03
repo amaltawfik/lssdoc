@@ -121,7 +121,10 @@ lss_render_audit_section <- function(doc, audit_idx, theme) {
   ft <- flextable::width(ft, j = "severity", width = 0.70, unit = "in")
   ft <- flextable::width(ft, j = "location", width = 1.85, unit = "in")
   ft <- flextable::width(ft, j = "language", width = 0.70, unit = "in")
-  ft <- flextable::width(ft, j = "message", width = 3.05, unit = "in")
+  # message absorbs the surplus so the table spans the full body width:
+  # 3.05 in in portrait (6.30 total), wider in landscape / A3.
+  ft <- flextable::width(ft, j = "message",
+                         width = theme$content_width_in - 3.25, unit = "in")
   doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }

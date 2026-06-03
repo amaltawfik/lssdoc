@@ -205,7 +205,10 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
   ft <- flextable::width(ft, j = "limit", width = 0.55, unit = "in")
   ft <- flextable::width(ft, j = "action", width = 1.15, unit = "in")
   ft <- flextable::width(ft, j = "condition", width = 1.70, unit = "in")
-  ft <- flextable::width(ft, j = "message", width = 1.90, unit = "in")
+  # message absorbs the surplus so the table spans the full body width:
+  # 1.90 in in portrait (6.30 total), wider in landscape / A3.
+  ft <- flextable::width(ft, j = "message",
+                         width = theme$content_width_in - 4.40, unit = "in")
   doc <- flextable::body_add_flextable(doc, ft, align = "left")
   doc
 }
