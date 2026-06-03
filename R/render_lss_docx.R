@@ -40,7 +40,8 @@
   colors = NULL,
   authors = NULL,
   description = NULL,
-  chrome_lang = NULL
+  chrome_lang = NULL,
+  variable_names = c("brackets", "underscore")
 ) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
@@ -57,6 +58,7 @@
   template <- rlang::arg_match(template)
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
+  variable_names <- rlang::arg_match(variable_names)
   # "auto" is template-aware: the dense codebook ("table") is too wide to
   # read in portrait, so it defaults to A4 landscape; the spacious "cards"
   # layout stacks comfortably in portrait. An explicit page_format is always
@@ -101,6 +103,10 @@
   # and quota tables, the dense codebook table) lays out to this width, so
   # passing page_format = "A4-landscape" / "A3" widens them automatically.
   theme$content_width_in <- lss_content_width_in(page_format)
+  # Response-variable naming style: "brackets" (CSV/Excel export form, the
+  # default, so the variable index matches the raw data column for column)
+  # or "underscore" (the EM / SPSS / Stata code form).
+  theme$variable_names <- variable_names
   if (!is.null(font)) theme$font_body <- font
   if (!is.null(font_code)) theme$font_code <- font_code
   if (!is.null(colors)) theme <- utils::modifyList(theme, colors)

@@ -52,7 +52,7 @@ test_that("predefined-scale and structural types document their Value", {
   # variable names and the scale headers (dualscale_headerA/B) surface.
   for (lbl in c("Uncertain", "Increase", "Decrease",
                 "5-point scale (1 to 5)", "10-point scale (1 to 10)",
-                "trustinstitutions_PARL_1", "trustinstitutions_PARL_2",
+                "trustinstitutions[PARL][1]", "trustinstitutions[PARL][2]",
                 "Trust", "Importance")) {
     expect_true(grepl(lbl, txt, fixed = TRUE), info = lbl)
   }

@@ -492,7 +492,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     # is a self-contained dictionary entry (name | value domain | label).
     value_token <- "Y/blank"
     for (sq in q$subquestions) {
-      item_code <- paste0(q$code, "_", sq$code)
+      item_code <- lss_variable_name(q$code, sq$code,
+                                     style = theme$variable_names)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
         code = item_code, no = parent_no
       )
@@ -516,7 +517,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     if (!is.null(onr)) out[[length(out) + 1L]] <- onr
     if (identical(q$other, "Y")) {
       state$item_no <- state$item_no + 1L
-      item_code <- paste0(q$code, "_other")
+      item_code <- lss_other_variable(q, theme$variable_names)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
         code = item_code, no = state$item_no
       )
@@ -527,11 +528,42 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out
   }
 
+  # One grouped block for a ranking question: a parent stem row, one
+  # position column per item (named by the item's answer id, the CSV form
+  # `code[aid]`, carrying its rank), then the rankable items as value rows
+  # (the codes that can appear as a cell's value).
+  emit_ranking <- function(q) {
+    out <- list()
+    state$item_no <- state$item_no + 1L
+    prow <- emit_question_row("leaf", state$item_no, "", q = q)
+    prow$mc_parent <- TRUE
+    out[[length(out) + 1L]] <- prow
+    for (i in seq_along(q$answers)) {
+      a <- q$answers[[i]]
+      item_code <- lss_variable_name(q$code, a$aid, style = theme$variable_names)
+      state$index_entries[[length(state$index_entries) + 1L]] <- list(
+        code = item_code, no = state$item_no
+      )
+      out[[length(out) + 1L]] <- list(
+        kind = "mc_option", variable = item_code, value_token = "",
+        labels = stats::setNames(
+          rep(list(sprintf(chrome$item_rank_fmt, i)), length(langs)), langs
+        )
+      )
+    }
+    out <- c(out, emit_values(q$answers))
+    onr <- order_note_row(q, "answer_order", chrome$item_order)
+    if (!is.null(onr)) out[[length(out) + 1L]] <- onr
+    out
+  }
+
   for (q in g$questions) {
       info <- lss_type_info(q$type)
       if (identical(info$family, "multiple") &&
           length(q$subquestions) > 0L) {
         rows <- c(rows, emit_multiple_choice(q))
+      } else if (identical(q$type, "R")) {
+        rows <- c(rows, emit_ranking(q))
       } else if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
         # Dual-scale arrays (type 1): one row per (subquestion x scale),
         # each a single-choice variable named `<q>_<subq>_<0|1>`, with the
@@ -539,11 +571,41 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         # scale's answers below -- mirroring the cards layout.
         dual_scale <- isTRUE(info$has_scales) &&
           !is.null(q$scales) && length(q$scales) > 1L
+        sq_scale <- function(s) {
+          if (is.null(s$scale_id) || is.na(s$scale_id)) "0" else as.character(s$scale_id)
+        }
+        two_d <- !dual_scale &&
+          length(unique(vapply(q$subquestions, sq_scale, character(1)))) > 1L
+        if (two_d) {
+          # Two-dimensional array: rows (scale 0) x columns (scale 1) ->
+          # one variable per cell, `parent[row_col]`, with the column label
+          # in the Question cell (reusing the scale_header line).
+          rows_sq <- Filter(function(s) sq_scale(s) == "0", q$subquestions)
+          cols_sq <- Filter(function(s) sq_scale(s) != "0", q$subquestions)
+          for (rsq in rows_sq) for (csq in cols_sq) {
+            state$item_no <- state$item_no + 1L
+            item_code <- lss_variable_name(
+              q$code, paste0(rsq$code, "_", csq$code),
+              style = theme$variable_names
+            )
+            state$index_entries[[length(state$index_entries) + 1L]] <- list(
+              code = item_code, no = state$item_no
+            )
+            qr <- emit_question_row("subq", state$item_no, item_code,
+                                    q = q, sq = rsq)
+            qr$scale_header <- stats::setNames(
+              lapply(langs, function(lg) csq$texts[[lg]]$question), langs
+            )
+            rows[[length(rows) + 1L]] <- qr
+            rows <- c(rows, emit_value_rows_for(q))
+          }
+        } else {
         for (sq in q$subquestions) {
           if (dual_scale) {
             for (si in seq_along(q$scales)) {
               state$item_no <- state$item_no + 1L
-              item_code <- paste0(q$code, "_", sq$code, "_", si)
+              item_code <- lss_variable_name(q$code, sq$code, si,
+                                             theme$variable_names)
               state$index_entries[[length(state$index_entries) + 1L]] <- list(
                 code = item_code, no = state$item_no
               )
@@ -562,7 +624,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
             }
           } else {
             state$item_no <- state$item_no + 1L
-            item_code <- paste0(q$code, "_", sq$code)
+            item_code <- lss_variable_name(q$code, sq$code,
+                                           style = theme$variable_names)
             state$index_entries[[length(state$index_entries) + 1L]] <- list(
               code = item_code, no = state$item_no
             )
@@ -572,9 +635,10 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
             rows <- c(rows, emit_value_rows_for(q))
           }
         }
+        }
         if (identical(q$other, "Y")) {
           state$item_no <- state$item_no + 1L
-          item_code <- paste0(q$code, "_other")
+          item_code <- lss_other_variable(q, theme$variable_names)
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
             code = item_code, no = state$item_no
           )
@@ -593,6 +657,30 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         rows <- c(rows, emit_value_rows_for(q))
         onr <- order_note_row(q, "answer_order", chrome$item_order)
         if (!is.null(onr)) rows[[length(rows) + 1L]] <- onr
+        # Single-choice "Other" free-text column.
+        if (identical(q$other, "Y")) {
+          state$item_no <- state$item_no + 1L
+          item_code <- lss_other_variable(q, theme$variable_names)
+          state$index_entries[[length(state$index_entries) + 1L]] <- list(
+            code = item_code, no = state$item_no
+          )
+          rows[[length(rows) + 1L]] <- emit_question_row(
+            "other", state$item_no, item_code, q = q, other_q = q
+          )
+        }
+        # List-with-comment (type O) free-text comment column.
+        if (identical(q$type, "O")) {
+          state$item_no <- state$item_no + 1L
+          item_code <- lss_variable_name(q$code, "_Ccomment",
+                                         style = theme$variable_names)
+          state$index_entries[[length(state$index_entries) + 1L]] <- list(
+            code = item_code, no = state$item_no
+          )
+          cr <- emit_question_row("leaf", state$item_no, item_code, q = q)
+          cr$q$type <- "S"
+          cr$type_label <- chrome$type_text_short
+          rows[[length(rows) + 1L]] <- cr
+        }
       }
   }
   rows
@@ -695,9 +783,12 @@ lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) 
     EXPR = q$type,
     "N" = "[num]",
     "K" = "[num]",
+    ":" = "[num]",
     "S" = "[text]",
     "T" = "[text]",
     "U" = "[text]",
+    ";" = "[text]",
+    "Q" = "[text]",
     "D" = "[date]",
     "*" = "[calc]",
     "R" = "[rank]",

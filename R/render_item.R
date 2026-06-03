@@ -92,7 +92,16 @@ lss_render_question_block <- function(doc, q, langs, theme,
                                       show_help, show_attrs,
                                       show_technical_attrs, audit_idx, state) {
   info <- lss_type_info(q$type)
-  if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
+  if (identical(q$type, "R")) {
+    # Ranking: N items -> N data columns, one per rank position, named by
+    # the i-th item's answer id (LimeSurvey's CSV form, e.g.
+    # devicerank[59842]). Rendered like multiple choice.
+    doc <- lss_render_ranking_item(
+      doc, q, langs, theme,
+      show_help = show_help, show_attrs = show_attrs,
+      audit_idx = audit_idx, state = state
+    )
+  } else if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
     doc <- lss_render_compound_question(
       doc, q, langs, theme,
       show_help = show_help,
@@ -121,6 +130,14 @@ lss_render_question_block <- function(doc, q, langs, theme,
   # variable and the customized prompt.
   if (identical(q$other, "Y")) {
     doc <- lss_render_other_item(
+      doc, q, langs, theme,
+      audit_idx = audit_idx,
+      state = state
+    )
+  }
+  # List-with-comment (type O) adds a free-text comment column.
+  if (identical(q$type, "O")) {
+    doc <- lss_render_comment_item(
       doc, q, langs, theme,
       audit_idx = audit_idx,
       state = state
@@ -175,10 +192,44 @@ lss_render_compound_question <- function(doc, q, langs, theme,
   # do not preserve it specially.
   dual_scale <- isTRUE(info$has_scales) &&
     !is.null(q$scales) && length(q$scales) > 1L
+  # Two-dimensional arrays (array numbers ":", array texts ";", array by
+  # column "H"): subquestions live on two axes -- rows on scale 0, columns
+  # on scale 1 -- so each data column is the (row x column) cross product,
+  # e.g. `adaptability[NEW_NOW]`. Render one block per cell, with the row
+  # label on the "Subquestion" line and the column label on a "Column"
+  # line.
+  sq_scale <- function(s) {
+    if (is.null(s$scale_id) || is.na(s$scale_id)) "0" else as.character(s$scale_id)
+  }
+  two_d <- !dual_scale &&
+    length(unique(vapply(q$subquestions, sq_scale, character(1)))) > 1L
+  if (two_d) {
+    rows_sq <- Filter(function(s) sq_scale(s) == "0", q$subquestions)
+    cols_sq <- Filter(function(s) sq_scale(s) != "0", q$subquestions)
+    for (rsq in rows_sq) {
+      for (csq in cols_sq) {
+        item_code <- lss_variable_name(
+          q$code, paste0(rsq$code, "_", csq$code),
+          style = theme$variable_names
+        )
+        doc <- lss_render_subq_item(
+          doc, q, rsq, langs, theme,
+          item_code = item_code,
+          show_help = show_help,
+          show_attrs = show_attrs,
+          audit_idx = audit_idx,
+          state = state,
+          column = csq
+        )
+      }
+    }
+    return(doc)
+  }
   for (sq in q$subquestions) {
     if (dual_scale) {
       for (si in seq_along(q$scales)) {
-        item_code <- paste0(q$code, "_", sq$code, "_", si)
+        item_code <- lss_variable_name(q$code, sq$code, si,
+                                       theme$variable_names)
         doc <- lss_render_subq_item(
           doc, q, sq, langs, theme,
           item_code = item_code,
@@ -196,7 +247,8 @@ lss_render_compound_question <- function(doc, q, langs, theme,
     } else {
       doc <- lss_render_subq_item(
         doc, q, sq, langs, theme,
-        item_code = paste0(q$code, "_", sq$code),
+        item_code = lss_variable_name(q$code, sq$code,
+                                      style = theme$variable_names),
         show_help = show_help,
         show_attrs = show_attrs,
         audit_idx = audit_idx,
@@ -205,6 +257,114 @@ lss_render_compound_question <- function(doc, q, langs, theme,
     }
   }
   doc
+}
+
+#' Render a ranking question (R) as one grouped card
+#'
+#' A ranking of N items produces N data columns, one per rank position,
+#' which LimeSurvey names by the i-th item's answer id (e.g.
+#' `devicerank[59842]`). Rendered like multiple choice: the variable
+#' family `parent[*]` in the meta band, a "Positions" section listing each
+#' position column (the bare answer id, with its rank), and a "Value"
+#' section listing the rankable items (the codes that can appear as a
+#' cell's value). Every position column is registered in the variable
+#' index.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_ranking_item <- function(doc, q, langs, theme,
+                                    show_help, show_attrs, audit_idx, state) {
+  chrome <- theme$chrome
+  state$item_no <- state$item_no + 1L
+  item_no <- state$item_no
+  n <- length(q$answers)
+  for (a in q$answers) {
+    state$index_entries[[length(state$index_entries) + 1L]] <- list(
+      code = lss_variable_name(q$code, a$aid, style = theme$variable_names),
+      no = item_no
+    )
+  }
+  doc <- lss_render_item_spacer(doc, theme)
+  if (isTRUE(state$show_item_heading)) {
+    audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
+    heading_text <- sprintf("%d. %s", item_no, q$code)
+    if (!is.null(audit_marker)) {
+      heading_text <- paste0(heading_text, "  ", audit_marker$text)
+    }
+    heading_prop <- officer::fp_text(
+      font.family = theme$font_body, font.size = theme$size_heading2,
+      bold = TRUE,
+      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+    )
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(heading_text, prop = heading_prop),
+        fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+      )
+    )
+  }
+  doc <- lss_render_question_meta_table(
+    doc, theme,
+    item_no = item_no,
+    variable = lss_variable_name(q$code, "*", style = theme$variable_names),
+    type = q$type, type_label = lss_localized_type_label(q, theme),
+    mandatory = q$mandatory, relevance = q$relevance,
+    show_raw_filter = isTRUE(state$show_raw_filter)
+  )
+  doc <- lss_render_intra_item_gap(doc, theme)
+
+  parent_text <- lapply(langs, function(lg) q$texts[[lg]]$question)
+  parent_help <- lapply(langs, function(lg) q$texts[[lg]]$help)
+  blank <- stats::setNames(as.list(rep("", length(langs))), langs)
+  rows <- list()
+  rows[[length(rows) + 1L]] <- list(
+    label = chrome$item_question,
+    texts = stats::setNames(parent_text, langs),
+    size = theme$size_question
+  )
+  if (isTRUE(show_help) && lss_any_present(parent_help)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = chrome$item_help,
+      texts = stats::setNames(parent_help, langs),
+      size = theme$size_help, color = theme$color_muted, italic = TRUE
+    )
+  }
+  rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
+  # Positions section: one row per rank slot. The bare answer id is the
+  # suffix that fills the `[*]` family in the meta band; the rank it
+  # records is the chrome annotation across the language columns.
+  rows[[length(rows) + 1L]] <- list(
+    label = sprintf("%s (%d)", chrome$item_positions, n),
+    texts = blank, size = theme$size_meta, section_header = TRUE
+  )
+  for (i in seq_along(q$answers)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = as.character(q$answers[[i]]$aid),
+      texts = stats::setNames(
+        rep(list(sprintf(chrome$item_rank_fmt, i)), length(langs)), langs
+      ),
+      size = theme$size_answer, code_row = TRUE, span_note = TRUE
+    )
+  }
+  # Value section: the rankable items -- the codes that can appear as a
+  # position column's value. A non-default presentation order of the
+  # items (answer_order) is noted on the section header.
+  vrows <- list(list(
+    label = chrome$item_value, texts = blank,
+    size = theme$size_meta, section_header = TRUE
+  ))
+  for (a in q$answers) {
+    vrows[[length(vrows) + 1L]] <- list(
+      label = a$code,
+      texts = stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs),
+      size = theme$size_answer, value_row = TRUE
+    )
+  }
+  vrows <- lss_apply_order_note(vrows, lss_answer_order_note(q, theme),
+                               langs, theme)
+  rows <- c(rows, vrows)
+  lss_render_item_table(doc, theme, langs, rows)
 }
 
 #' Render a multiple-choice question (M / P) as one grouped card
@@ -228,7 +388,8 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   # Register every option variable in the index (lookup preserved).
   for (sq in q$subquestions) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
-      code = paste0(q$code, "_", sq$code), no = item_no
+      code = lss_variable_name(q$code, sq$code, style = theme$variable_names),
+      no = item_no
     )
   }
 
@@ -259,7 +420,7 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   doc <- lss_render_question_meta_table(
     doc, theme,
     item_no = item_no,
-    variable = paste0(q$code, "_*"),
+    variable = lss_variable_name(q$code, "*", style = theme$variable_names),
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter)
@@ -412,7 +573,7 @@ lss_render_parent_stem <- function(doc, q, langs, theme,
 #' @noRd
 lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
   state$item_no <- state$item_no + 1L
-  item_code <- paste0(q$code, "_other")
+  item_code <- lss_other_variable(q, theme$variable_names)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
   )
@@ -473,6 +634,64 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
     section_header = TRUE,
     section_with_text = TRUE,
     span_note = TRUE
+  )
+  lss_render_item_table(doc, theme, langs, rows)
+}
+
+#' Render the free-text comment of a "list with comment" question (type O)
+#'
+#' A list-with-comment question yields a second data column holding the
+#' respondent's free-text comment, which LimeSurvey names `<parent>[_Ccomment]`
+#' in its CSV/Excel export. We surface it as its own numbered item so the
+#' reader sees the variable in the index and meta table alongside the list.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
+  state$item_no <- state$item_no + 1L
+  item_code <- lss_variable_name(q$code, "_Ccomment",
+                                 style = theme$variable_names)
+  state$index_entries[[length(state$index_entries) + 1L]] <- list(
+    code = item_code, no = state$item_no
+  )
+  doc <- lss_render_item_spacer(doc, theme)
+  if (isTRUE(state$show_item_heading)) {
+    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    heading_prop <- officer::fp_text(
+      font.family = theme$font_body, font.size = theme$size_heading2,
+      bold = TRUE, color = theme$color_text
+    )
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext(heading_text, prop = heading_prop),
+        fp_p = officer::fp_par(padding.top = 8, padding.bottom = 2)
+      )
+    )
+  }
+  doc <- lss_render_question_meta_table(
+    doc, theme,
+    item_no = state$item_no,
+    variable = item_code,
+    type = "S", type_label = theme$chrome$type_text_short,
+    mandatory = "N",
+    relevance = q$relevance,
+    show_raw_filter = isTRUE(state$show_raw_filter)
+  )
+  doc <- lss_render_intra_item_gap(doc, theme)
+  stem <- lapply(langs, function(lg) q$texts[[lg]]$question)
+  rows <- list(
+    list(label = theme$chrome$item_question,
+         texts = stats::setNames(stem, langs),
+         size = theme$size_question),
+    # A "Comment" line names what this free-text column records, then the
+    # Value section documents its response shape (single-line free text).
+    list(label = theme$chrome$item_comment,
+         texts = stats::setNames(
+           rep(list(theme$chrome$value_free_text_short), length(langs)), langs
+         ),
+         size = theme$size_answer, section_header = TRUE,
+         section_with_text = TRUE, span_note = TRUE)
   )
   lss_render_item_table(doc, theme, langs, rows)
 }
@@ -554,7 +773,8 @@ lss_render_scale_table <- function(doc, answers, langs, theme) {
 #' @noRd
 lss_render_subq_item <- function(doc, q, sq, langs, theme,
                                  item_code, show_help, show_attrs,
-                                 audit_idx, state, scale = NULL) {
+                                 audit_idx, state, scale = NULL,
+                                 column = NULL) {
   state$item_no <- state$item_no + 1L
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = state$item_no
@@ -608,9 +828,19 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   }
   # Dual-scale arrays: a "Scale" row naming this scale (the dualscale
   # header, or "1"/"2" when the author left it blank) -- the sole element
-  # that binds the `_0` / `_1` variable suffix to its meaning.
+  # that binds the `_1` / `_2` variable suffix to its meaning.
   if (!is.null(scale)) {
     rows[[length(rows) + 1L]] <- lss_scale_row(scale, langs, theme)
+  }
+  # Two-dimensional arrays: a "Column" row carrying the second-axis
+  # (scale 1) subquestion label, the counterpart of the row label above.
+  if (!is.null(column)) {
+    col_text <- lapply(langs, function(lg) column$texts[[lg]]$question)
+    rows[[length(rows) + 1L]] <- list(
+      label = theme$chrome$item_column,
+      texts = stats::setNames(col_text, langs),
+      size = theme$size_subq
+    )
   }
   if (isTRUE(show_help) && lss_any_present(parent_help)) {
     rows[[length(rows) + 1L]] <- list(

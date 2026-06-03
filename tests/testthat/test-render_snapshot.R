@@ -164,12 +164,12 @@ test_that("the table template renders multiple choice as a parent row plus full-
   # Variable column: in the table the option rows below already list the
   # full names, so the family wildcard would be redundant (and the bare
   # parent is not a real data column).
-  expect_false(grepl("semestrechargetrav_*", txt, fixed = TRUE))
+  expect_false(grepl("semestrechargetrav[*]", txt, fixed = TRUE))
   # Each option keeps its FULL variable name on its own codebook row
   # (the table is a variable dictionary, unlike the card's suffix-only
   # option list).
   for (k in 1:8) {
-    code <- sprintf("semestrechargetrav_%d", k)
+    code <- sprintf("semestrechargetrav[%d]", k)
     expect_true(grepl(code, txt, fixed = TRUE),
                 info = sprintf("expected full option variable '%s'", code))
   }
@@ -188,12 +188,12 @@ test_that("a multiple-choice question renders as a single grouped card", {
 
   # The meta band shows the variable family with the wildcard, not a
   # single column.
-  expect_true(grepl("semestrechargetrav_*", txt, fixed = TRUE))
+  expect_true(grepl("semestrechargetrav[*]", txt, fixed = TRUE))
   # Every option's full Yes/No variable code is recoverable: it appears
   # verbatim in the variable index (the card itself shows the meta
   # pattern plus the per-option suffix, which compose to the full name).
   for (k in 1:8) {
-    code <- sprintf("semestrechargetrav_%d", k)
+    code <- sprintf("semestrechargetrav[%d]", k)
     expect_true(grepl(code, txt, fixed = TRUE),
                 info = sprintf("expected option variable '%s' in the index", code))
   }

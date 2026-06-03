@@ -67,6 +67,15 @@ both output formats.
 * `chrome_lang` controls the document chrome (column headers, row
   labels, audit-section labels) independently of the survey content
   languages. Supported: `"en"`, `"fr"`, `"de"`, `"es"`, `"it"`.
+* `variable_names` controls how response-variable names are written:
+  `"brackets"` (default) reproduces the LimeSurvey CSV / Excel export
+  column names exactly -- so the variable index matches the raw data
+  file column for column (`parent[subq]`, `parent[subq][1]`,
+  `parent[other]`, ranking `parent[answerid]`, two-dimensional arrays
+  `parent[row_col]`, list-with-comment `parent[_Ccomment]`) -- or
+  `"underscore"` for the Expression Manager / SPSS / Stata code form.
+  Ranking and two-dimensional array questions are expanded so every
+  produced column is documented on its own.
 
 ## Cover and metadata
 

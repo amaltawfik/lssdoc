@@ -38,7 +38,8 @@ render_questionnaire(
   colors = NULL,
   authors = NULL,
   description = NULL,
-  chrome_lang = NULL
+  chrome_lang = NULL,
+  variable_names = c("brackets", "underscore")
 )
 }
 \arguments{
@@ -272,6 +273,23 @@ e.g. \code{chrome_lang = "en"} with \code{languages = c("fr", "en")}
 produces an English-labelled document with French and English
 content. Spanish and Italian translations should be reviewed
 by a native speaker before publishing an official document.}
+
+\item{variable_names}{How response-variable names are written, so the
+document matches the data file the reader holds. One of:
+\itemize{
+\item \code{"brackets"} (default) -- the exact column names of the
+\strong{CSV / Excel data export}, so the variable index reproduces the
+raw data file column for column: \code{parent[subq]},
+\code{parent[subq][1]} (dual scale), \code{parent[CH]} / \code{parent[other]}
+(multiple choice), \code{parent[59842]} (ranking, by answer id),
+\verb{parent[_Ccomment]} (list-with-comment).
+\item \code{"underscore"} -- the sanitized code form used by the Expression
+Manager / relevance equations and the SPSS / Stata / R exports
+(\code{parent_subq}, \code{parent_subq_1}).
+The two-dimensional arrays (array of numbers / texts with a second
+axis) and ranking questions are expanded so every produced column
+appears as its own entry either way.
+}}
 }
 \value{
 The \code{output} path, invisibly.

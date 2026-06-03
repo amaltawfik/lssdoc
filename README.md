@@ -50,14 +50,16 @@ Other things lssdoc takes care of for you:
   Independent from the survey’s content languages, so you can keep your
   FR/DE questionnaire and switch the document scaffolding to English (or
   vice versa) with a single argument.
-- **Variable-centric compound rendering.** Array, multiple-choice and
-  multiple-numerical questions are documented per subquestion, with the
-  real variable code (`parent_subq`) on the meta row – not the parent
-  code, which never appears in the data export. Dual-scale arrays go one
-  step further: each subquestion is split into one single-choice block
-  per scale (`parent_subq_1` / `parent_subq_2`, the 1-based scale index
-  LimeSurvey uses in its data export), so every column of the data
-  export is documented on its own.
+- **Variable-centric compound rendering, matching the data file.** Every
+  response variable is documented under the exact column name of the
+  LimeSurvey **CSV / Excel export**, so the variable index lines up with
+  the raw data file column for column: arrays and multiple choice as
+  `parent[subq]` / `parent[other]`, dual-scale arrays split into one
+  block per scale (`parent[subq][1]`), two-dimensional arrays as the row
+  x column cross-product (`parent[row_col]`), ranking expanded into one
+  column per position (`parent[answerid]`), and list-with-comment into
+  `parent[_Ccomment]`. Pass `variable_names = "underscore"` for the
+  Expression Manager / SPSS / Stata code form (`parent_subq`) instead.
 - **Methodological type labels.** UI distinctions like “List (radio)” vs
   “List (dropdown)” collapse into “Single choice”, because the response
   semantics are identical and the actual codes appear in the Value

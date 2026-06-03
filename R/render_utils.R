@@ -21,6 +21,60 @@ lss_render_state <- function(model) {
   state
 }
 
+#' Build a response-variable name in the requested style
+#'
+#' Assembles the data-column name LimeSurvey gives a response variable
+#' from its parts, in one of two styles:
+#' * `"brackets"` (default) -- the exact form of the **CSV / Excel data
+#'   export** header, so the rendered codebook and its variable index
+#'   match the raw data file column for column: `parent[part]`,
+#'   `parent[part][scale]` (e.g. `sleephours[WEEK]`,
+#'   `trustinstitutions[PARL][1]`, `devicerank[59842]`).
+#' * `"underscore"` -- the sanitized code form used by the Expression
+#'   Manager / relevance equations and the SPSS / Stata / R exports:
+#'   `parent_part`, `parent_part_scale`.
+#'
+#' `part` is the subquestion code, the multiple-choice answer code, the
+#' literal `"other"` / `"_Cother"` / `"_Ccomment"` appendix marker, the
+#' ranking slot's answer id, or `"*"` for the family placeholder shown in
+#' a multiple-choice meta band. `scale` is the 1-based dual-scale index.
+#'
+#' @keywords internal
+#' @noRd
+lss_variable_name <- function(parent, part = NULL, scale = NULL,
+                              style = "brackets") {
+  brackets <- !identical(style, "underscore")
+  wrap <- function(x) if (brackets) paste0("[", x, "]") else paste0("_", x)
+  # LimeSurvey exports a purely-numeric subquestion code without its
+  # leading zeros (`001` -> `1`), so normalize digit-only parts to match
+  # the data file column.
+  if (!is.null(part) && grepl("^[0-9]+$", part)) {
+    part <- as.character(as.integer(part))
+  }
+  out <- parent
+  if (!is.null(part)) out <- paste0(out, wrap(part))
+  if (!is.null(scale)) out <- paste0(out, wrap(scale))
+  out
+}
+
+#' Data-column name of a question's free-text "Other" response
+#'
+#' LimeSurvey names the "Other" appendix differently by family in the
+#' CSV/Excel export: a multiple-choice "Other" is `code[other]`, while a
+#' single-choice list "Other" is `code[_Cother]`. The `"underscore"`
+#' style uses the clean code form `code_other` for both.
+#'
+#' @keywords internal
+#' @noRd
+lss_other_variable <- function(q, style = "brackets") {
+  if (identical(style, "underscore")) {
+    return(lss_variable_name(q$code, "other", style = style))
+  }
+  multiple <- identical(lss_type_info(q$type)$family, "multiple")
+  lss_variable_name(q$code, if (multiple) "other" else "_Cother",
+                    style = style)
+}
+
 #' Bookmark name for a group, used to wire TOC entries to group headings
 #' @keywords internal
 #' @noRd
