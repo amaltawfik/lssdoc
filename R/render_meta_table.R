@@ -249,9 +249,11 @@ lss_render_question_meta_table <- function(doc, theme,
   # the uniform 10 pt band font (~0.083 in/char Consolas for Variable,
   # ~0.066 in/char Calibri for the others):
   #   No        0.35  - holds up to 3 digits in 10 pt body font (max #999).
-  #   Variable  2.05  - holds identifiers up to ~24 chars in 10 pt
-  #                     Consolas (e.g. `abandonetudesraisons_1`) on one
-  #                     line; longer codes wrap.
+  #   Variable  2.30  - holds identifiers up to ~27 chars in 10 pt
+  #                     Consolas (e.g. `trustinstitutions[PARL][1]`) on
+  #                     one line; longer codes wrap. Widened from 2.05
+  #                     (and Filter narrowed to match) now that the
+  #                     bracket export names run longer.
   #   Type      1.10  - holds the common 10 pt labels ("Single choice",
   #                     "Multiple choice", "Number") on one line; long
   #                     localized variants ("Choix multiple avec
@@ -262,17 +264,17 @@ lss_render_question_meta_table <- function(doc, theme,
   #                     ~0.73 in incl. padding; 0.70 wrapped the final
   #                     "y", so widened to 0.80. Body holds the short
   #                     Yes/No/Soft tokens.
-  #   Filter    2.00  - the human-readable form at 10 pt on top and the
+  #   Filter    1.75  - the human-readable form at 10 pt on top and the
   #                     raw LimeSurvey expression at 8 pt italic mono
   #                     below; 2-3 chained conditions fit on a line.
   ft <- flextable::width(ft, j = "No", width = 0.35, unit = "in")
-  ft <- flextable::width(ft, j = "Variable", width = 2.05, unit = "in")
+  ft <- flextable::width(ft, j = "Variable", width = 2.30, unit = "in")
   ft <- flextable::width(ft, j = "Type", width = 1.10, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.80, unit = "in")
   # Filter absorbs the surplus so the band always spans the full body
-  # width: 2.00 in in portrait (6.30 total), wider in landscape / A3.
+  # width: 1.75 in in portrait (6.30 total), wider in landscape / A3.
   ft <- flextable::width(ft, j = "Filter",
-                         width = theme$content_width_in - 4.30, unit = "in")
+                         width = theme$content_width_in - 4.55, unit = "in")
   # keepnext: the meta table is a header for the item table that
   # follows; Word must keep them on the same page so the dark band
   # never floats orphaned at the bottom.
