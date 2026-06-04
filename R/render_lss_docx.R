@@ -41,7 +41,8 @@
   authors = NULL,
   description = NULL,
   chrome_lang = NULL,
-  variable_names = c("brackets", "underscore")
+  variable_names = c("brackets", "underscore"),
+  base_size = 10L
 ) {
   if (!inherits(lss, "lss")) {
     lssdoc_abort(
@@ -59,6 +60,14 @@
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
   variable_names <- rlang::arg_match(variable_names)
+  if (!is.numeric(base_size) || length(base_size) != 1L || is.na(base_size) ||
+      base_size < 7L || base_size > 16L) {
+    lssdoc_abort(
+      "{.arg base_size} must be a single number between 7 and 16 (points).",
+      class = "lssdoc_bad_base_size"
+    )
+  }
+  base_size <- as.integer(round(base_size))
   # "auto" is template-aware: the dense codebook ("table") is too wide to
   # read in portrait, so it defaults to A4 landscape; the spacious "cards"
   # layout stacks comfortably in portrait. An explicit page_format is always
@@ -97,7 +106,7 @@
   # progress bar correctly. This step is fast (< 1 s).
   model <- lss_model(lss, languages = languages)
   langs <- model$languages
-  theme <- lss_render_theme()
+  theme <- lss_render_theme(base_size)
   # The usable body width follows the chosen page orientation (never the
   # language count): every full-width panel (meta table, item table, audit
   # and quota tables, the dense codebook table) lays out to this width, so

@@ -811,7 +811,9 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
 
   parent_text <- lapply(langs, function(lg) q$texts[[lg]]$question)
   parent_help <- lapply(langs, function(lg) q$texts[[lg]]$help)
-  subq_text  <- lapply(langs, function(lg) sq$texts[[lg]]$question)
+  subq_text  <- stats::setNames(
+    lapply(langs, function(lg) sq$texts[[lg]]$question), langs
+  )
 
   rows <- list()
   rows[[length(rows) + 1L]] <- list(
@@ -819,26 +821,25 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
     texts = stats::setNames(parent_text, langs),
     size = theme$size_question
   )
-  if (lss_any_present(subq_text)) {
+  # The "Subquestion" line carries the row item, with the second-axis
+  # facet appended in parentheses when present: the dual-scale header
+  # ("Parliament (Trust)") or the 2-D array column ("Trying new things
+  # (Today)"). One self-contained, jargon-free item label for both, with no
+  # empty parentheses when the facet has no label in a given language.
+  subq_merged <- lapply(langs, function(lg) {
+    s <- subq_text[[lg]]
+    f <- lss_subq_facet(scale, column, lg, theme)
+    s_ok <- !is.null(s) && !is.na(s) && nzchar(trimws(s))
+    if (!is.null(f)) {
+      if (s_ok) paste0(s, " (", f, ")") else f
+    } else {
+      s
+    }
+  })
+  if (lss_any_present(subq_merged)) {
     rows[[length(rows) + 1L]] <- list(
       label = theme$chrome$item_subquestion,
-      texts = stats::setNames(subq_text, langs),
-      size = theme$size_subq
-    )
-  }
-  # Dual-scale arrays: a "Scale" row naming this scale (the dualscale
-  # header, or "1"/"2" when the author left it blank) -- the sole element
-  # that binds the `_1` / `_2` variable suffix to its meaning.
-  if (!is.null(scale)) {
-    rows[[length(rows) + 1L]] <- lss_scale_row(scale, langs, theme)
-  }
-  # Two-dimensional arrays: a "Column" row carrying the second-axis
-  # (scale 1) subquestion label, the counterpart of the row label above.
-  if (!is.null(column)) {
-    col_text <- lapply(langs, function(lg) column$texts[[lg]]$question)
-    rows[[length(rows) + 1L]] <- list(
-      label = theme$chrome$item_column,
-      texts = stats::setNames(col_text, langs),
+      texts = stats::setNames(subq_merged, langs),
       size = theme$size_subq
     )
   }
@@ -997,31 +998,27 @@ lss_dualscale_header <- function(q, scale_idx, langs) {
   vals
 }
 
-#' "Scale" row for one scale of a dual-scale array block
+#' Second-axis facet label for a subquestion block, in one language
 #'
-#' Names the scale this single-choice block measures: the translated
-#' `dualscale_header` across the language columns when the author defined
-#' it, or the bare scale index ("1" / "2", spanning the columns as a
-#' chrome annotation) when they left it blank. This row is what binds the
-#' `_0` / `_1` variable suffix to its meaning.
+#' The facet appended in parentheses to the "Subquestion" line: for a
+#' dual-scale array, the translated `dualscale_header` (e.g. "Trust"), or a
+#' "Scale N" fallback when the author left it blank; for a 2-D array, the
+#' column subquestion label (e.g. "Today"). Returns `NULL` when there is no
+#' facet for this language, so the caller can omit the parentheses.
 #'
 #' @keywords internal
 #' @noRd
-lss_scale_row <- function(scale, langs, theme) {
-  hdr <- scale$header
-  if (!is.null(hdr)) {
-    texts <- stats::setNames(lapply(langs, function(lg) {
-      v <- hdr[[lg]]
-      if (is.null(v) || is.na(v)) "" else v
-    }), langs)
-    list(label = theme$chrome$item_scale, texts = texts,
-         size = theme$size_subq)
-  } else {
-    n <- as.character(scale$index)
-    list(label = theme$chrome$item_scale,
-         texts = stats::setNames(rep(list(n), length(langs)), langs),
-         size = theme$size_subq, span_note = TRUE)
+lss_subq_facet <- function(scale, column, lg, theme) {
+  if (!is.null(scale)) {
+    h <- if (!is.null(scale$header)) scale$header[[lg]] else NULL
+    if (!is.null(h) && !is.na(h) && nzchar(trimws(h))) return(h)
+    return(sprintf("%s %d", theme$chrome$item_scale, scale$index))
   }
+  if (!is.null(column)) {
+    v <- column$texts[[lg]]$question
+    if (!is.null(v) && !is.na(v) && nzchar(trimws(v))) return(v)
+  }
+  NULL
 }
 
 #' "Value" section header plus one row per answer for a plain answer list

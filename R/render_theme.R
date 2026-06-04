@@ -7,9 +7,17 @@
 # rendering pipeline can be programmed against them.
 
 #' Centralized visual theme for the rendered document
+#'
+#' `base_size` is the body type size in points (default 10): the question
+#' text, item tables, meta band, quotas, variable index and cover metadata
+#' all derive from it, so a single argument scales the whole document up
+#' (e.g. `base_size = 12` for a roomier single-language render). The cover
+#' title and subtitle keep their fixed title-page hierarchy.
+#'
 #' @keywords internal
 #' @noRd
-lss_render_theme <- function() {
+lss_render_theme <- function(base_size = 10L) {
+  base_size <- as.integer(base_size)
   list(
     # Editorial petrol-blue palette tuned for scientific questionnaire
     # documentation. Replaces the earlier Office-blue family (#1F4E79 /
@@ -57,17 +65,22 @@ lss_render_theme <- function() {
     # mono face, and Word on macOS picks Menlo. Override via
     # render_questionnaire(font_code = "JetBrains Mono") for sharper code style.
     font_code = "Consolas",
-    size_meta = 8,
-    size_lang_header = 9,
-    size_question = 10,
-    size_subq = 9,
-    size_answer = 9,
-    size_help = 8,
-    size_heading1 = 14,
-    size_heading2 = 11,
-    size_cover_title = 22,
-    size_cover_subtitle = 12,
-    size_cover_meta = 9,
+    # Content sizes derive from base_size so one argument scales the whole
+    # body. Defaults (base_size 10): meta 8, lang header 9, question 10,
+    # subq/answer 9, help 8, heading2 11, heading1 14.
+    size_meta = base_size - 2L,
+    size_lang_header = base_size - 1L,
+    size_question = base_size,
+    size_subq = base_size - 1L,
+    size_answer = base_size - 1L,
+    size_help = base_size - 2L,
+    size_heading1 = base_size + 4L,
+    size_heading2 = base_size + 1L,
+    # Cover keeps its own title-page hierarchy; the metadata table follows
+    # the body size so it harmonizes with the rest of the document.
+    size_cover_title = 22L,
+    size_cover_subtitle = 16L,
+    size_cover_meta = base_size,
 
     empty_marker = "\u2014"
   )

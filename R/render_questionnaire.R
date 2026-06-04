@@ -220,6 +220,13 @@
 #'   The two-dimensional arrays (array of numbers / texts with a second
 #'   axis) and ranking questions are expanded so every produced column
 #'   appears as its own entry either way.
+#' @param base_size Body type size in points (default `10`). One lever
+#'   scales the whole document: question text, item tables, the meta band,
+#'   the quotas table, the variable index and the cover metadata all
+#'   follow it, while headings and answer/help text keep their relative
+#'   offsets. Useful for a roomier single-language render (e.g. `12`). The
+#'   cover title and subtitle keep their fixed title-page sizes. Accepted
+#'   range: 7 to 16.
 #'
 #' @section "LimeSurvey last save" date on the cover:
 #' The cover metadata table carries a row labelled
@@ -342,7 +349,8 @@ render_questionnaire <- function(
   authors = NULL,
   description = NULL,
   chrome_lang = NULL,
-  variable_names = c("brackets", "underscore")
+  variable_names = c("brackets", "underscore"),
+  base_size = 10L
 ) {
   lss <- lss_resolve_input(input)
   if (!is.character(output) || length(output) != 1L || is.na(output)) {

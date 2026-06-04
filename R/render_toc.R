@@ -38,7 +38,9 @@ lss_render_index <- function(doc, entries, theme) {
   # matters in a variable index where the reader scans for an exact
   # match.
   ft <- flextable::font(ft, j = "Variable", fontname = theme$font_code, part = "body")
-  ft <- flextable::fontsize(ft, size = theme$size_answer, part = "all")
+  # Index reads at the body size (like the questions), so the back matter
+  # is not visibly smaller than the content it points to.
+  ft <- flextable::fontsize(ft, size = theme$size_question, part = "all")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band, part = "header")
@@ -108,10 +110,10 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
   action_v <- character(n); cond_v <- character(n)
   msg_cells <- vector("list", n)
   cell_props <- officer::fp_text(font.family = theme$font_body,
-                                 font.size = theme$size_meta,
+                                 font.size = theme$size_question,
                                  color = theme$color_text)
   lang_props <- officer::fp_text(font.family = theme$font_body,
-                                 font.size = theme$size_meta,
+                                 font.size = theme$size_question,
                                  color = theme$color_muted, bold = TRUE)
 
   for (qi in seq_len(n)) {
@@ -184,7 +186,8 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
     ft <- flextable::compose(ft, i = qi, j = "message", value = msg_cells[[qi]])
   }
   ft <- flextable::font(ft, fontname = theme$font_body, part = "all")
-  ft <- flextable::fontsize(ft, size = theme$size_meta, part = "all")
+  # Quotas read at the body size, like the questions.
+  ft <- flextable::fontsize(ft, size = theme$size_question, part = "all")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::color(ft, color = theme$color_primary, part = "header")
   ft <- flextable::bg(ft, bg = theme$color_band, part = "header")

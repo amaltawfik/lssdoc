@@ -875,20 +875,26 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
     add_text(lss_html_to_text(row$parent_text[[lg]]), plain())
   }
 
-  # Subquestion label below the stem (compound rows only), in
-  # italic so the eye separates "what's being asked" (stem) from
-  # "what this row narrows it to" (subq).
+  # Subquestion label below the stem (compound rows only), in italic so
+  # the eye separates "what's being asked" (stem) from "what this row
+  # narrows it to" (subq). The second-axis facet -- a dual-scale header or
+  # a 2-D array column -- is appended in parentheses ("Parliament (Trust)",
+  # "Trying new things (Today)"), with no empty parentheses when absent.
   if (identical(row$kind, "subq")) {
-    add_line(lss_html_to_text(row$subq_text[[lg]]),
-             plain(size = size_sq, italic = TRUE))
-  }
-
-  # Dual-scale arrays: the scale (dualscale header) this row measures,
-  # bold, so it reads as the dimension that distinguishes the two
-  # `_0` / `_1` variables sharing the same subquestion.
-  if (!is.null(row$scale_header)) {
-    add_line(lss_html_to_text(row$scale_header[[lg]]),
-             plain(size = size_sq, bold = TRUE))
+    s <- lss_html_to_text(row$subq_text[[lg]])
+    f <- if (!is.null(row$scale_header)) {
+      lss_html_to_text(row$scale_header[[lg]])
+    } else {
+      ""
+    }
+    s_ok <- !is.na(s) && nzchar(trimws(s))
+    f_ok <- !is.na(f) && nzchar(trimws(f))
+    txt <- if (f_ok) {
+      if (s_ok) paste0(s, " (", f, ")") else f
+    } else {
+      s
+    }
+    add_line(txt, plain(size = size_sq, italic = TRUE))
   }
 
   # Help (optional), small muted italic.
