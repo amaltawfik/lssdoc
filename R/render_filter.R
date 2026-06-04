@@ -102,6 +102,17 @@ lss_humanize_relevance <- function(x, theme = NULL) {
     if (identical(s, before)) break
   }
 
+  # Step 1b: drop the quotes LimeSurvey puts around a scalar answer code
+  # in a comparison (`X.NAOK == "1"`). They are string literals in the
+  # Expression Manager, but a bare code reads cleaner for a reviewer
+  # (`workstatus = 1`, not `workstatus = "1"`) and the Value section
+  # already documents the code. Quotes are kept around values that contain
+  # whitespace (so multi-word strings stay delimited) and around regex
+  # patterns (`X matches "pat"`, already converted in step 0 and never
+  # adjacent to a comparison operator, so untouched here).
+  s <- gsub("(\\.NAOK\\s*(?:==|!=|>=|<=|>|<)\\s*)\"([^\"\\s]+)\"",
+            "\\1\\2", s, perl = TRUE)
+
   # Step 2: collapse `X == a || X == b || X == c` (same variable)
   # to "X \u2208 {a, b, c}". Same for negation with `!=` and `&&` ->
   # "X \u2209 {a, b, c}". Repeat while the pattern keeps shrinking

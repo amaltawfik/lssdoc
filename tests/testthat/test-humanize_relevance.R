@@ -155,6 +155,34 @@ test_that("regexMatch(\"pat\", X.NAOK) becomes a predicate", {
   )
 })
 
+test_that("quotes around scalar answer codes are dropped", {
+  # A bare code reads cleaner than a string literal; the Value section
+  # already documents what the code means.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance('workstatus.NAOK == "1"'),
+    "workstatus = 1"
+  )
+  expect_identical(
+    lssdoc:::lss_humanize_relevance('role.NAOK == "ST2"'),
+    "role = ST2"
+  )
+  # Set notation and ranges drop the quotes too.
+  expect_identical(
+    lssdoc:::lss_humanize_relevance('a.NAOK == "1" || a.NAOK == "2"'),
+    "a ∈ {1, 2}"
+  )
+  # Quotes are kept when the value contains whitespace, and around regex
+  # patterns (a multi-word string and a pattern stay delimited).
+  expect_identical(
+    lssdoc:::lss_humanize_relevance('region.NAOK == "New York"'),
+    'region = "New York"'
+  )
+  expect_identical(
+    lssdoc:::lss_humanize_relevance('regexMatch("a b", code.NAOK)'),
+    'code matches "a b"'
+  )
+})
+
 test_that("that.X group references lose the structural prefix", {
   expect_identical(
     lssdoc:::lss_humanize_relevance("that.q1.NAOK == 1"),
