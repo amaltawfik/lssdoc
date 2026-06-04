@@ -66,7 +66,18 @@ Other things lssdoc takes care of for you:
 
 ## Installation
 
-The development version, from GitHub, with **pak** (recommended):
+From [R-universe](https://amaltawfik.r-universe.dev/lssdoc) (recommended
+– pre-built, no compiler needed):
+
+``` r
+
+install.packages(
+  "lssdoc",
+  repos = c("https://amaltawfik.r-universe.dev", "https://cloud.r-project.org")
+)
+```
+
+Or the development version from GitHub, with **pak**:
 
 ``` r
 
@@ -251,12 +262,11 @@ arguments accept any string to override.
 
 ## Citation
 
-Use `citation("lssdoc")` once the package is on CRAN, or cite the GitHub
-repository in the meantime:
+Run `citation("lssdoc")` for the up-to-date citation, or cite as:
 
 ``` R
-Tawfik A. (2026). lssdoc: Word codebook documents from LimeSurvey
-.lss files. R package version 0.0.0.9000.
+Tawfik A. (2026). lssdoc: Render Multilingual Questionnaires from
+LimeSurvey '.lss' Files. R package version 0.1.0.
 https://github.com/amaltawfik/lssdoc
 ```
 

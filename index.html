@@ -108,12 +108,18 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>The development version, from GitHub, with <strong>pak</strong> (recommended):</p>
+<p>From <a href="https://amaltawfik.r-universe.dev/lssdoc" class="external-link">R-universe</a> (recommended – pre-built, no compiler needed):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
+<span>  <span class="st">"lssdoc"</span>,</span>
+<span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://amaltawfik.r-universe.dev"</span>, <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Or the development version from GitHub, with <strong>pak</strong>:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"amaltawfik/lssdoc"</span><span class="op">)</span></span></code></pre></div>
 <p>Or with <strong>remotes</strong>:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"amaltawfik/lssdoc"</span><span class="op">)</span></span></code></pre></div>
 <p>The package depends on <strong>officer</strong> and <strong>flextable</strong> (declared as <code>Suggests</code> – the parse and audit paths work without them).</p>
@@ -154,7 +160,7 @@
 <div class="section level3">
 <h3 id="a-one-line-pipeline">A one-line pipeline<a class="anchor" aria-label="anchor" href="#a-one-line-pipeline"></a>
 </h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://amaltawfik.github.io/lssdoc/">lssdoc</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Parse the .lss and render the Word document in a single call.</span></span>
@@ -164,7 +170,7 @@
 <div class="section level3">
 <h3 id="table-layout">Table layout<a class="anchor" aria-label="anchor" href="#table-layout"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span></span>
 <span>  <span class="st">"survey.lss"</span>,</span>
 <span>  <span class="st">"review.docx"</span>,</span>
@@ -177,7 +183,7 @@
 <div class="section level3">
 <h3 id="ethics-committee-submission">Ethics committee submission<a class="anchor" aria-label="anchor" href="#ethics-committee-submission"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span></span>
 <span>  <span class="st">"survey.lss"</span>,</span>
 <span>  <span class="st">"ethics_review.docx"</span>,</span>
@@ -204,7 +210,7 @@
 <div class="section level3">
 <h3 id="minimal-questionnaire--just-the-variables">Minimal questionnaire – just the variables<a class="anchor" aria-label="anchor" href="#minimal-questionnaire--just-the-variables"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span></span>
 <span>  <span class="st">"survey.lss"</span>,</span>
 <span>  <span class="st">"minimal.docx"</span>,</span>
@@ -222,7 +228,7 @@
 <div class="section level3">
 <h3 id="parse-once-render-many">Parse once, render many<a class="anchor" aria-label="anchor" href="#parse-once-render-many"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Parse a single time, then audit and render different variants</span></span>
 <span><span class="co"># without re-reading the .lss.</span></span>
 <span><span class="va">lss</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_lss.html">read_lss</a></span><span class="op">(</span><span class="st">"survey.lss"</span><span class="op">)</span></span>
@@ -237,7 +243,7 @@
 <h3 id="see-the-audit-in-action">See the audit in action<a class="anchor" aria-label="anchor" href="#see-the-audit-in-action"></a>
 </h3>
 <p>A deliberately flawed survey ships with the package, so you can see what <code><a href="reference/audit_lss.html">audit_lss()</a></code> catches without supplying your own file:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">demo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"audit_demo.lss"</span>, package <span class="op">=</span> <span class="st">"lssdoc"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="fu"><a href="reference/read_lss.html">read_lss</a></span><span class="op">(</span><span class="va">demo</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; -- lssdoc audit ----------------------------------------------------</span></span>
@@ -255,7 +261,7 @@
 <div class="section level3">
 <h3 id="pdf-output">PDF output<a class="anchor" aria-label="anchor" href="#pdf-output"></a>
 </h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Same call, just pass a .pdf path. The package writes the .docx</span></span>
 <span><span class="co"># into a temp file and converts it locally via LibreOffice</span></span>
 <span><span class="co"># (must be installed and on PATH).</span></span>
@@ -271,10 +277,10 @@
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<p>Use <code>citation("lssdoc")</code> once the package is on CRAN, or cite the GitHub repository in the meantime:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>Tawfik <span class="fu">A.</span> (<span class="dv">2026</span>). lssdoc<span class="sc">:</span> Word codebook documents from LimeSurvey</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>.lss files. R package version <span class="dv">0</span>.<span class="dv">0</span>.<span class="dv">0</span>.<span class="fl">9000.</span></span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>amaltawfik<span class="sc">/</span>lssdoc</span></code></pre></div>
+<p>Run <code>citation("lssdoc")</code> for the up-to-date citation, or cite as:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>Tawfik <span class="fu">A.</span> (<span class="dv">2026</span>). lssdoc<span class="sc">:</span> Render Multilingual Questionnaires from</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>LimeSurvey <span class="st">'.lss'</span> Files. R package version <span class="dv">0</span>.<span class="dv">1</span>.<span class="fl">0.</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>amaltawfik<span class="sc">/</span>lssdoc</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -320,6 +326,7 @@
 <li><a href="https://www.repostatus.org/#wip" class="external-link"><img src="https://www.repostatus.org/badges/latest/wip.svg" alt="Project Status: WIP"></a></li>
 <li><a href="https://github.com/amaltawfik/lssdoc/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/amaltawfik/lssdoc/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://app.codecov.io/gh/amaltawfik/lssdoc" class="external-link"><img src="https://codecov.io/gh/amaltawfik/lssdoc/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://amaltawfik.r-universe.dev/lssdoc" class="external-link"><img src="https://amaltawfik.r-universe.dev/badges/lssdoc" alt="R-universe"></a></li>
 <li><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat" alt="MIT License"></a></li>
 </ul>
 </div>
