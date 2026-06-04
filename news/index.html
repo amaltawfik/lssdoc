@@ -106,6 +106,8 @@
 <h3 id="typography-and-layout-0-1-0">Typography and layout<a class="anchor" aria-label="anchor" href="#typography-and-layout-0-1-0"></a></h3>
 <ul><li>The cards body renders at one uniform type size with a two-tone meta band and cell-symmetric alignment per column (each column’s header takes the same alignment as its body). The meta table, intra-item gap and item table carry Word’s “keep with next” property so they stay on the same page in the typical case.</li>
 <li>In the table template the language columns get at least 50% of the page width, the <code>Mandatory</code> header abbreviates in the dense layout (<code>Mand.</code> / <code>Oblig.</code> / <code>Pflicht</code> / <code>Obblig.</code>), and the body font steps down (8 pt to 7 pt) when rendering 3 or 4 languages so the narrower columns stay readable.</li>
+<li>
+<code>base_size</code> (default <code>10</code>) scales the whole body type from a single argument – question text, item tables, the meta band, quotas, variable index and cover metadata all follow it – useful for a roomier single-language render (e.g. <code>base_size = 12</code>).</li>
 <li>The package ships a hex logo (<code>man/figures/logo.png</code> and <code>.svg</code>) and a favicon set for the pkgdown site.</li>
 </ul></div>
 <div class="section level3">
