@@ -260,21 +260,22 @@ lss_render_question_meta_table <- function(doc, theme,
   #                     commentaire", 31 chars) wrap, acceptable for a
   #                     rare type. Widened from 1.00 to absorb the move
   #                     from 8 pt to 10 pt.
-  #   Mandatory 0.80  - "Mandatory" header (9 chars in 10 pt bold) needs
-  #                     ~0.73 in incl. padding; 0.70 wrapped the final
-  #                     "y", so widened to 0.80. Body holds the short
-  #                     Yes/No/Soft tokens.
-  #   Filter    1.75  - the human-readable form at 10 pt on top and the
-  #                     raw LimeSurvey expression at 8 pt italic mono
+  #   Mandatory 0.95  - "Mandatory" header (9 chars bold) needs ~0.73 in
+  #                     at 10 pt but ~0.88 in at base_size 12, so 0.80
+  #                     wrapped the final "y" on a larger body; widened
+  #                     to 0.95 to stay on one line up to base_size ~14.
+  #                     Body holds the short Yes/No/Soft tokens.
+  #   Filter    1.60  - the human-readable form on top and the raw
+  #                     LimeSurvey expression in smaller italic mono
   #                     below; 2-3 chained conditions fit on a line.
   ft <- flextable::width(ft, j = "No", width = 0.35, unit = "in")
   ft <- flextable::width(ft, j = "Variable", width = 2.30, unit = "in")
   ft <- flextable::width(ft, j = "Type", width = 1.10, unit = "in")
-  ft <- flextable::width(ft, j = "Mandatory", width = 0.80, unit = "in")
+  ft <- flextable::width(ft, j = "Mandatory", width = 0.95, unit = "in")
   # Filter absorbs the surplus so the band always spans the full body
-  # width: 1.75 in in portrait (6.30 total), wider in landscape / A3.
+  # width: 1.60 in in portrait (6.30 total), wider in landscape / A3.
   ft <- flextable::width(ft, j = "Filter",
-                         width = theme$content_width_in - 4.55, unit = "in")
+                         width = theme$content_width_in - 4.70, unit = "in")
   # keepnext: the meta table is a header for the item table that
   # follows; Word must keep them on the same page so the dark band
   # never floats orphaned at the bottom.
