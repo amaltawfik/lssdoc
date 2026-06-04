@@ -111,7 +111,8 @@ tie the document together. Rendering uses the suggested packages
 <span>  authors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  description <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chrome_lang <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  variable_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"brackets"</span>, <span class="st">"underscore"</span><span class="op">)</span></span>
+<span>  variable_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"brackets"</span>, <span class="st">"underscore"</span><span class="op">)</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">10L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -427,6 +428,16 @@ The two-dimensional arrays (array of numbers / texts with a second
 axis) and ranking questions are expanded so every produced column
 appears as its own entry either way.</p></li>
 </ul></dd>
+
+
+<dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
+<dd><p>Body type size in points (default <code>10</code>). One lever
+scales the whole document: question text, item tables, the meta band,
+the quotas table, the variable index and the cover metadata all
+follow it, while headings and answer/help text keep their relative
+offsets. Useful for a roomier single-language render (e.g. <code>12</code>). The
+cover title and subtitle keep their fixed title-page sizes. Accepted
+range: 7 to 16.</p></dd>
 
 </dl></div>
     <div class="section level2">

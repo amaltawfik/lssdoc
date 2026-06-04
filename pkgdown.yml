@@ -2,7 +2,7 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles: {}
-last_built: 2026-06-03T19:22Z
+last_built: 2026-06-04T01:11Z
 urls:
   reference: https://amaltawfik.github.io/lssdoc/reference
   article: https://amaltawfik.github.io/lssdoc/articles

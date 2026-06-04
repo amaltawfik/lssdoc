@@ -48,7 +48,8 @@ render_questionnaire(
   authors = NULL,
   description = NULL,
   chrome_lang = NULL,
-  variable_names = c("brackets", "underscore")
+  variable_names = c("brackets", "underscore"),
+  base_size = 10L
 )
 ```
 
@@ -351,6 +352,15 @@ render_questionnaire(
     of numbers / texts with a second axis) and ranking questions are
     expanded so every produced column appears as its own entry either
     way.
+
+- base_size:
+
+  Body type size in points (default `10`). One lever scales the whole
+  document: question text, item tables, the meta band, the quotas table,
+  the variable index and the cover metadata all follow it, while
+  headings and answer/help text keep their relative offsets. Useful for
+  a roomier single-language render (e.g. `12`). The cover title and
+  subtitle keep their fixed title-page sizes. Accepted range: 7 to 16.
 
 ## Value
 
