@@ -149,6 +149,10 @@ both output formats.
   (`Mand.` / `Oblig.` / `Pflicht` / `Obblig.`), and the body font steps
   down (8 pt to 7 pt) when rendering 3 or 4 languages so the narrower
   columns stay readable.
+* `base_size` (default `10`) scales the whole body type from a single
+  argument -- question text, item tables, the meta band, quotas, variable
+  index and cover metadata all follow it -- useful for a roomier
+  single-language render (e.g. `base_size = 12`).
 * The package ships a hex logo (`man/figures/logo.png` and `.svg`) and
   a favicon set for the pkgdown site.
 
