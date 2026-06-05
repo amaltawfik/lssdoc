@@ -12,3 +12,5 @@ dev/references/
 
 # Claude Code harness state (never commit)
 .claude/
+/doc/
+/Meta/

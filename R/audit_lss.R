@@ -40,9 +40,10 @@
 #'   PDF document.
 #'
 #' @examples
-#' audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
-#'                                package = "lssdoc"))
-#' print(audit)
+#' # A deliberately flawed demo survey ships with the package, seeded
+#' # with every anomaly the audit detects.
+#' demo <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
+#' audit_lss(demo)
 #' @export
 audit_lss <- function(input) {
   lss <- lss_resolve_input(input)

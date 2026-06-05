@@ -49,9 +49,10 @@ question that does not exist.
 }
 }
 \examples{
-audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
-                               package = "lssdoc"))
-print(audit)
+# A deliberately flawed demo survey ships with the package, seeded
+# with every anomaly the audit detects.
+demo <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
+audit_lss(demo)
 }
 \seealso{
 \code{\link[=render_audit]{render_audit()}} to write the same findings to a Word or

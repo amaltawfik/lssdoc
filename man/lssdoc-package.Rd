@@ -10,6 +10,22 @@
 
 Render LimeSurvey '.lss' survey exports as multilingual questionnaire documents in Word ('.docx') or PDF, displaying up to four languages side by side with localized chrome in English, French, German, Spanish and Italian. Includes a rule-based automated audit that flags missing translations, forward filter references, duplicate codes, array-scale inconsistencies and orphan structural references. Designed for anyone working with a LimeSurvey survey: researchers, methodologists, ethics committees, translators and reviewers. Processing is fully local: the source file is the only input and no questionnaire content is uploaded to a third-party service.
 }
+\section{Example surveys}{
+
+Two example \code{.lss} files ship with the package and are reachable with
+\code{\link[base:system.file]{base::system.file()}}, so every reader can reproduce the examples and
+the \emph{Get started} vignette without supplying their own LimeSurvey
+export:
+\itemize{
+\item \code{demo_survey.lss} -- a clean, synthetic four-language survey
+(English, French, German, Spanish) with quotas and a consent block:
+\code{system.file("extdata", "demo_survey.lss", package = "lssdoc")}.
+\item \code{audit_demo.lss} -- a deliberately flawed survey seeded with every
+anomaly \code{\link[=audit_lss]{audit_lss()}} detects:
+\code{system.file("extdata", "audit_demo.lss", package = "lssdoc")}.
+}
+}
+
 \seealso{
 Useful links:
 \itemize{

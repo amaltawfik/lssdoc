@@ -38,7 +38,8 @@ field that is present but empty (e.g. \verb{<help/>}) is read as \code{""}; a
 field that is absent from a row is read as \code{NA}.
 }
 \examples{
-lss <- read_lss(system.file("extdata", "hesav_2026.lss",
-                            package = "lssdoc"))
+# A synthetic four-language demo survey ships with the package.
+demo <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
+lss <- read_lss(demo)
 lss$languages
 }

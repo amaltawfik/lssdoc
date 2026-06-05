@@ -26,9 +26,12 @@ Imports:
     xml2
 Suggests:
     flextable,
+    knitr,
     officer,
+    rmarkdown,
     testthat (>= 3.0.0),
     zip
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://amaltawfik.github.io/lssdoc/, https://github.com/amaltawfik/lssdoc
 BugReports: https://github.com/amaltawfik/lssdoc/issues
