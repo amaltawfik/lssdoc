@@ -47,76 +47,9 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="lssdoc-010">lssdoc 0.1.0<a class="anchor" aria-label="anchor" href="#lssdoc-010"></a></h2>
-<p>First release. lssdoc reads a LimeSurvey <code>.lss</code> export and renders a multilingual questionnaire document (Word <code>.docx</code> or PDF) for review by ethics committees, methodologists, researchers and translators, together with a rule-based audit of the survey. The user-facing API is four functions: <code><a href="../reference/read_lss.html">read_lss()</a></code>, <code><a href="../reference/audit_lss.html">audit_lss()</a></code>, <code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> and <code><a href="../reference/render_audit.html">render_audit()</a></code>. All processing stays on the user’s machine. Tested across two example surveys, both templates (<code>cards</code> and <code>table</code>), the five chrome languages (English, French, German, Spanish, Italian) and both output formats.</p>
-<div class="section level3">
-<h3 id="reading-0-1-0">Reading<a class="anchor" aria-label="anchor" href="#reading-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/read_lss.html">read_lss()</a></code> reads a LimeSurvey <code>.lss</code> file into a structured <code>lss</code> object, preserving all user text verbatim. It validates the <code>.lss</code> <code>DBVersion</code> against the tested window (400 to 799): a version below 400 (pre <code>*_l10ns</code> schema) raises a classed error, a version of 800 or above warns but still parses.</li>
-<li>
-<code>audit_lss(input)</code> and the two renderers all accept either a path to a <code>.lss</code> file or a pre-parsed <code>lss</code> object as <code>input</code>.</li>
+<ul><li>Initial CRAN release.</li>
 </ul></div>
-<div class="section level3">
-<h3 id="audit-0-1-0">Audit<a class="anchor" aria-label="anchor" href="#audit-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/audit_lss.html">audit_lss()</a></code> inspects a parsed survey and reports reviewable anomalies as a classed <code>lss_audit</code> object with a print method: missing translations, texts empty in every language, duplicate question or answer codes, types missing their required options or subquestions, and orphan references.</li>
-<li>It also flags <strong>forward filter references</strong> – a routing condition that depends on a variable appearing at or after the filtered question, almost always a survey-design bug (severity: error); <strong>array-scale inconsistencies</strong> – an array whose subquestions and answer options use mismatched <code>scale_id</code> values (severity: warning); and <strong>whitespace in identifier codes</strong> – a question, subquestion or answer code carrying leading, trailing or interior whitespace, which causes silent lookup failures at data export (severity: warning).</li>
-<li>
-<code>print(audit)</code> paginates output at 20 findings by default, with a hint to use <code>print(audit, n = Inf)</code> or <code>as.data.frame(audit)</code> to see them all.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="rendering-0-1-0">Rendering<a class="anchor" aria-label="anchor" href="#rendering-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/render_questionnaire.html">render_questionnaire()</a></code> produces a Word or PDF questionnaire document from a path or a parsed <code>lss</code>: a cover page with the survey title in every language and a metadata table, a table of contents, an optional audit section near the top with inline markers on affected questions, group sections, and one compact block per question with a meta header (number, variable code, type, mandatory, filter) and one column per language for the question text, subquestions and answer options. The output format (<code>.docx</code> or <code>.pdf</code>) is inferred from the <code>output</code> extension; PDF is produced locally via LibreOffice. Page orientation follows the template, not the language count: the <code>cards</code> template is laid out in A4 portrait and the dense <code>table</code> template in A4 landscape by default; <code>page_format</code> overrides this with <code>"A4-portrait"</code>, <code>"A4-landscape"</code> or <code>"A3"</code>, and every panel scales to the chosen width.</li>
-<li>
-<code><a href="../reference/render_audit.html">render_audit()</a></code> produces a focused audit-only document: the same cover page, then one section per severity (errors, warnings, notes) with a table of findings. Use it for QA follow-up, separate from the full review.</li>
-<li>Two output templates:
-<ul><li>
-<code>"cards"</code> (default) – a meta band plus item table per question, stacked vertically, reading as a questionnaire.</li>
-<li>
-<code>"table"</code> – one dense codebook table covering the whole document, with one tinted Question row per variable and one or more Value rows beneath.</li>
-</ul></li>
-<li>
-<code>chrome_lang</code> controls the document chrome (column headers, row labels, audit-section labels) independently of the survey content languages. Supported: <code>"en"</code>, <code>"fr"</code>, <code>"de"</code>, <code>"es"</code>, <code>"it"</code>.</li>
-<li>
-<code>variable_names</code> controls how response-variable names are written: <code>"brackets"</code> (default) reproduces the LimeSurvey CSV / Excel export column names exactly – so the variable index matches the raw data file column for column (<code>parent[subq]</code>, <code>parent[subq][1]</code>, <code>parent[other]</code>, ranking <code>parent[answerid]</code>, two-dimensional arrays <code>parent[row_col]</code>, list-with-comment <code>parent[_Ccomment]</code>) – or <code>"underscore"</code> for the Expression Manager / SPSS / Stata code form. Ranking and two-dimensional array questions are expanded so every produced column is documented on its own.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="cover-and-metadata-0-1-0">Cover and metadata<a class="anchor" aria-label="anchor" href="#cover-and-metadata-0-1-0"></a></h3>
-<ul><li>The cover shows the LimeSurvey <strong>Survey ID</strong> and the last-save timestamp for stable traceability.</li>
-<li>Optional <code>logo</code> places a PNG or JPEG image at the top of the cover page (default keeps the cover logo-free, matching the neutral style of survey-methodology references).</li>
-<li>Optional <code>authors</code> supports an unnamed character vector, a named character vector (name = affiliation), or a list of named lists (<code>name</code>, <code>affiliation</code>, <code>orcid</code>). ORCID iDs render as monospace hyperlinks.</li>
-<li>Optional <code>description</code> is shown below the authors block. Line breaks (<code>\n</code>) split into separate centered lines; <code>http://</code> and <code>https://</code> tokens render as clickable hyperlinks.</li>
-<li>Multilingual <code>welcome</code> text, <code>endtext</code> and <code>description</code> are toggleable via <code>show_welcome</code>, <code>show_endtext</code>, <code>show_description</code> (all <code>TRUE</code> by default).</li>
-<li>
-<code>show_consent</code> (default <code>TRUE</code>) renders a data-protection and consent block in the front matter (before the welcome text): the survey’s privacy policy notice and its consent checkbox label, side by side across languages, with the checkbox drawn as an empty box. Skipped when the survey turns the policy notice off or carries no notice.</li>
-<li>Optional <code>show_privacy_settings</code> and <code>show_admin_settings</code> surface LimeSurvey flags (<code>anonymized</code>, save partial, <code>datestamp</code>, <code>ipaddr</code>, <code>refurl</code>, <code>alias</code>, end URL, <code>active</code>) as additional cover metadata rows (both default <code>FALSE</code>).</li>
-<li>
-<code>show_toc</code>, <code>show_index</code> and <code>show_header_title</code> (all <code>TRUE</code>) add a table of contents, an alphabetical variable index listing every item code with its number, and the survey title at the top of every page. The table of contents is comprehensive: it lists the document’s sections – audit, data protection, the questionnaire with its groups indented beneath it, quotas, variable index – each a clickable link to the matching heading, rather than only the question groups. Group headings themselves are not numbered. The page footer always carries a compact <code>X/Y</code> page counter.</li>
-<li>
-<code>show_quotas</code> (default <code>TRUE</code>) appends a quotas section after the end text: one block per sampling quota with its localized name, status (active, limit, action when full), the membership condition resolved to question codes and answer labels, and the localized “quota full” message. Skipped when the survey defines no quotas.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="filter-rendering-0-1-0">Filter rendering<a class="anchor" aria-label="anchor" href="#filter-rendering-0-1-0"></a></h3>
-<ul><li>The <code>Filter</code> cell reads in the chosen chrome language – <code>AND</code>, <code>OR</code>, <code>is answered</code>, <code>is empty</code> and <code>matches</code> localize alongside the rest of the chrome.</li>
-<li>The humanizer translates LimeSurvey’s defensive <code>!is_empty(X.NAOK) &amp;&amp; (X.NAOK OP value)</code> idiom to <code>X OP value</code>. It collapses several disjunctions on one variable to set notation (<code>Q1 = 1 OR Q1 = 2 OR Q1 = 3</code> reads as <code>Q1 in {1, 2, 3}</code>) and two bounds to an encased range (<code>age &gt;= 18 AND age &lt;= 65</code> reads as <code>18 &lt;= age &lt;= 65</code>, with Unicode math symbols in the output). It also unwraps <code>intval(X.NAOK)</code>, maps <code>strlen(X.NAOK)</code> predicates to “is answered” / “is empty”, renders <code>regexMatch("pat", X.NAOK)</code> as <code>X matches "pat"</code>, and drops <code>that.X</code> group prefixes.</li>
-<li>
-<code>show_raw_filter</code> defaults to <code>FALSE</code>: the <code>Filter</code> cell shows only the human-readable form (e.g. <code>Q1 = 1</code>), matching ESS / MOSAiCH / GESIS conventions. Pass <code>show_raw_filter = TRUE</code> to also surface the raw LimeSurvey expression underneath.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="typography-and-layout-0-1-0">Typography and layout<a class="anchor" aria-label="anchor" href="#typography-and-layout-0-1-0"></a></h3>
-<ul><li>The cards body renders at one uniform type size with a two-tone meta band and cell-symmetric alignment per column (each column’s header takes the same alignment as its body). The meta table, intra-item gap and item table carry Word’s “keep with next” property so they stay on the same page in the typical case.</li>
-<li>In the table template the language columns get at least 50% of the page width, the <code>Mandatory</code> header abbreviates in the dense layout (<code>Mand.</code> / <code>Oblig.</code> / <code>Pflicht</code> / <code>Obblig.</code>), and the body font steps down (8 pt to 7 pt) when rendering 3 or 4 languages so the narrower columns stay readable.</li>
-<li>
-<code>base_size</code> (default <code>10</code>) scales the whole body type from a single argument – question text, item tables, the meta band, quotas, variable index and cover metadata all follow it – useful for a roomier single-language render (e.g. <code>base_size = 12</code>).</li>
-<li>The package ships a hex logo (<code>man/figures/logo.png</code> and <code>.svg</code>) and a favicon set for the pkgdown site.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="quality-0-1-0">Quality<a class="anchor" aria-label="anchor" href="#quality-0-1-0"></a></h3>
-<ul><li>Continuous integration runs the full render suite; a Codecov coverage badge in the README is wired through <code>.github/workflows/test-coverage.yaml</code>.</li>
-</ul></div>
-</div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
-    </nav></aside></div>
+  </main></div>
 
 
     <footer><div class="pkgdown-footer-left">
