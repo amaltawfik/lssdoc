@@ -67,12 +67,33 @@ to write the same findings to a Word or PDF document.
 ## Examples
 
 ``` r
-audit <- audit_lss(system.file("extdata", "hesav_2026.lss",
-                               package = "lssdoc"))
-print(audit)
+# A deliberately flawed demo survey ships with the package, seeded
+# with every anomaly the audit detects.
+demo <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
+audit_lss(demo)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpKzkfyZ/temp_libpath1b321c014e51/lssdoc/extdata/hesav_2026.lss
-#> Languages: "de" and "fr"
-#> ✔ No anomalies detected.
+#> File: /tmp/Rtmp6rJR6Z/temp_libpath1a8c7d40b90f/lssdoc/extdata/audit_demo.lss
+#> Languages: "en" and "fr"
+#> 12 findings: 5 errors, 7 warnings, 0 notes.
+#> ✖ Survey: Duplicate question code: 'age'.
+#> ✖ Question 'blank_q': The question text is empty in every language.
+#> ✖ Question 'age': Filter references variable 'income' (item 4), which is not
+#>   asked before this question (item 1).
+#> ✖ Answer 'X': Answer points to question id '99999', which does not exist.
+#> ✖ Subquestion 'orphan_sq': Subquestion points to question id '99999', which
+#>   does not exist.
+#> Question 'arr': Subquestions reference scale_id '0' but no answer options are
+#> defined for it.
+#> Question 'arr': Answer options reference scale_id '1' but no subquestions are
+#> defined for it.
+#> Question 'comment ': The question code 'comment ' contains whitespace;
+#> LimeSurvey will export it verbatim, which usually breaks downstream lookups.
+#> Group: The group name is empty in every language.
+#> Question 'satisf': Type 'Single choice' expects answer options, but none are
+#> defined.
+#> Question 'rating': Type 'Multiple choice' expects subquestions, but none are
+#> defined.
+#> Question 'income' [fr]: The question text is missing in 'fr' but present in
+#> other languages.
 ```

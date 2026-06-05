@@ -11,6 +11,23 @@ committees, translators and reviewers. Processing is fully local: the
 source file is the only input and no questionnaire content is uploaded
 to a third-party service.
 
+## Example surveys
+
+Two example `.lss` files ship with the package and are reachable with
+[`base::system.file()`](https://rdrr.io/r/base/system.file.html), so
+every reader can reproduce the examples and the *Get started* vignette
+without supplying their own LimeSurvey export:
+
+- `demo_survey.lss` – a clean, synthetic four-language survey (English,
+  French, German, Spanish) with quotas and a consent block:
+  `system.file("extdata", "demo_survey.lss", package = "lssdoc")`.
+
+- `audit_demo.lss` – a deliberately flawed survey seeded with every
+  anomaly
+  [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
+  detects:
+  `system.file("extdata", "audit_demo.lss", package = "lssdoc")`.
+
 ## See also
 
 Useful links:

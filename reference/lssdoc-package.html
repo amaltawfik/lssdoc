@@ -55,6 +55,20 @@ Render LimeSurvey '.lss' survey exports as multilingual questionnaire documents 
 
 
     <div class="section level2">
+    <h2 id="example-surveys">Example surveys<a class="anchor" aria-label="anchor" href="#example-surveys"></a></h2>
+
+
+<p>Two example <code>.lss</code> files ship with the package and are reachable with
+<code><a href="https://rdrr.io/r/base/system.file.html" class="external-link">base::system.file()</a></code>, so every reader can reproduce the examples and
+the <em>Get started</em> vignette without supplying their own LimeSurvey
+export:</p><ul><li><p><code>demo_survey.lss</code> – a clean, synthetic four-language survey
+(English, French, German, Spanish) with quotas and a consent block:
+<code>system.file("extdata", "demo_survey.lss", package = "lssdoc")</code>.</p></li>
+<li><p><code>audit_demo.lss</code> – a deliberately flawed survey seeded with every
+anomaly <code><a href="audit_lss.html">audit_lss()</a></code> detects:
+<code>system.file("extdata", "audit_demo.lss", package = "lssdoc")</code>.</p></li>
+</ul></div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Useful links:</p><ul><li><p><a href="https://amaltawfik.github.io/lssdoc/">https://amaltawfik.github.io/lssdoc/</a></p></li>
 <li><p><a href="https://github.com/amaltawfik/lssdoc" class="external-link">https://github.com/amaltawfik/lssdoc</a></p></li>
