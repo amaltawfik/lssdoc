@@ -5,8 +5,8 @@
 * This is a new release, so there is a "New submission" NOTE.
 
 Words flagged by the spell checker in the DESCRIPTION ("LimeSurvey",
-"multilingual", "docx") are a product name and correctly spelled domain
-terms.
+"methodologists") are, respectively, the name of the survey software the
+package reads and a correctly spelled English term.
 
 ## Test environments
 
