@@ -85,11 +85,11 @@
 <ul>
 <li>
 <p><strong><code>"cards"</code></strong> – one detached block per item (meta table + question table), stacked vertically. Closest to the printed questionnaire a respondent would see.</p>
-<p><img src="reference/figures/template_cards.png" alt="Cards layout: multiple-choice subquestions with the Exclusive row appearing only on the named subquestion, plus an Other free-text item, all side by side in French and German" width="100%"></p>
+<p><img src="reference/figures/template_cards.png" alt="Cards layout: one card per question stacked vertically, French and German side by side -- a free-text Other field, a single-choice-with-comment question showing its labelled answer scale and paired comment row, then a new section heading and the next single-choice question" width="100%"></p>
 </li>
 <li>
-<p><strong><code>"table"</code></strong> – one dense codebook table covering the whole document: every variable is one tinted <em>Question</em> row carrying its metadata, followed by one or more white <em>Value</em> rows holding the answer codes and their labels per language. Group banners, welcome text, description and end text become labelled rows of the same table so the codebook reads as a single artifact.</p>
-<p><img src="reference/figures/template_table.png" alt="Codebook layout mid-document: a Single choice variable with five Value rows (5-point scale), followed by a Number variable carrying the [num] descriptor in its Value cell; the column header repeats automatically at the top of each new page" width="100%"></p>
+<p><strong><code>"table"</code></strong> – one dense codebook table covering the whole document: every variable is one tinted <em>Question</em> row carrying its metadata, followed by one or more white <em>Value</em> rows holding the answer codes and their labels per language. Group banners (with their description, when present), welcome text, survey description and end text become labelled rows of the same table so the codebook reads as a single artifact.</p>
+<p><img src="reference/figures/template_table.png" alt="Codebook layout: one variable per row with French and German columns -- a yes/no single choice, two Number variables, a computed variable, a display item, a multiple-choice question expanded into one row per option with its free-text Other, and a single-choice answer scale; the column header repeats automatically at the top of each new page" width="100%"></p>
 </li>
 </ul>
 <p>Other things lssdoc takes care of for you:</p>
@@ -296,6 +296,20 @@
 </ul>
 </div>
 
+<div class="example-output">
+<h2 data-toc-skip>Example output</h2>
+<ul class="list-unstyled">
+<li><p>The bundled demo survey rendered in full, all four languages side by side — <a href="https://amaltawfik.github.io/lssdoc/demo_survey-cards.docx">cards layout</a> and <a href="https://amaltawfik.github.io/lssdoc/demo_survey-table.docx">table / codebook</a>.</p></li>
+</ul>
+</div>
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing lssdoc</a></li>
+</ul>
+</div>
+
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
@@ -304,13 +318,6 @@
 </ul>
 </div>
 
-
-<div class="citation">
-<h2 data-toc-skip>Citation</h2>
-<ul class="list-unstyled">
-<li><a href="authors.html#citation">Citing lssdoc</a></li>
-</ul>
-</div>
 
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>

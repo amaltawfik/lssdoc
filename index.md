@@ -14,22 +14,25 @@ Two output templates:
   table), stacked vertically. Closest to the printed questionnaire a
   respondent would see.
 
-  ![Cards layout: multiple-choice subquestions with the Exclusive row
-  appearing only on the named subquestion, plus an Other free-text item,
-  all side by side in French and
-  German](reference/figures/template_cards.png)
+  ![Cards layout: one card per question stacked vertically, French and
+  German side by side -- a free-text Other field, a
+  single-choice-with-comment question showing its labelled answer scale
+  and paired comment row, then a new section heading and the next
+  single-choice question](reference/figures/template_cards.png)
 
 - **`"table"`** – one dense codebook table covering the whole document:
   every variable is one tinted *Question* row carrying its metadata,
   followed by one or more white *Value* rows holding the answer codes
-  and their labels per language. Group banners, welcome text,
-  description and end text become labelled rows of the same table so the
-  codebook reads as a single artifact.
+  and their labels per language. Group banners (with their description,
+  when present), welcome text, survey description and end text become
+  labelled rows of the same table so the codebook reads as a single
+  artifact.
 
-  ![Codebook layout mid-document: a Single choice variable with five
-  Value rows (5-point scale), followed by a Number variable carrying the
-  \[num\] descriptor in its Value cell; the column header repeats
-  automatically at the top of each new
+  ![Codebook layout: one variable per row with French and German columns
+  -- a yes/no single choice, two Number variables, a computed variable,
+  a display item, a multiple-choice question expanded into one row per
+  option with its free-text Other, and a single-choice answer scale; the
+  column header repeats automatically at the top of each new
   page](reference/figures/template_table.png)
 
 Other things lssdoc takes care of for you:
