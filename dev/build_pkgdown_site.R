@@ -144,6 +144,36 @@ fix_html_encoding_artifacts <- function(dir = docs_dir) {
 
 pkgdown::build_site()
 
+# --- downloadable rendered examples ------------------------------------------
+# Render the bundled demo survey to .docx and drop the files into the built
+# site so the Get Started article and the README can offer a "download the
+# full rendered output" link. These binaries live ONLY in the deployed site:
+# never committed to git (`*.docx` is .gitignore'd) and never shipped to CRAN
+# (`docs/` and `pkgdown/` are .Rbuildignore'd). They are regenerated on every
+# site build, so they cannot drift from the current renderer.
+
+rendered_examples <- character(0)
+if (requireNamespace("officer", quietly = TRUE) &&
+    requireNamespace("flextable", quietly = TRUE) &&
+    requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(".", quiet = TRUE, export_all = FALSE)
+  demo <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
+  if (nzchar(demo)) {
+    langs <- c("en", "de", "es", "fr")
+    targets <- c(
+      cards = file.path(docs_dir, "demo_survey-cards.docx"),
+      table = file.path(docs_dir, "demo_survey-table.docx")
+    )
+    for (tmpl in names(targets)) {
+      lssdoc::render_questionnaire(
+        demo, targets[[tmpl]],
+        template = tmpl, languages = langs, chrome_lang = "en"
+      )
+    }
+    rendered_examples <- targets[file.exists(targets)]
+  }
+}
+
 # --- post-build cleanup ------------------------------------------------------
 
 removed_internal <- remove_files(page_variants(internal_pages))
@@ -169,3 +199,4 @@ report("Removed internal pkgdown pages", removed_internal)
 report("Removed legacy pkgdown pages", removed_legacy)
 report("Removed generated reference artifacts", removed_artifacts)
 report("Fixed HTML encoding artifacts", fixed_html)
+report("Rendered downloadable examples", rendered_examples)

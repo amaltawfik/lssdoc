@@ -47,11 +47,14 @@ test_that("show_quotas = FALSE and quota-less surveys produce no quota section",
   )
   expect_false(grepl("exceeded a quota", t_off, fixed = TRUE))
 
-  hesav <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
-  skip_if_not(file.exists(hesav))
+  # A quota-less survey (quotas stripped in memory) renders no quota
+  # full message even with the default show_quotas = TRUE.
+  lss_noq <- read_lss(demo)
+  lss_noq$quotas <- lss_noq$quotas[0, , drop = FALSE]
+  lss_noq$quota_members <- lss_noq$quota_members[0, , drop = FALSE]
   out_none <- tempfile(fileext = ".docx")
   on.exit(unlink(out_none), add = TRUE)
-  render_questionnaire(hesav, out_none, chrome_lang = "en")
+  render_questionnaire(lss_noq, out_none, chrome_lang = "en")
   t_none <- paste(
     officer::docx_summary(officer::read_docx(out_none))$text, collapse = " | "
   )

@@ -41,7 +41,7 @@ test_that("lss_question_label prefers the type code then the theme name", {
 })
 
 test_that("every question type in the bundled fixtures is recognized", {
-  for (file in c("hesav_2026.lss", "limesurvey_survey_751689.lss")) {
+  for (file in c("demo_survey.lss", "audit_demo.lss")) {
     path <- system.file("extdata", file, package = "lssdoc")
     skip_if_not(file.exists(path))
     lss <- read_lss(path)

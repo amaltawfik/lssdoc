@@ -3,30 +3,30 @@ test_that("lss_model rejects non-lss input", {
 })
 
 test_that("lss_model validates requested languages", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
-  expect_error(lss_model(lss, languages = "es"), class = "lssdoc_unknown_language")
+  expect_error(lss_model(lss, languages = "it"), class = "lssdoc_unknown_language")
   expect_identical(lss_model(lss, languages = "fr")$languages, "fr")
 })
 
 test_that("lss_model assembles groups and questions in order", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   m <- lss_model(read_lss(path))
 
   expect_s3_class(m, "lss_model")
-  expect_identical(m$languages, c("de", "fr"))
-  expect_length(m$groups, 5L)
+  expect_identical(m$languages, c("en", "de", "es", "fr"))
+  expect_length(m$groups, 6L)
 
   n_q <- sum(vapply(m$groups, function(g) length(g$questions), integer(1)))
-  expect_identical(n_q, 31L)
+  expect_identical(n_q, 47L)
 
-  expect_identical(m$groups[[1]]$names$fr, "Vos études à la HES-SO")
+  expect_identical(m$groups[[1]]$names$fr, "Introduction et profil")
 })
 
 test_that("list questions carry per-language answer labels", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   m <- lss_model(read_lss(path))
   all_q <- unlist(lapply(m$groups, function(g) g$questions), recursive = FALSE)
@@ -42,7 +42,7 @@ test_that("list questions carry per-language answer labels", {
 })
 
 test_that("array questions carry subquestions and a shared answer scale", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   m <- lss_model(read_lss(path))
   all_q <- unlist(lapply(m$groups, function(g) g$questions), recursive = FALSE)
@@ -54,7 +54,7 @@ test_that("array questions carry subquestions and a shared answer scale", {
 })
 
 test_that("multiple-choice questions use subquestions, not answers", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   m <- lss_model(read_lss(path))
   all_q <- unlist(lapply(m$groups, function(g) g$questions), recursive = FALSE)
@@ -65,7 +65,7 @@ test_that("multiple-choice questions use subquestions, not answers", {
 })
 
 test_that("subquestion attributes are exposed on the model subq objects", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
   # The bundled fixtures do not use per-subquestion attributes, so we
@@ -96,7 +96,7 @@ test_that("subquestion attributes are exposed on the model subq objects", {
 })
 
 test_that("a missing translation surfaces as NA, not a dropped entry", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   # Request only the base language; every question still has an fr entry.
   m <- lss_model(read_lss(path), languages = "fr")

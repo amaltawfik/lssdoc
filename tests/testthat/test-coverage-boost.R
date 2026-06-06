@@ -61,7 +61,7 @@ test_that("lss_type_info returns a default 'other' row for an unknown code", {
 # ---- print.lss_audit with findings ---------------------------------
 
 test_that("print.lss_audit lists findings and respects the n cap", {
-  path <- system.file("extdata", "limesurvey_survey_751689.lss",
+  path <- system.file("extdata", "demo_survey.lss",
                       package = "lssdoc")
   skip_if_not(file.exists(path))
   au <- audit_lss(read_lss(path))
@@ -80,7 +80,7 @@ test_that("a render with authors, description, admin/privacy and item headings s
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "limesurvey_survey_751689.lss",
+  path <- system.file("extdata", "demo_survey.lss",
                       package = "lssdoc")
   skip_if_not(file.exists(path))
 

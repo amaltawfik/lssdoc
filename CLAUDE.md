@@ -27,8 +27,9 @@ Optional dependencies (Suggests): `officer`, `flextable` (used only
 by the rendering path). Guard all usage with `requireNamespace()`
 and a clear, actionable error (`lssdoc_missing_suggest`).
 
-Example data ships in `inst/extdata/` (`hesav_2026.lss`,
-`limesurvey_survey_751689.lss`).
+Example data ships in `inst/extdata/`: `demo_survey.lss` (clean
+synthetic four-language survey with quotas and consent) and
+`audit_demo.lss` (deliberately flawed, for the audit).
 
 ## Working style
 

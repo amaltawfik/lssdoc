@@ -80,7 +80,7 @@ distributing the full questionnaire.
 \dontrun{
 # One-shot (path -> .docx)
 render_audit(
-  system.file("extdata", "limesurvey_survey_751689.lss",
+  system.file("extdata", "demo_survey.lss",
               package = "lssdoc"),
   tempfile(fileext = ".docx")
 )

@@ -15,7 +15,7 @@ lss_render_q_text <- function(input, ..., template = "cards") {
 # ---- Render arguments and toggles ----------------------------------
 
 test_that("render_questionnaire honors a single-language scalar 'title'", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   txt <- lss_render_q_text(read_lss(path), chrome_lang = "en",
                            title = "Custom Override Title")
@@ -23,7 +23,7 @@ test_that("render_questionnaire honors a single-language scalar 'title'", {
 })
 
 test_that("render_questionnaire honors a per-language named title", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   txt <- lss_render_q_text(
     read_lss(path), chrome_lang = "en",
@@ -35,7 +35,7 @@ test_that("render_questionnaire honors a per-language named title", {
 })
 
 test_that("show_header_title = FALSE hides the survey title from page headers", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -49,7 +49,7 @@ test_that("show_header_title = FALSE hides the survey title from page headers", 
 })
 
 test_that("show_source = FALSE hides Source file and Survey ID rows", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   with <- lss_render_q_text(read_lss(path), chrome_lang = "en")
   without <- lss_render_q_text(read_lss(path), chrome_lang = "en",
@@ -59,7 +59,7 @@ test_that("show_source = FALSE hides Source file and Survey ID rows", {
 })
 
 test_that("show_item_heading = TRUE adds the bold variable heading line", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -81,7 +81,7 @@ test_that("show_item_heading = TRUE adds the bold variable heading line", {
 })
 
 test_that("show_raw_filter = TRUE adds the raw expression underneath the plain form", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
   has_rel <- !is.na(lss$questions$relevance) &
@@ -94,7 +94,7 @@ test_that("show_raw_filter = TRUE adds the raw expression underneath the plain f
 })
 
 test_that("page_format = 'A4-landscape' is accepted", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -107,7 +107,7 @@ test_that("page_format = 'A4-landscape' is accepted", {
 })
 
 test_that("page_format = 'A3' is accepted", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -122,7 +122,7 @@ test_that("page_format = 'A3' is accepted", {
 # ---- font / font_code overrides ------------------------------------
 
 test_that("font and font_code overrides flow through the theme", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -150,7 +150,7 @@ test_that("lss_validate_font rejects non-character / NA / multi-element values",
 # ---- Audit doc paths --------------------------------------------------
 
 test_that("render_audit accepts logo, font, font_code, colors, authors, description", {
-  path <- system.file("extdata", "limesurvey_survey_751689.lss",
+  path <- system.file("extdata", "demo_survey.lss",
                       package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
@@ -174,7 +174,7 @@ test_that("render_audit accepts logo, font, font_code, colors, authors, descript
 })
 
 test_that("render_audit on a clean survey still renders a doc with the all-clear text", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -210,7 +210,7 @@ test_that("lss_normalize_authors accepts a partial list element", {
 # ---- description multiline + URL detection -------------------------
 
 test_that("description with line breaks and URLs renders without error", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -235,7 +235,7 @@ test_that("description with line breaks and URLs renders without error", {
 # ---- Cover ID resolver and various titles --------------------------
 
 test_that("render_questionnaire accepts authors as a named character vector", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -255,7 +255,7 @@ test_that("render_questionnaire accepts authors as a named character vector", {
 })
 
 test_that("render_questionnaire accepts authors as an unnamed character vector", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -275,7 +275,7 @@ test_that("render_questionnaire accepts authors as an unnamed character vector",
 # ---- show_admin_settings -------------------------------------------
 
 test_that("show_admin_settings = TRUE accepts the flag without error", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -294,7 +294,7 @@ test_that("show_admin_settings = TRUE accepts the flag without error", {
 # ---- One language only ---------------------------------------------
 
 test_that("a one-language render produces a portrait document", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
   skip_if_not_installed("officer")
@@ -309,7 +309,7 @@ test_that("a one-language render produces a portrait document", {
 # ---- chrome_lang = NULL follows languages[1] ------------------------
 
 test_that("chrome_lang = NULL (default) follows the primary content language", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   # languages[1] = "fr", chrome_lang unspecified -> French chrome.
   txt <- lss_render_q_text(read_lss(path),

@@ -60,7 +60,7 @@ test_that("render_questionnaire produces a real PDF when LibreOffice is availabl
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   skip_if(is.null(lss_find_soffice()), "LibreOffice not installed")
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".pdf")
   on.exit(unlink(out), add = TRUE)

@@ -2,19 +2,6 @@
 #
 # Extracted from R/render_lss_docx.R.
 
-#' Build the meta header line text for a question
-#' @keywords internal
-#' @noRd
-lss_question_meta <- function(q, theme) {
-  parts <- c(
-    sprintf("Q %s", q$code),
-    sprintf("Type: %s", q$type_label),
-    sprintf("Mandatory: %s", lss_yes_no(q$mandatory)),
-    sprintf("Filter: %s", lss_relevance_label(q$relevance))
-  )
-  paste(parts, collapse = "  \u00b7  ")
-}
-
 #' Apply consistent visual polish to a flextable
 #' @keywords internal
 #' @noRd

@@ -2,7 +2,7 @@ test_that("render_questionnaire parses then renders to .docx", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
@@ -15,7 +15,7 @@ test_that("render_audit writes an audit-only document", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
@@ -45,7 +45,7 @@ test_that("render_questionnaire and render_audit produce PDFs when soffice is pr
   if (is.null(lssdoc:::lss_find_soffice())) {
     skip("LibreOffice not installed in this environment")
   }
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
 
   pdf_full <- tempfile(fileext = ".pdf")

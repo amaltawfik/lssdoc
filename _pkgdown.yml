@@ -15,6 +15,17 @@ home:
     translations, dangling references, structural issues) without
     any AI. Processing is fully local -- nothing is ever uploaded
     to a third-party service.
+  sidebar:
+    structure: [links, downloads, citation, license, community, authors, dev]
+    components:
+      downloads:
+        title: Example output
+        text: >
+          The bundled demo survey rendered in full, all four languages side
+          by side &mdash;
+          [cards layout](https://amaltawfik.github.io/lssdoc/demo_survey-cards.docx)
+          and
+          [table / codebook](https://amaltawfik.github.io/lssdoc/demo_survey-table.docx).
 
 template:
   bootstrap: 5

@@ -47,7 +47,7 @@ test_that("print.lss_audit caps the list and summarizes the remainder", {
 # ---- Output-extension guard ----------------------------------------
 
 test_that("render_questionnaire rejects an output path that is neither .docx nor .pdf", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   expect_error(
     render_questionnaire(path, tempfile(fileext = ".txt")),

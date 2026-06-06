@@ -6,21 +6,6 @@
 # Filter cell of every rendered question. Audited and tested in
 # tests/testthat/test-humanize_relevance.R.
 
-#' Display label for a relevance expression
-#'
-#' When `theme` is supplied, the localized "All" string from
-#' `theme$chrome$filter_all` is used; otherwise English (audit text
-#' generation does not thread the chrome through).
-#' @keywords internal
-#' @noRd
-lss_relevance_label <- function(x, theme = NULL) {
-  if (is.null(x) || is.na(x) || !nzchar(x)) return("\u2014")
-  if (identical(x, "1")) {
-    return(if (!is.null(theme)) theme$chrome$filter_all else "All")
-  }
-  x
-}
-
 #' Best-effort translation of a LimeSurvey relevance expression into a
 #' human-readable form.
 #'

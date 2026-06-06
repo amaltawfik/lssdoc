@@ -74,8 +74,9 @@ languages displayed side-by-side in the item table.
 \item \code{"table"} renders a single dense table covering the whole
 document: every variable is one tinted Question row carrying
 \code{No | Variable | Type | Mand. | Filter}, followed by one or
-more white Value rows. Group banners become merged section
-rows; the column header repeats on every page. The body font
+more white Value rows. Group banners (and a group's
+description, when the author wrote one) become section rows;
+the column header repeats on every page. The body font
 steps down for three or four languages so the columns stay
 within the portrait content width.
 }}
@@ -367,7 +368,7 @@ and use \verb{File > Save As > PDF}.
 
 \examples{
 \dontrun{
-file <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+file <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
 
 # One-shot: parse + render Word document
 render_questionnaire(file, tempfile(fileext = ".docx"))

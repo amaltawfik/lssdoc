@@ -512,53 +512,6 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   lss_render_item_table(doc, theme, langs, rows)
 }
 
-#' Render the parent stem of a compound question as a small bordered block
-#'
-#' A meta line with the parent code and type, then a one-row flextable with
-#' one column per language showing the stem text. Optional help and
-#' attributes (prefix, suffix, validation, etc.) follow below.
-#'
-#' @keywords internal
-#' @noRd
-lss_render_parent_stem <- function(doc, q, langs, theme,
-                                   show_help, show_attrs, audit_idx, state) {
-  # No H1 emitted here, so the running item counter must NOT advance: the
-  # parent stem is a banner, only its subq items below carry a number.
-  doc <- lss_render_item_spacer(doc, theme)
-  doc <- lss_render_question_meta_table(
-    doc, theme,
-    item_no = NA_integer_,
-    variable = q$code,
-    type = q$type, type_label = lss_localized_type_label(q, theme),
-    mandatory = q$mandatory, relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
-  )
-  doc <- lss_render_intra_item_gap(doc, theme)
-
-  texts_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$question)
-  help_by_lang <- lapply(langs, function(lg) q$texts[[lg]]$help)
-  rows <- list()
-  rows[[length(rows) + 1L]] <- list(
-    label = theme$chrome$item_question,
-    texts = stats::setNames(texts_by_lang, langs),
-    size = theme$size_question
-  )
-  if (isTRUE(show_help) && lss_any_present(help_by_lang)) {
-    rows[[length(rows) + 1L]] <- list(
-      label = theme$chrome$item_help,
-      texts = stats::setNames(help_by_lang, langs),
-      size = theme$size_help,
-      color = theme$color_muted,
-      italic = TRUE
-    )
-  }
-  coding <- lss_coding_row(q, langs, theme)
-  if (!is.null(coding)) rows[[length(rows) + 1L]] <- coding
-  rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
-  doc <- lss_render_item_table(doc, theme, langs, rows)
-  doc
-}
-
 #' Render the LimeSurvey "Other:" text input as a standalone item
 #'
 #' When a question has `other = "Y"`, LimeSurvey generates an
@@ -694,66 +647,6 @@ lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
          section_with_text = TRUE, span_note = TRUE)
   )
   lss_render_item_table(doc, theme, langs, rows)
-}
-
-#' Render the shared answer scale of an array-style question
-#' @keywords internal
-#' @noRd
-lss_render_shared_scale <- function(doc, q, langs, theme) {
-  scales <- if (!is.null(q$scales) && length(q$scales) > 1L) q$scales else list(default = q$answers)
-  for (si in seq_along(scales)) {
-    answers <- scales[[si]]
-    if (length(answers) == 0L) next
-    title <- if (length(scales) > 1L) {
-      sprintf("Shared answer scale %d", si)
-    } else {
-      "Shared answer scale"
-    }
-    doc <- officer::body_add_fpar(
-      doc,
-      officer::fpar(officer::ftext(
-        title,
-        prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_question,
-          bold = TRUE, color = theme$color_primary
-        )
-      ))
-    )
-    doc <- lss_render_scale_table(doc, answers, langs, theme)
-  }
-  doc
-}
-
-#' Build the answer-scale flextable
-#' @keywords internal
-#' @noRd
-lss_render_scale_table <- function(doc, answers, langs, theme) {
-  df <- data.frame(
-    code = vapply(answers, function(a) a$code, character(1)),
-    stringsAsFactors = FALSE
-  )
-  for (lg in langs) df[[lg]] <- ""
-  ft <- flextable::flextable(df)
-  ft <- flextable::set_header_labels(
-    ft,
-    values = c(
-      list(code = "Value"),
-      stats::setNames(as.list(lss_language_label(langs)), langs)
-    )
-  )
-  for (i in seq_along(answers)) {
-    for (lg in langs) {
-      ft <- flextable::compose(
-        ft, i = i, j = lg,
-        value = lss_compose(answers[[i]]$labels[[lg]], theme,
-                            size = theme$size_question)
-      )
-    }
-  }
-  ft <- lss_table_polish(ft, theme, lang_cols = langs, has_code = TRUE,
-                         body_size = theme$size_question,
-                         header_size = theme$size_question)
-  flextable::body_add_flextable(doc, ft, align = "left")
 }
 
 #' Render a subquestion as a fully self-contained numbered item
@@ -1242,40 +1135,6 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
-#' Item-table row describing the response coding for types where it is
-#' implicit rather than listed as enumerated answers
-#'
-#' For multiple-choice questions and predefined types (Yes/No, 5-point,
-#' gender), LimeSurvey stores responses with implicit codes (`Y/empty`,
-#' `Y/N`, `1..5`, ...). The Value section of the item table either
-#' lists the answer codes explicitly (for `has_answers` types) or stays
-#' empty (for predefined types). This helper produces a small italic
-#' "Coding" row that documents the value mapping for the latter case.
-#'
-#' @return A single row list compatible with `lss_render_item_table`,
-#'   or `NULL` when the type has no implicit coding worth printing.
-#' @keywords internal
-#' @noRd
-lss_coding_row <- function(q, langs, theme) {
-  coding <- switch(
-    q$type,
-    "M" = "Y = selected, blank = not selected",
-    "P" = "Y = selected, blank = not selected (plus a `<subq>comment` text variable)",
-    "Y" = "Y = Yes, N = No",
-    "G" = "M = Male, F = Female",
-    "5" = "1, 2, 3, 4, 5 (1 = lowest, 5 = highest)",
-    NULL
-  )
-  if (is.null(coding)) return(NULL)
-  list(
-    label = "Coding",
-    texts = stats::setNames(rep(list(coding), length(langs)), langs),
-    size = theme$size_meta,
-    color = theme$color_muted,
-    italic = TRUE
-  )
-}
-
 #' Build a single-row "Value" section header carrying the response
 #' format descriptor for question types that have no enumerated answer
 #' table.
@@ -1357,8 +1216,10 @@ lss_value_implicit_row <- function(q, langs, theme) {
 #' @keywords internal
 #' @noRd
 lss_predefined_labelled <- function(type) {
+  # `EXPR = type` is explicit so the "E" case label is not seen as a
+  # partial match for switch()'s `EXPR` formal (R CMD check NOTE).
   switch(
-    type,
+    EXPR = type,
     "C" = list(c("Y", "value_array_yes"), c("U", "value_array_uncertain"),
                c("N", "value_array_no")),
     "E" = list(c("I", "value_array_increase"), c("S", "value_array_same"),
@@ -1591,21 +1452,6 @@ lss_render_lang_block <- function(doc, texts_by_lang, langs, theme,
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
-#' Render a language block only when at least one language has non-empty text
-#' @keywords internal
-#' @noRd
-lss_render_optional_lang_block <- function(doc, texts_by_lang, langs, theme,
-                                           size, color, italic = FALSE) {
-  any_present <- any(vapply(
-    texts_by_lang,
-    function(v) !is.null(v) && !is.na(v) && nzchar(trimws(as.character(v))),
-    logical(1)
-  ))
-  if (!any_present) return(doc)
-  lss_render_lang_block(doc, texts_by_lang, langs, theme,
-                        size = size, color = color, italic = italic)
-}
-
 #' Build item-table rows for the requested question attributes
 #'
 #' Each rendered attribute becomes one labelled row inside the item
@@ -1731,26 +1577,5 @@ lss_exclusive_row <- function(q, sq, langs, theme) {
     italic = TRUE,
     span_note = TRUE
   )
-}
-
-#' Legacy: render attributes as small italic lines (kept for backward
-#' compatibility, no longer called from the main render path).
-#' @keywords internal
-#' @noRd
-lss_render_attrs <- function(doc, q, langs, theme, show_attrs) {
-  for (row in lss_attr_rows(q, langs, theme, show_attrs)) {
-    val <- paste(unlist(row$texts), collapse = " | ")
-    doc <- officer::body_add_fpar(
-      doc,
-      officer::fpar(officer::ftext(
-        sprintf("%s: %s", row$label, val),
-        prop = officer::fp_text(
-          font.family = theme$font_body, font.size = theme$size_meta,
-          color = theme$color_muted, italic = TRUE
-        )
-      ))
-    )
-  }
-  doc
 }
 

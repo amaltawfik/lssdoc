@@ -3,7 +3,7 @@ test_that("render_audit rejects bad inputs", {
     render_audit(list(), tempfile(fileext = ".docx")),
     class = "lssdoc_bad_input"
   )
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
   expect_error(render_audit(lss, 123), class = "lssdoc_bad_output")
@@ -13,7 +13,7 @@ test_that("render_audit writes a focused audit document", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
@@ -47,11 +47,18 @@ test_that("render_audit on a clean survey says 'no anomalies'", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_audit(read_lss(path), out, chrome_lang = "en")
+  # The demo survey carries a single informational note (an equation
+  # question with no display text). Give that question text so the audit
+  # comes back perfectly clean and the "no anomalies" branch renders.
+  lss <- read_lss(path)
+  eq <- lss$questions$qid[lss$questions$type == "*"]
+  is_eq <- lss$question_l10ns$qid %in% eq & !nzchar(lss$question_l10ns$question)
+  lss$question_l10ns$question[is_eq] <- "Computed value"
+  render_audit(lss, out, chrome_lang = "en")
   s <- officer::docx_summary(officer::read_docx(out))
   expect_true(any(grepl("No anomalies detected", s$text)))
 })

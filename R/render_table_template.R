@@ -48,6 +48,9 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     } else if (identical(r$kind, "group")) {
       df$Field[i] <- chrome$item_group
       # Group name composed below per language via flextable::compose.
+    } else if (identical(r$kind, "group_description")) {
+      # Field stays blank: the row reads as the group banner's intro
+      # text. The localized description is composed below.
     } else if (identical(r$kind, "scale_header")) {
       # Dual-scale separator: announce "Value (scale N)" on the
       # Value column. Lang cells stay empty.
@@ -174,8 +177,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     }
 
     if (identical(kind, "welcome") || identical(kind, "endtext") ||
-        identical(kind, "description")) {
-      # Welcome / End text: full HTML content composed per language
+        identical(kind, "description") || identical(kind, "group_description")) {
+      # Welcome / End text / group intro: full HTML content per language
       # via the same lss_compose() helper the cards template uses
       # for the side-by-side block, so paragraphs and formatting
       # are preserved.
@@ -357,6 +360,20 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
       kind = "group",
       name_by_lang = group_names
     )
+    # Group description (when the author wrote one): a row right under
+    # the banner carrying the localized intro text, mirroring what the
+    # cards template renders below the group title. Skipped when every
+    # language is blank, so a group without a description adds no row.
+    desc_vals <- vapply(langs, function(lg) {
+      v <- if (!is.null(g$descriptions[[lg]])) g$descriptions[[lg]] else NA_character_
+      if (is.null(v) || is.na(v)) NA_character_ else as.character(v)
+    }, character(1))
+    if (any(!is.na(desc_vals) & nzchar(trimws(desc_vals)))) {
+      rows[[length(rows) + 1L]] <- list(
+        kind = "group_description",
+        text_by_lang = stats::setNames(as.list(desc_vals), langs)
+      )
+    }
   }
 
   # Build one Question row per variable (carrying the meta and the
@@ -1101,6 +1118,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # welcome / endtext sit outside the data flow with accent borders.
   kinds <- vapply(rows, function(r) as.character(r$kind), character(1L))
   group_idx        <- which(kinds == "group")
+  group_desc_idx   <- which(kinds == "group_description")
   question_idx     <- which(kinds %in% c("leaf", "subq", "other"))
   scale_header_idx <- which(kinds == "scale_header")
   welcome_idx      <- which(kinds %in% c("welcome", "endtext", "description"))
@@ -1148,6 +1166,15 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
                              part = "body")
     }
     ft <- flextable::padding(ft, i = gi, padding.top = 6, padding.bottom = 6,
+                             padding.left = 4, padding.right = 4,
+                             part = "body")
+  }
+  # Group description rows: same band tint as the group banner above so
+  # the two read as a single section block; lighter padding since the
+  # intro text follows the title directly.
+  for (gd in group_desc_idx) {
+    ft <- flextable::bg(ft, i = gd, bg = theme$color_band, part = "body")
+    ft <- flextable::padding(ft, i = gd, padding.top = 4, padding.bottom = 6,
                              padding.left = 4, padding.right = 4,
                              part = "body")
   }

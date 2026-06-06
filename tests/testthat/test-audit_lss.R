@@ -2,26 +2,40 @@ test_that("audit_lss rejects objects that are not lss", {
   expect_error(audit_lss(list()), class = "lssdoc_bad_input")
 })
 
-test_that("a clean survey produces no findings", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+test_that("the demo survey has no error- or warning-level findings", {
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   a <- audit_lss(read_lss(path))
   expect_s3_class(a, "lss_audit")
-  expect_identical(a$n_findings, 0L)
+  # The demo survey is editorially clean: its only finding is an
+  # informational note (an equation question carries no display text).
+  expect_false(any(a$findings$severity %in% c("error", "warning")))
   expect_s3_class(as.data.frame(a), "data.frame")
 })
 
-test_that("an empty boilerplate text is flagged as an error", {
-  path <- system.file("extdata", "limesurvey_survey_751689.lss", package = "lssdoc")
+test_that("an empty (non-equation) question text is flagged as an error", {
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  a <- audit_lss(read_lss(path))
-  empties <- a$findings[a$findings$check == "empty_in_all_languages", ]
+  lss <- read_lss(path)
+
+  # Blank the first non-equation question's text in every language; a
+  # real question (unlike an equation) must carry text, so this is an
+  # error-severity finding.
+  i <- which(lss$questions$type != "*")[1]
+  qid <- lss$questions$qid[i]
+  lss$question_l10ns$question[lss$question_l10ns$qid == qid] <- ""
+
+  a <- audit_lss(lss)
+  empties <- a$findings[
+    a$findings$check == "empty_in_all_languages" &
+      grepl(lss$questions$title[i], a$findings$location, fixed = TRUE),
+  ]
   expect_true(nrow(empties) >= 1)
   expect_true(all(empties$severity == "error"))
 })
 
 test_that("a missing translation in one language is detected", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -37,7 +51,7 @@ test_that("a missing translation in one language is detected", {
 })
 
 test_that("duplicate question codes are flagged as errors", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -51,7 +65,7 @@ test_that("duplicate question codes are flagged as errors", {
 })
 
 test_that("orphan subquestions are detected", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
   lss$subquestions$parent_qid[1] <- "999999999"
@@ -61,7 +75,7 @@ test_that("orphan subquestions are detected", {
 })
 
 test_that("an empty equation text is a note, not an error", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -81,7 +95,7 @@ test_that("an empty equation text is a note, not an error", {
 })
 
 test_that("a filter referencing a later variable is flagged as an error", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -104,7 +118,7 @@ test_that("a filter referencing a later variable is flagged as an error", {
 })
 
 test_that("a backward filter reference does not trigger forward_filter_reference", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -123,7 +137,7 @@ test_that("a backward filter reference does not trigger forward_filter_reference
 })
 
 test_that("an array whose subquestion scales do not match the answer scales is flagged", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -149,7 +163,7 @@ test_that("an array whose subquestion scales do not match the answer scales is f
 })
 
 test_that("whitespace in a question code is flagged as a warning", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -162,7 +176,7 @@ test_that("whitespace in a question code is flagged as a warning", {
 })
 
 test_that("whitespace inside a code is also caught", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -175,7 +189,7 @@ test_that("whitespace inside a code is also caught", {
 })
 
 test_that("print.lss_audit paginates and respects n = Inf", {
-  path <- system.file("extdata", "limesurvey_survey_751689.lss",
+  path <- system.file("extdata", "demo_survey.lss",
                       package = "lssdoc")
   skip_if_not(file.exists(path))
   a <- audit_lss(read_lss(path))
@@ -197,8 +211,8 @@ test_that("print.lss_audit paginates and respects n = Inf", {
   expect_no_match(out_full, "more finding")
 })
 
-test_that("audit_lss returns an empty data frame when no findings", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+test_that("as.data.frame keeps a stable column set regardless of findings", {
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   a <- audit_lss(read_lss(path))
   expect_s3_class(as.data.frame(a), "data.frame")

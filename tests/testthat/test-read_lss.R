@@ -25,28 +25,28 @@ test_that("read_lss rejects XML that is not a survey export", {
   expect_error(read_lss(not_survey), class = "lssdoc_not_a_survey")
 })
 
-test_that("read_lss reads the bundled hesav example", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+test_that("read_lss reads the bundled demo survey", {
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
   expect_s3_class(lss, "lss")
-  expect_identical(lss$languages, c("de", "fr"))
+  expect_identical(lss$languages, c("en", "de", "es", "fr"))
   expect_identical(lss$base_language, "fr")
   expect_identical(lss$doc_type, "Survey")
 
-  expect_identical(nrow(lss$groups), 5L)
-  expect_identical(nrow(lss$questions), 31L)
-  expect_identical(nrow(lss$subquestions), 78L)
-  expect_identical(nrow(lss$answers), 86L)
+  expect_identical(nrow(lss$groups), 6L)
+  expect_identical(nrow(lss$questions), 47L)
+  expect_identical(nrow(lss$subquestions), 55L)
+  expect_identical(nrow(lss$answers), 64L)
 })
 
 test_that("read_lss keeps localized text and distinguishes empty from absent", {
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
-  expect_setequal(unique(lss$question_l10ns$language), c("de", "fr"))
+  expect_setequal(unique(lss$question_l10ns$language), c("en", "de", "es", "fr"))
   expect_true(all(c("question", "help") %in% names(lss$question_l10ns)))
   expect_true(any(nzchar(lss$question_l10ns$question)))
 

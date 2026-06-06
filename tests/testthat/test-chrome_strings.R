@@ -103,7 +103,7 @@ test_that("lss_localized_type_label uses the chrome strings", {
 test_that("the rendered document contains chrome strings in the requested language", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
@@ -126,7 +126,7 @@ test_that("the rendered document contains chrome strings in the requested langua
 test_that("chrome_lang = 'en' forces English chrome even with FR/DE content", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "hesav_2026.lss", package = "lssdoc")
+  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- read_lss(path)
 
