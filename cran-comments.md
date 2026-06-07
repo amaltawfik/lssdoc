@@ -1,12 +1,19 @@
+## Resubmission
+
+This is a resubmission. In response to the CRAN review:
+
+* The software name 'LimeSurvey' is now single-quoted in the Title and
+  Description fields of DESCRIPTION.
+
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
 * This is a new release, so there is a "New submission" NOTE.
 
-Words flagged by the spell checker in the DESCRIPTION ("LimeSurvey",
-"methodologists") are, respectively, the name of the survey software the
-package reads and a correctly spelled English term.
+The spell checker may still flag "LimeSurvey" (now single-quoted, the name
+of the survey software the package reads) and "methodologists" (a correctly
+spelled English term).
 
 ## Test environments
 
