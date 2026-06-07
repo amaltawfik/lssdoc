@@ -73,7 +73,7 @@ demo <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
 audit_lss(demo)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpGE2lw0/temp_libpath1af3596e159a/lssdoc/extdata/audit_demo.lss
+#> File: /tmp/RtmpKWxKBP/temp_libpath1af349c97e35/lssdoc/extdata/audit_demo.lss
 #> Languages: "en" and "fr"
 #> 12 findings: 5 errors, 7 warnings, 0 notes.
 #> ✖ Survey: Duplicate question code: 'age'.

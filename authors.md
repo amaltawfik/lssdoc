@@ -11,11 +11,11 @@ Source:
 [`DESCRIPTION`](https://github.com/amaltawfik/lssdoc/blob/main/DESCRIPTION)
 
 Tawfik A (2026). *lssdoc: Render Multilingual Questionnaires from
-LimeSurvey '.lss' Files*. R package version 0.1.0,
+'LimeSurvey' '.lss' Files*. R package version 0.1.0,
 <https://amaltawfik.github.io/lssdoc/>.
 
     @Manual{,
-      title = {lssdoc: Render Multilingual Questionnaires from LimeSurvey '.lss' Files},
+      title = {lssdoc: Render Multilingual Questionnaires from 'LimeSurvey' '.lss' Files},
       author = {Amal Tawfik},
       year = {2026},
       note = {R package version 0.1.0},
