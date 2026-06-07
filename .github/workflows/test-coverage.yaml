@@ -39,7 +39,11 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' && true || false }}
+          # Codecov upload is informational; a Codecov-side outage (e.g. the
+          # CLI's GPG signature verification failing to fetch the public key)
+          # must not redden the build. Coverage is still computed and uploaded
+          # when Codecov is reachable.
+          fail_ci_if_error: false
           files: ./cobertura.xml
           plugins: noop
           disable_search: true
