@@ -69,16 +69,8 @@ Other things lssdoc takes care of for you:
 
 ## Installation
 
-Install the released version from CRAN:
-
-``` r
-
-install.packages("lssdoc")
-```
-
-Or the latest build from
-[R-universe](https://amaltawfik.r-universe.dev/lssdoc) (pre-built, no
-compiler needed):
+From [R-universe](https://amaltawfik.r-universe.dev/lssdoc) (recommended
+– pre-built, no compiler needed):
 
 ``` r
 
@@ -184,7 +176,7 @@ render_questionnaire(
   ),
   description = paste0(
     "Validated as part of the SNSF project XYZ. ",
-    "Reference: https://example.org/projects/xyz"
+    "Reference: https://doi.org/10.5281/zenodo.123456"
   )
 )
 ```
