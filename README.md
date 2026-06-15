@@ -5,14 +5,18 @@
 
 <!-- badges: start -->
 
-[![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![Project Status:
-WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/lssdoc)](https://CRAN.R-project.org/package=lssdoc)
+[![CRAN
+downloads](https://cranlogs.r-pkg.org/badges/lssdoc)](https://CRAN.R-project.org/package=lssdoc)
 [![R-CMD-check](https://github.com/amaltawfik/lssdoc/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amaltawfik/lssdoc/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/amaltawfik/lssdoc/graph/badge.svg)](https://app.codecov.io/gh/amaltawfik/lssdoc)
 [![R-universe](https://amaltawfik.r-universe.dev/badges/lssdoc)](https://amaltawfik.r-universe.dev/lssdoc)
+[![Lifecycle:
+stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
+[![Project Status:
+Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![MIT
 License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
@@ -77,8 +81,15 @@ Other things lssdoc takes care of for you:
 
 ## Installation
 
-From [R-universe](https://amaltawfik.r-universe.dev/lssdoc) (recommended
-– pre-built, no compiler needed):
+Install the released version from CRAN:
+
+``` r
+install.packages("lssdoc")
+```
+
+Or the latest build from
+[R-universe](https://amaltawfik.r-universe.dev/lssdoc) (pre-built, no
+compiler needed):
 
 ``` r
 install.packages(
@@ -175,7 +186,7 @@ render_questionnaire(
   ),
   description = paste0(
     "Validated as part of the SNSF project XYZ. ",
-    "Reference: https://doi.org/10.5281/zenodo.123456"
+    "Reference: https://example.org/projects/xyz"
   )
 )
 ```

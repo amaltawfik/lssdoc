@@ -14,3 +14,6 @@ dev/references/
 .claude/
 /doc/
 /Meta/
+
+# AI agent instructions: keep local, do not publish
+CLAUDE.md
