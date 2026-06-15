@@ -144,6 +144,17 @@ fix_html_encoding_artifacts <- function(dir = docs_dir) {
 
 pkgdown::build_site()
 
+# --- disable Jekyll on GitHub Pages ------------------------------------------
+# GitHub Pages serves this branch with the legacy (Jekyll) builder. Without a
+# `.nojekyll` marker, Jekyll runs its Liquid parser over the static pkgdown
+# output and crashes on literal `{{ ... }}` sequences -- e.g. the BibTeX form
+# of the citation, which contains `{{lssdoc}`. pkgdown normally writes this
+# file; we force it so the deployed site always serves as-is.
+nojekyll <- file.path(docs_dir, ".nojekyll")
+if (!file.exists(nojekyll)) {
+  file.create(nojekyll)
+}
+
 # --- downloadable rendered examples ------------------------------------------
 # Render the bundled demo survey to .docx and drop the files into the built
 # site so the Get Started article and the README can offer a "download the
