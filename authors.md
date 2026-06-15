@@ -8,16 +8,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/amaltawfik/lssdoc/blob/main/DESCRIPTION)
+[`inst/CITATION`](https://github.com/amaltawfik/lssdoc/blob/main/inst/CITATION)
 
 Tawfik A (2026). *lssdoc: Render Multilingual Questionnaires from
-'LimeSurvey' '.lss' Files*. R package version 0.1.0,
-<https://amaltawfik.github.io/lssdoc/>.
+'LimeSurvey' '.lss' Files*. R package version 0.1.0.9000,
+<https://CRAN.R-project.org/package=lssdoc>.
 
     @Manual{,
-      title = {lssdoc: Render Multilingual Questionnaires from 'LimeSurvey' '.lss' Files},
+      title = {{lssdoc}: Render Multilingual Questionnaires from 'LimeSurvey' '.lss' Files},
       author = {Amal Tawfik},
       year = {2026},
-      note = {R package version 0.1.0},
-      url = {https://amaltawfik.github.io/lssdoc/},
+      note = {R package version 0.1.0.9000},
+      url = {https://CRAN.R-project.org/package=lssdoc},
     }
