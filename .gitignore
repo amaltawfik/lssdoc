@@ -17,3 +17,5 @@ dev/references/
 
 # AI agent instructions: keep local, do not publish
 CLAUDE.md
+AGENTS.md
+SPEC.md
