@@ -4,6 +4,20 @@
 on:
   push:
     branches: [main, master]
+    # Documentation- and site-only changes do not affect R CMD check, so
+    # they should not trigger this ~30 min job. Any change to R code,
+    # tests, Rd, DESCRIPTION, NAMESPACE, inst/ or vignettes still runs it.
+    paths-ignore:
+      - 'README.md'
+      - 'README.Rmd'
+      - 'NEWS.md'
+      - 'cran-comments.md'
+      - 'LICENSE.md'
+      - 'man/figures/**'
+      - 'pkgdown/**'
+      - '_pkgdown.yml'
+      - 'dev/**'
+      - '.github/workflows/pkgdown.yaml'
   pull_request:
 
 name: R-CMD-check.yaml

@@ -1,6 +1,20 @@
 on:
   push:
     branches: [main, master]
+    # Documentation- and site-only changes do not change coverage, so they
+    # should not trigger this ~1 h covr job. Any change to R code or tests
+    # still runs it.
+    paths-ignore:
+      - 'README.md'
+      - 'README.Rmd'
+      - 'NEWS.md'
+      - 'cran-comments.md'
+      - 'LICENSE.md'
+      - 'man/figures/**'
+      - 'pkgdown/**'
+      - '_pkgdown.yml'
+      - 'dev/**'
+      - '.github/workflows/pkgdown.yaml'
   pull_request:
     branches: [main, master]
 
