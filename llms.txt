@@ -14,8 +14,8 @@ Two output templates:
   table), stacked vertically. Closest to the printed questionnaire a
   respondent would see.
 
-  ![Cards layout: one card per question stacked vertically, French and
-  German side by side -- a free-text Other field, a
+  ![Cards layout: one card per question stacked vertically, English and
+  French side by side -- a free-text Other field, a
   single-choice-with-comment question showing its labelled answer scale
   and paired comment row, then a new section heading and the next
   single-choice question](reference/figures/template_cards.png)
@@ -28,11 +28,11 @@ Two output templates:
   labelled rows of the same table so the codebook reads as a single
   artifact.
 
-  ![Codebook layout: one variable per row with French and German columns
-  -- a yes/no single choice, two Number variables, a computed variable,
-  a display item, a multiple-choice question expanded into one row per
-  option with its free-text Other, and a single-choice answer scale; the
-  column header repeats automatically at the top of each new
+  ![Codebook layout: one variable per row with English and French
+  columns -- a yes/no single choice, two Number variables, a computed
+  variable, a display item, a multiple-choice question expanded into one
+  row per option with its free-text Other, and a single-choice answer
+  scale; the column header repeats automatically at the top of each new
   page](reference/figures/template_table.png)
 
 Other things lssdoc takes care of for you:
