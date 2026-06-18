@@ -1,5 +1,7 @@
 # Changelog
 
+## lssdoc (development version)
+
 ## lssdoc 0.1.1
 
 - [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
