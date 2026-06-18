@@ -1,19 +1,22 @@
-## Resubmission
+## Submission
 
-This is a resubmission. In response to the CRAN review:
+This is a patch release (0.1.1) that fixes the test ERROR reported on
+r-devel-linux-x86_64-fedora-gcc.
 
-* The software name 'LimeSurvey' is now single-quoted in the Title and
-  Description fields of DESCRIPTION.
+* On that platform's libxml2, passing non-XML input to `xml2::read_xml()`
+  aborted the R process with an uncatchable C++ exception
+  ("Start tag expected, '<' not found"), so the unit test exercising the
+  invalid-XML path crashed. `read_lss()` now pre-validates that the file
+  begins with an XML tag and fails cleanly with a classed
+  `lssdoc_invalid_xml` error before reaching libxml2.
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
-* This is a new release, so there is a "New submission" NOTE.
-
-The spell checker may still flag "LimeSurvey" (now single-quoted, the name
-of the survey software the package reads) and "methodologists" (a correctly
-spelled English term).
+* The spell checker may flag "LimeSurvey" (the survey software the package
+  reads) and "methodologists" (a correctly spelled English term) in the
+  DESCRIPTION.
 
 ## Test environments
 
