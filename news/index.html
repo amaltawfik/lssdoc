@@ -48,7 +48,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="lssdoc-011">lssdoc 0.1.1<a class="anchor" aria-label="anchor" href="#lssdoc-011"></a></h2>
 <ul><li>
-<code><a href="../reference/read_lss.html">read_lss()</a></code> now validates that the input begins with an XML tag before parsing. A non-XML or empty file fails with a clear <code>lssdoc_invalid_xml</code> error instead of, on some platforms (recent libxml2 builds), aborting the R session. Fixes the test ERROR seen on <code>r-devel-linux-x86_64-fedora-gcc</code>.</li>
+<code><a href="../reference/read_lss.html">read_lss()</a></code> now returns a clear error on a non-XML or empty file, instead of, on some systems, crashing the R session.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="lssdoc-010">lssdoc 0.1.0<a class="anchor" aria-label="anchor" href="#lssdoc-010"></a></h2><p class="text-muted">CRAN release: 2026-06-15</p>
