@@ -1,7 +1,7 @@
 ## Submission
 
 This is a patch release (0.1.1) that fixes the test ERROR reported on
-r-devel-linux-x86_64-fedora-gcc.
+r-devel-linux-x86_64-fedora-gcc (CRAN requested a correction by 2026-07-02).
 
 * On that platform's libxml2, passing non-XML input to `xml2::read_xml()`
   aborted the R process with an uncatchable C++ exception
@@ -14,9 +14,12 @@ r-devel-linux-x86_64-fedora-gcc.
 
 0 errors | 0 warnings | 1 note
 
-* The spell checker may flag "LimeSurvey" (the survey software the package
-  reads) and "methodologists" (a correctly spelled English term) in the
-  DESCRIPTION.
+* "Days since last update: 3" -- this release follows 0.1.0 closely only
+  because it corrects the CRAN-reported ERROR described above, within the
+  requested deadline.
+* If flagged, "LimeSurvey" (the survey software the package reads) and
+  "methodologists" (a correctly spelled English term) in the DESCRIPTION
+  are intentional.
 
 ## Test environments
 
