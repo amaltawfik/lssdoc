@@ -51,7 +51,7 @@ broken <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
 audit_lss(read_lss(broken))
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmprrJa5z/temp_libpath1abe48bf357f/lssdoc/extdata/audit_demo.lss
+#> File: /tmp/RtmprGop65/temp_libpath1ad04b679d3e/lssdoc/extdata/audit_demo.lss
 #> Languages: "en" and "fr"
 #> 12 findings: 5 errors, 7 warnings, 0 notes.
 #> ✖ Survey: Duplicate question code: 'age'.

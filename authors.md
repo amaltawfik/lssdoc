@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/amaltawfik/lssdoc/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/amaltawfik/lssdoc/blob/v0.1.1/inst/CITATION)
 
 Tawfik A (2026). *lssdoc: Render Multilingual Questionnaires from
 'LimeSurvey' '.lss' Files*.
