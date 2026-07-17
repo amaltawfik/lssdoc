@@ -1078,17 +1078,22 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   #   No        0.30  - 3 digits in 11 pt body font ("999" max).
   #   Variable  1.30  - common `parent_subq` codes fit on a single
   #                     11 pt Consolas line; codes >14 chars wrap.
-  #   Type      0.55  - "Single choice" wraps to two lines (an
-  #                     acceptable cost on the per-variable header
-  #                     row); shorter labels ("Number", "Text")
-  #                     fit on one line.
+  #   Type      0.62  - one-word labels ("Computed", "Number",
+  #                     "Display", "Ranking") stay on one line
+  #                     ("Computed", 8 chars at 8 pt, needs ~0.50 in
+  #                     plus cell padding, which 0.55 clipped);
+  #                     multi-word labels ("Single choice") still
+  #                     wrap, an acceptable cost on the per-variable
+  #                     header row.
   #   Mandatory 0.50  - uses the abbreviated header
   #                     (`meta_mandatory_short`); the widest
   #                     localized variant ("Pflicht", 7 chars at
   #                     8 pt bold ~0.42 in) fits with thin margin.
-  #   Filter    0.65  - editorial default (show_raw_filter = FALSE)
-  #                     shows only the plain form (e.g. `Q1 = 1`);
-  #                     longer chained conditions wrap.
+  #   Filter    0.58  - editorial default (show_raw_filter = FALSE)
+  #                     shows only the plain form; "All" fits, and a
+  #                     real condition (`workstatus = 1`) wrapped
+  #                     already at 0.65, so ceding 0.07 in to Type
+  #                     costs nothing visible.
   #   Value     0.55  - 1-3 digit codes in 11 pt Consolas bold
   #                     ("1", "12", "999").
   # Total meta = 4.47; the language columns split the remaining width.
@@ -1099,15 +1104,15 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # 0.40 in floor is a hard legibility minimum (the body font already steps
   # down to 7 pt from three languages on); if it binds, the page format is
   # too narrow for that many languages and landscape is the fix.
-  meta_w <- 0.62 + 0.30 + 1.30 + 0.55 + 0.50 + 0.65 + 0.55
+  meta_w <- 0.62 + 0.30 + 1.30 + 0.62 + 0.50 + 0.58 + 0.55
   total_w <- theme$content_width_in
   lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 0.40)
   ft <- flextable::width(ft, j = "Field",     width = 0.62, unit = "in")
   ft <- flextable::width(ft, j = "No",        width = 0.30, unit = "in")
   ft <- flextable::width(ft, j = "Variable",  width = 1.30, unit = "in")
-  ft <- flextable::width(ft, j = "Type",      width = 0.55, unit = "in")
+  ft <- flextable::width(ft, j = "Type",      width = 0.62, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.50, unit = "in")
-  ft <- flextable::width(ft, j = "Filter",    width = 0.65, unit = "in")
+  ft <- flextable::width(ft, j = "Filter",    width = 0.58, unit = "in")
   ft <- flextable::width(ft, j = "Value",     width = 0.55, unit = "in")
   for (idx in seq_len(n_lang)) {
     ft <- flextable::width(ft, j = 7L + idx, width = lang_w, unit = "in")
