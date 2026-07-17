@@ -4,6 +4,8 @@
 
 ## lssdoc 0.1.1
 
+CRAN release: 2026-06-18
+
 - [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
   now returns a clear error on a non-XML or empty file, instead of, on
   some systems, crashing the R session.
