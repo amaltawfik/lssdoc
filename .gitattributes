@@ -1,0 +1,12 @@
+# Store text files with LF and check them out with LF on every platform,
+# so Windows commits stop warning about CRLF conversion.
+* text=auto eol=lf
+
+# Binary / fixture files: preserve exact bytes, never normalize line endings.
+# The .lss fixtures matter byte-for-byte (read_lss() does a byte-level check).
+*.lss  binary
+*.docx binary
+*.xlsx binary
+*.png  binary
+*.rds  binary
+*.ico  binary
