@@ -2,6 +2,9 @@
 
 ## lssdoc (development version)
 
+- The table codebook’s “Type” column no longer wraps one-word labels
+  (such as “Computed”) onto a second line.
+
 ## lssdoc 0.1.1
 
 CRAN release: 2026-06-18

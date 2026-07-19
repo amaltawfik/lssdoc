@@ -32,5 +32,5 @@ for rendering several variants from a single parse.
 
 - [`lssdoc`](https://amaltawfik.github.io/lssdoc/reference/lssdoc-package.md)
   [`lssdoc-package`](https://amaltawfik.github.io/lssdoc/reference/lssdoc-package.md)
-  : lssdoc: Render Multilingual Questionnaires from LimeSurvey '.lss'
-  Files
+  : lssdoc: Render 'LimeSurvey' '.lss' Questionnaires as Word and PDF
+  Documents
