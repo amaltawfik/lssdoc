@@ -143,7 +143,7 @@ lss_margin_side_in <- 0.98
 #' Usable body width (in) for a page format
 #'
 #' The meta table, item table, audit table, quota table and the dense
-#' codebook table are all laid out to this width so they sit flush
+#' table are all laid out to this width so they sit flush
 #' between the margins instead of overflowing the page or leaving an
 #' empty band. It depends ONLY on the page orientation (never on the
 #' language count): portrait fits 6.30 in, A4 landscape 9.72 in, A3
