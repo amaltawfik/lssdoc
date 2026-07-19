@@ -22,3 +22,6 @@ SPEC.md
 
 # covr artifacts (dev-only, excluded from the build via .Rbuildignore)
 dev/_cov*
+
+# Local render outputs and survey data used during development
+dev/examples/
