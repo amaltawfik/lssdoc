@@ -282,10 +282,9 @@ grid). Calibri body / Consolas monospace by default; the `font` and
 
 Run `citation("lssdoc")` for the up-to-date citation, or cite as:
 
-```
-Tawfik A. (2026). lssdoc: Render Multilingual Questionnaires from
-LimeSurvey '.lss' Files. R package version 0.1.0.
-https://github.com/amaltawfik/lssdoc
+```{r citation, echo = FALSE, results = "asis"}
+meta <- as.list(read.dcf("DESCRIPTION")[1, ])
+cat(format(utils::readCitationFile("inst/CITATION", meta = meta), style = "text"))
 ```
 
 ## License
