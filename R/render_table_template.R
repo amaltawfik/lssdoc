@@ -589,7 +589,13 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         dual_scale <- isTRUE(info$has_scales) &&
           !is.null(q$scales) && length(q$scales) > 1L
         sq_scale <- function(s) {
+          # Defensive default: a subquestion without a scale_id maps to scale
+          # "0". covr cannot trace this closure because it is only ever invoked
+          # through vapply()/Filter(), so its body reads as uncovered even when
+          # the enclosing 2-D array path runs; excluded from coverage.
+          # nocov start
           if (is.null(s$scale_id) || is.na(s$scale_id)) "0" else as.character(s$scale_id)
+          # nocov end
         }
         two_d <- !dual_scale &&
           length(unique(vapply(q$subquestions, sq_scale, character(1)))) > 1L

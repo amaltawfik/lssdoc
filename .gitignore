@@ -19,3 +19,6 @@ dev/references/
 CLAUDE.md
 AGENTS.md
 SPEC.md
+
+# covr artifacts (dev-only, excluded from the build via .Rbuildignore)
+dev/_cov*
