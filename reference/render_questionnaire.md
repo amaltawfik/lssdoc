@@ -136,9 +136,8 @@ render_questionnaire(
   `"cards"` template gets A4 portrait, while the dense `"table"`
   template gets A4 landscape, which it needs to stay readable. Pass an
   explicit value to override; selecting a wider page makes every panel
-  (meta table, item table, audit/quota tables and the dense codebook
-  table) expand automatically to fill the content width, in both
-  templates.
+  (meta table, item table, audit/quota tables and the dense table)
+  expand automatically to fill the content width, in both templates.
 
 - show_toc:
 
@@ -183,12 +182,12 @@ render_questionnaire(
 - show_raw_filter:
 
   Logical. If `FALSE` (the default), the Filter cell shows only the
-  human-readable form (e.g. `Q1 = 1`) – editorial codebook style,
-  matching ESS / MOSAiCH / GESIS conventions. Set to `TRUE` to also
-  surface the raw LimeSurvey relevance expression underneath in small
-  italic gray (e.g. `!is_empty(Q1.NAOK) && (Q1.NAOK == 1)`), useful for
-  QA cross-checks. The raw form is always shown when the plain form
-  could not be simplified.
+  human-readable form (e.g. `Q1 = 1`) – editorial style, matching ESS /
+  MOSAiCH / GESIS conventions. Set to `TRUE` to also surface the raw
+  LimeSurvey relevance expression underneath in small italic gray (e.g.
+  `!is_empty(Q1.NAOK) && (Q1.NAOK == 1)`), useful for QA cross-checks.
+  The raw form is always shown when the plain form could not be
+  simplified.
 
 - show_groups:
 

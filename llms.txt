@@ -20,19 +20,19 @@ Two output templates:
   and paired comment row, then a new section heading and the next
   single-choice question](reference/figures/template_cards.png)
 
-- **`"table"`** – one dense codebook table covering the whole document:
-  every variable is one tinted *Question* row carrying its metadata,
-  followed by one or more white *Value* rows holding the answer codes
-  and their labels per language. Group banners (with their description,
-  when present), welcome text, survey description and end text become
-  labelled rows of the same table so the codebook reads as a single
+- **`"table"`** – one dense table covering the whole document: every
+  variable is one tinted *Question* row carrying its metadata, followed
+  by one or more white *Value* rows holding the answer codes and their
+  labels per language. Group banners (with their description, when
+  present), welcome text, survey description and end text become
+  labelled rows of the same table so the document reads as a single
   artifact.
 
-  ![Codebook layout: one variable per row with English and French
-  columns -- a yes/no single choice, two Number variables, a computed
-  variable, a display item, a multiple-choice question expanded into one
-  row per option with its free-text Other, and a single-choice answer
-  scale; the column header repeats automatically at the top of each new
+  ![Table layout: one variable per row with English and French columns
+  -- a yes/no single choice, two Number variables, a computed variable,
+  a display item, a multiple-choice question expanded into one row per
+  option with its free-text Other, and a single-choice answer scale; the
+  column header repeats automatically at the top of each new
   page](reference/figures/template_table.png)
 
 Other things lssdoc takes care of for you:

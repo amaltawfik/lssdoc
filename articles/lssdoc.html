@@ -144,7 +144,7 @@ broken fixture is included to show the output:</p>
 <span><span class="fu"><a href="../reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="fu"><a href="../reference/read_lss.html">read_lss</a></span><span class="op">(</span><span class="va">broken</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc audit</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpZJkD24/temp_libpath196b1f9db9fa/lssdoc/extdata/audit_demo.lss</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmpfnd2Pc/temp_libpath1a22310f446e/lssdoc/extdata/audit_demo.lss</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">Languages</span>: <span style="color: #0000BB;">"en"</span> and <span style="color: #0000BB;">"fr"</span></span></span>
 <span><span class="co">#&gt; <span style="font-weight: bold;">12</span> findings: 5 errors, 7 warnings, 0 notes.</span></span>
 <span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> <span style="font-weight: bold;">Survey</span>: Duplicate question code: 'age'.</span></span>
@@ -181,11 +181,11 @@ format is inferred from the file extension (<code>.docx</code> or
 <strong><code>"cards"</code></strong> template (default) stacks one
 block per item – closest to the printed questionnaire:</p>
 <p><img src="../reference/figures/template_cards.png" class="r-plt" alt="" width="100%"></p>
-<p>The <strong><code>"table"</code></strong> template is one dense
-codebook covering the whole document – one row per variable, with its
-value codes beneath:</p>
+<p>The <strong><code>"table"</code></strong> template is one dense table
+covering the whole document – one row per variable, with its value codes
+beneath:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span><span class="va">lss</span>, <span class="st">"codebook.docx"</span>, template <span class="op">=</span> <span class="st">"table"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/render_questionnaire.html">render_questionnaire</a></span><span class="op">(</span><span class="va">lss</span>, <span class="st">"questionnaire.docx"</span>, template <span class="op">=</span> <span class="st">"table"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="../reference/figures/template_table.png" class="r-plt" alt="" width="100%"></p>
 <div class="section level3">
 <h3 id="useful-arguments">Useful arguments<a class="anchor" aria-label="anchor" href="#useful-arguments"></a>

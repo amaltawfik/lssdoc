@@ -51,7 +51,7 @@ broken <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
 audit_lss(read_lss(broken))
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpZJkD24/temp_libpath196b1f9db9fa/lssdoc/extdata/audit_demo.lss
+#> File: /tmp/Rtmpfnd2Pc/temp_libpath1a22310f446e/lssdoc/extdata/audit_demo.lss
 #> Languages: "en" and "fr"
 #> 12 findings: 5 errors, 7 warnings, 0 notes.
 #> ✖ Survey: Duplicate question code: 'age'.
@@ -94,12 +94,12 @@ one block per item – closest to the printed questionnaire:
 
 ![](../reference/figures/template_cards.png)
 
-The **`"table"`** template is one dense codebook covering the whole
+The **`"table"`** template is one dense table covering the whole
 document – one row per variable, with its value codes beneath:
 
 ``` r
 
-render_questionnaire(lss, "codebook.docx", template = "table")
+render_questionnaire(lss, "questionnaire.docx", template = "table")
 ```
 
 ![](../reference/figures/template_table.png)
