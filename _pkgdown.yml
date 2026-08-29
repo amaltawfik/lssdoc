@@ -90,6 +90,17 @@ reference:
     contents:
       - read_lss
       - audit_lss
+  - title: Author (experimental)
+    desc: >
+      Build a survey specification programmatically and write it
+      as an importable LimeSurvey 6 `.lss` file. The specification
+      is validated in depth at construction time, because
+      LimeSurvey imports silently and only surfaces mistakes once
+      respondents hit them. The written file round-trips through
+      `read_lss()` and `audit_lss()`.
+    contents:
+      - lss_spec
+      - write_lss
   - title: Package overview
     contents:
       - lssdoc-package
