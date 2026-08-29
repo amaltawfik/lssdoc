@@ -47,7 +47,8 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="lssdoc-development-version">lssdoc (development version)<a class="anchor" aria-label="anchor" href="#lssdoc-development-version"></a></h2>
-<ul><li>The table codebook’s “Type” column no longer wraps one-word labels (such as “Computed”) onto a second line.</li>
+<ul><li><p>New experimental authoring layer: <code><a href="../reference/lss_spec.html">lss_spec()</a></code> builds and deeply validates a survey specification (21 question kinds attested by a corpus of real exports, option codes, exclusives, caps, display conditions in a minimal syntax, end-of-survey quotas), and <code><a href="../reference/write_lss.html">write_lss()</a></code> emits it as a LimeSurvey 6 (DBVersion 700) <code>.lss</code> file that imports directly. Validation covers what LimeSurvey silently accepts and breaks: localized attributes without a language code, conditions citing questions defined later or multiple-choice targets, caps at or above the option count, an “other” option marked exclusive, malformed option codes. The written file round-trips through <code><a href="../reference/read_lss.html">read_lss()</a></code> and <code><a href="../reference/audit_lss.html">audit_lss()</a></code>.</p></li>
+<li><p>The table codebook’s “Type” column no longer wraps one-word labels (such as “Computed”) onto a second line.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="lssdoc-011">lssdoc 0.1.1<a class="anchor" aria-label="anchor" href="#lssdoc-011"></a></h2><p class="text-muted">CRAN release: 2026-06-18</p>

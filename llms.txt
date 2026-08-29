@@ -315,6 +315,25 @@ for rendering several variants from a single parse.
 - [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
   : Audit a LimeSurvey survey for reviewable anomalies
 
+## Author (experimental)
+
+Build a survey specification programmatically and write it as an
+importable LimeSurvey 6 `.lss` file. The specification is validated in
+depth at construction time, because LimeSurvey imports silently and only
+surfaces mistakes once respondents hit them. The written file
+round-trips through
+[`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
+and
+[`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md).
+
+- [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
+  : Build and validate a survey specification
+
+- [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
+  :
+
+  Write a survey specification to an importable `.lss` file
+
 ## Package overview
 
 - [`lssdoc`](https://amaltawfik.github.io/lssdoc/reference/lssdoc-package.md)
