@@ -275,10 +275,12 @@ arguments accept any string to override.
 
 Run `citation("lssdoc")` for the up-to-date citation, or cite as:
 
-Tawfik A (2026). *lssdoc: Render ‘LimeSurvey’ ‘.lss’ Questionnaires as
-Word and PDF Documents*. <doi:10.32614/CRAN.package.lssdoc>
+``` R
+Tawfik A (2026). _lssdoc: Render 'LimeSurvey' '.lss' Questionnaires as
+Word and PDF Documents_. doi:10.32614/CRAN.package.lssdoc
 <https://doi.org/10.32614/CRAN.package.lssdoc>. R package version
-0.1.1.9000, <https://CRAN.R-project.org/package=lssdoc>.
+0.2.0, <https://CRAN.R-project.org/package=lssdoc>.
+```
 
 ## License
 
