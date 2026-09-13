@@ -1,45 +1,51 @@
 ## Submission
 
-This is a patch release (0.1.1) that fixes the test ERROR reported on
-r-devel-linux-x86_64-fedora-gcc (CRAN requested a correction by 2026-07-02).
+This is a feature release (0.2.0), about three months after 0.1.1.
 
-* On that platform's libxml2, passing non-XML input to `xml2::read_xml()`
-  aborted the R process with an uncatchable C++ exception
-  ("Start tag expected, '<' not found"), so the unit test exercising the
-  invalid-XML path crashed. `read_lss()` now pre-validates that the file
-  begins with an XML tag and fails cleanly with a classed
-  `lssdoc_invalid_xml` error before reaching libxml2.
+* It adds an experimental authoring layer: `lss_spec()` builds a validated
+  survey specification and `write_lss()` writes it as a LimeSurvey 6
+  (DBVersion 700) `.lss` file. Both are flagged experimental with lifecycle
+  badges, as their interface may evolve with LimeSurvey's file format.
+* New dependency: \pkg{lifecycle} (Imports), for those badges.
+* `read_lss()` now warns when a file comes from a newer LimeSurvey than
+  the version the package targets.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+<!-- Fill in from devtools::check() and win-builder before submitting. -->
+(pending)
 
-* "Days since last update: 3" -- this release follows 0.1.0 closely only
-  because it corrects the CRAN-reported ERROR described above, within the
-  requested deadline.
-* If flagged, "LimeSurvey" (the survey software the package reads) and
-  "methodologists" (a correctly spelled English term) in the DESCRIPTION
-  are intentional.
+* If flagged, "LimeSurvey" (the survey software the package reads and
+  writes) and "methodologists" (a correctly spelled English term) in the
+  DESCRIPTION are intentional.
 
 ## Test environments
 
-* Local: Windows 11, R 4.6.0
+* Local: Windows 11, R 4.6.1
 * GitHub Actions (r-lib/actions, R CMD check, `error-on = "warning"`):
   * macOS-latest (R release)
   * windows-latest (R release)
   * ubuntu-latest (R devel, release, oldrel-1)
+<!-- Add win-builder (release, devel, oldrelease) and R-hub results after
+     running dev/02_release_cran.R steps 04-05. -->
 
 ## Notes for the reviewer
 
 * The rendering path (`render_questionnaire()`, `render_audit()`) relies
   on the suggested packages \pkg{officer} and \pkg{flextable}; every use
   is guarded with `requireNamespace()` and a classed, actionable error,
-  and the parse and audit paths work without them. The corresponding
+  and the parse, audit and authoring paths work without them. Those
   examples are wrapped in `\dontrun{}` because they write a Word file and
   the PDF variant additionally requires a local LibreOffice install.
+* The new `write_lss()` example runs on check and writes only to
+  `tempfile()`.
+* The `.lss` output was validated against a real LimeSurvey instance
+  (7.0.0-beta1): a generated 21-question survey covering every supported
+  question kind imported without warnings and was re-exported with every
+  question, attribute and display condition intact (DBVersion 700).
 * All processing is local: the package makes no network calls and never
   uploads questionnaire content to a third-party service.
 
 ## Downstream dependencies
 
-There are no downstream dependencies (new package).
+There are no reverse dependencies on CRAN.
