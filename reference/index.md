@@ -40,10 +40,10 @@ and
 [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md).
 
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
-  : Build and validate a survey specification
+  **\[experimental\]** : Build and validate a survey specification
 
 - [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
-  :
+  **\[experimental\]** :
 
   Write a survey specification to an importable `.lss` file
 

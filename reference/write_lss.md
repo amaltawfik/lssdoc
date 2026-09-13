@@ -1,17 +1,6 @@
 # Write a survey specification to an importable `.lss` file
 
-**Experimental.** Turn an
-[`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
-specification into a LimeSurvey 6 structure file (`.lss`, DBVersion 700)
-that imports directly through *Create survey -\> Import*. The emitted
-file can be read back with
-[`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md),
-checked with
-[`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
-and rendered with
-[`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
-– so the document reviewers read is produced from the very file
-LimeSurvey receives.
+**\[experimental\]**
 
 ## Usage
 
@@ -52,6 +41,19 @@ Invisibly, the path to the written file.
 
 ## Details
 
+**Experimental.** Turn an
+[`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
+specification into a LimeSurvey structure file (`.lss`) that imports
+directly through *Create survey -\> Import*. The output targets
+LimeSurvey 6 (DBVersion 700). The emitted file can be read back with
+[`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md),
+checked with
+[`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
+and rendered with
+[`render_questionnaire()`](https://amaltawfik.github.io/lssdoc/reference/render_questionnaire.md)
+– so the document reviewers read is produced from the very file
+LimeSurvey receives.
+
 Mapping choices, each validated against real LimeSurvey 6 imports:
 
 - Each kind maps to a LimeSurvey type and theme attested by a corpus of
@@ -80,6 +82,17 @@ Mapping choices, each validated against real LimeSurvey 6 imports:
 - A mandatory or capped ranking also receives `min_answers = 1`,
   overridable through the question's `attributes`.
 
+## Languages
+
+The spec model is multilingual
+([`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
+accepts `languages` and per-language texts); the emitter is not yet.
+This version writes the primary language – `languages[1]` – only,
+exactly as it did when a spec could hold a single language. A spec
+declaring more than one language raises a classed error
+(`lssdoc_unsupported_multilang`) rather than silently dropping the
+translations; multi-language emission is planned for 0.3.0.
+
 ## See also
 
 [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md),
@@ -99,11 +112,11 @@ spec <- lss_spec(
 )
 out <- tempfile(fileext = ".lss")
 write_lss(spec, out)
-#> ✔ Wrote /tmp/RtmphapTdf/file1b1950486fa1.lss (1 question, 1 group, 0 quotas).
+#> ✔ Wrote /tmp/RtmpgO37VG/file1a42737bcaf3.lss (1 question, 1 group, 0 quotas).
 audit_lss(out)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmphapTdf/file1b1950486fa1.lss
+#> File: /tmp/RtmpgO37VG/file1a42737bcaf3.lss
 #> Languages: "fr"
 #> ✔ No anomalies detected.
 ```

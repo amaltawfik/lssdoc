@@ -1,6 +1,6 @@
 # Changelog
 
-## lssdoc (development version)
+## lssdoc 0.2.0
 
 - New experimental authoring layer:
   [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
@@ -17,6 +17,17 @@
   [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
   and
   [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md).
+  The specification is language-aware: `languages = c("fr", "en")`
+  declares the survey languages and every text (title, welcome and end
+  texts, group titles, question texts and help, option labels, quota
+  names and messages) can be given per language as a named vector or
+  list, but this version emits the primary language only – multilingual
+  emission follows in 0.3.0. The emitted format was validated by
+  importing a generated 21-question survey, covering every supported
+  question kind, into LimeSurvey 7.0.0-beta1 (build 260121), which
+  imported the DBVersion 700 file without warnings and re-exported it
+  with every question, subquestion, answer, attribute and relevance
+  equation intact (DBVersion still 700).
 
 - The table codebook’s “Type” column no longer wraps one-word labels
   (such as “Computed”) onto a second line.

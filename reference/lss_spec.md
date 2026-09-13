@@ -1,13 +1,6 @@
 # Build and validate a survey specification
 
-**Experimental.** Assemble a survey specification – the authoring-side
-counterpart of the `lss` object – that
-[`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
-can turn into an importable LimeSurvey `.lss` file. The specification is
-validated in depth at construction time, because LimeSurvey itself
-imports silently: a mistyped attribute, a filter referencing a missing
-answer code, or a cap larger than the option list are all accepted on
-import and only surface once respondents hit them.
+**\[experimental\]**
 
 ## Usage
 
@@ -15,7 +8,8 @@ import and only surface once respondents hit them.
 lss_spec(
   title,
   groups,
-  language = "fr",
+  languages = NULL,
+  language = NULL,
   welcome = NULL,
   end_text = NULL,
   quotas = NULL
@@ -33,10 +27,16 @@ lss_spec(
   List of groups. Each group is a list with `title` (character) and
   `questions` (list of question specifications, see Details).
 
+- languages:
+
+  Character vector of language codes, the primary language first (e.g.
+  `c("fr", "en")`). Defaults to `"fr"`. See the *Languages* section.
+
 - language:
 
-  Character. Single language code of the survey (e.g. `"fr"`).
-  Multi-language authoring is not supported yet.
+  Character. Backward-compatible alias for a single-language survey:
+  `language = "fr"` is `languages = "fr"`. Passing both is allowed only
+  when `language` is `languages[1]`.
 
 - welcome:
 
@@ -64,6 +64,15 @@ An object of class `lss_spec`: the validated specification with
 normalized questions (auto-numbered option codes filled in).
 
 ## Details
+
+**Experimental.** Assemble a survey specification – the authoring-side
+counterpart of the `lss` object – that
+[`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
+can turn into an importable LimeSurvey `.lss` file. The specification is
+validated in depth at construction time, because LimeSurvey itself
+imports silently: a mistyped attribute, a filter referencing a missing
+answer code, or a cap larger than the option list are all accepted on
+import and only surface once respondents hit them.
 
 Each question is a list with fields:
 
@@ -116,6 +125,39 @@ Each question is a list with fields:
 - `attributes` – optional named list of extra global question attributes
   passed through verbatim (e.g. `display_columns`).
 
+## Languages
+
+`languages` declares the survey languages, the primary one first;
+`languages[1]` is the language
+[`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
+emits. Every localizable text – survey title, welcome and end texts,
+group titles, question texts and help, option, row and column labels,
+the "other" label, quota names and messages – accepts either a plain
+string (read as the primary language) or a named character vector or
+list keyed by language code:
+
+    lss_spec(
+      title = c(fr = "Enquete", en = "Survey"),
+      languages = c("fr", "en"),
+      groups = list(list(
+        title = c(fr = "Profil", en = "Profile"),
+        questions = list(list(
+          code = "q1", kind = "yesno",
+          text = c(fr = "Etes-vous d'accord ?", en = "Do you agree?")))))
+    )
+
+The spec keeps one canonical form (a named list over the declared
+languages) and is strict: as soon as several languages are declared,
+every text must supply every one of them. A missing translation is
+precisely what
+[`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
+flags when reading a `.lss`, so the spec refuses to author one. In this
+version
+[`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
+emits the primary language only, and errors with class
+`lssdoc_unsupported_multilang` on a spec that declares more than one;
+multi-language emission is planned for 0.3.0.
+
 ## See also
 
 [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
@@ -130,7 +172,7 @@ to read it back and check it.
 ``` r
 spec <- lss_spec(
   title = "Demo",
-  language = "fr",
+  languages = "fr",
   groups = list(list(
     title = "Profil",
     questions = list(
