@@ -8,18 +8,19 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/amaltawfik/lssdoc/blob/v0.2.0/inst/CITATION)
+[`inst/CITATION`](https://github.com/amaltawfik/lssdoc/blob/main/inst/CITATION)
 
 Tawfik A (2026). *lssdoc: Render 'LimeSurvey' '.lss' Questionnaires as
 Word and PDF Documents*.
 [doi:10.32614/CRAN.package.lssdoc](https://doi.org/10.32614/CRAN.package.lssdoc).
-R package version 0.2.0, <https://CRAN.R-project.org/package=lssdoc>.
+R package version 0.2.0.9000,
+<https://CRAN.R-project.org/package=lssdoc>.
 
     @Manual{,
       title = {{lssdoc}: Render 'LimeSurvey' '.lss' Questionnaires as Word and PDF Documents},
       author = {Amal Tawfik},
       year = {2026},
-      note = {R package version 0.2.0},
+      note = {R package version 0.2.0.9000},
       doi = {10.32614/CRAN.package.lssdoc},
       url = {https://CRAN.R-project.org/package=lssdoc},
     }
