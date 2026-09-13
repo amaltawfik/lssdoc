@@ -47,6 +47,15 @@
 #' * A mandatory or capped ranking also receives `min_answers = 1`,
 #'   overridable through the question's `attributes`.
 #'
+#' @section Languages:
+#' The spec model is multilingual ([lss_spec()] accepts `languages` and
+#' per-language texts); the emitter is not yet. This version writes the
+#' primary language -- `languages[1]` -- only, exactly as it did when a
+#' spec could hold a single language. A spec declaring more than one
+#' language raises a classed error (`lssdoc_unsupported_multilang`) rather
+#' than silently dropping the translations; multi-language emission is
+#' planned for 0.3.0.
+#'
 #' @examples
 #' spec <- lss_spec(
 #'   title = "Demo",
@@ -69,7 +78,7 @@ write_lss <- function(spec, file, sid = 100001L, settings = list()) {
     }
     spec <- lss_spec(
       title = spec$title, groups = spec$groups,
-      language = spec$language %||% "fr",
+      languages = spec$languages %||% spec$language %||% "fr",
       welcome = spec$welcome, end_text = spec$end_text,
       quotas = spec$quotas
     )
@@ -87,6 +96,21 @@ write_lss <- function(spec, file, sid = 100001L, settings = list()) {
   # an lss_spec object may have been mutated after construction: the
   # revalidation is cheap and prevents emitting a silently wrong file
   spec_validate(spec)
+
+  # The spec model is multilingual; the emitter is not yet. This is the one
+  # place where the limitation is enforced, so the rest of the package can
+  # already be written against per-language texts.
+  languages <- spec$languages %||% spec$language
+  if (length(languages) > 1L) {
+    primary <- languages[[1L]]
+    lssdoc_abort(
+      c("Multi-language emission is not supported in this version of lssdoc.",
+        "x" = "The spec declares {.val {languages}}.",
+        "i" = "{.fn write_lss} emits the primary language ({.val {primary}}) only; multi-language emission is planned for 0.3.0.",
+        "i" = "Write one file per language, or declare a single language in {.arg languages}."),
+      class = "lssdoc_unsupported_multilang"
+    )
+  }
 
   emit <- lss_emitter(spec, sid, settings)
   xml2::write_xml(emit$doc, file, options = c("format", "no_declaration"))
@@ -198,7 +222,8 @@ lss_emitter <- function(spec, sid, settings) {
       gid = st$gid, sid = sid, group_order = gi,
       randomization_group = "", grelevance = "1")
     st$group_l10ns[[length(st$group_l10ns) + 1L]] <- list(
-      id = st$lid, gid = st$gid, group_name = g$title, description = "",
+      id = st$lid, gid = st$gid, group_name = loc_text(g$title, lang),
+      description = "",
       language = lang, sid = sid, group_order = gi,
       randomization_group = "", grelevance = "1")
     st$lid <- st$lid + 1L
@@ -223,8 +248,8 @@ lss_emitter <- function(spec, sid, settings) {
         modulename = "", encrypted = "N",
         question_theme_name = map$theme, same_script = 0L)
       st$question_l10ns[[length(st$question_l10ns) + 1L]] <- list(
-        id = st$lid, qid = parent, question = q$text,
-        help = q$help %||% "", language = lang, script = "")
+        id = st$lid, qid = parent, question = loc_text(q$text, lang),
+        help = loc_text(q$help, lang), language = lang, script = "")
       st$lid <- st$lid + 1L
 
       add_answers <- function(items) {
@@ -235,7 +260,8 @@ lss_emitter <- function(spec, sid, settings) {
             aid = st$aid, qid = parent, code = it$code,
             sortorder = k - 1L, assessment_value = 0L, scale_id = 0L)
           st$answer_l10ns[[length(st$answer_l10ns) + 1L]] <- list(
-            id = st$lid, aid = st$aid, answer = it$text, language = lang)
+            id = st$lid, aid = st$aid, answer = loc_text(it$text, lang),
+            language = lang)
           st$lid <- st$lid + 1L
         }
       }
@@ -250,8 +276,8 @@ lss_emitter <- function(spec, sid, settings) {
             same_default = 0L, relevance = "1", modulename = "",
             encrypted = "N", question_theme_name = "", same_script = 0L)
           st$question_l10ns[[length(st$question_l10ns) + 1L]] <- list(
-            id = st$lid, qid = st$qid, question = it$text, help = "",
-            language = lang, script = "")
+            id = st$lid, qid = st$qid, question = loc_text(it$text, lang),
+            help = "", language = lang, script = "")
           st$lid <- st$lid + 1L
         }
       }
@@ -284,7 +310,8 @@ lss_emitter <- function(spec, sid, settings) {
       if (length(other_opt)) {
         # localized attribute: MUST carry the language code, or LimeSurvey
         # silently ignores it and shows its default "Other:" wording
-        attr_add("other_replace_text", other_opt[[1L]]$text, language = lang)
+        attr_add("other_replace_text", loc_text(other_opt[[1L]]$text, lang),
+                 language = lang)
         if (!is.null(q$other_position)) {
           attr_add("other_position", q$other_position)
           if (identical(q$other_position, "specific")) {
@@ -338,15 +365,16 @@ lss_emitter <- function(spec, sid, settings) {
     quota <- list(); members <- list(); qls <- list()
     for (k in seq_along(spec$quotas)) {
       qu <- spec$quotas[[k]]
-      quota[[k]] <- list(id = k, sid = sid, name = qu$name %||% qu$question,
+      quota_name <- loc_text(qu$name, lang, default = NULL) %||% qu$question
+      quota[[k]] <- list(id = k, sid = sid, name = quota_name,
                          qlimit = 0L, action = 1L, active = 1L,
                          autoload_url = 0L)
       members[[k]] <- list(id = k, sid = sid, qid = qid_of[[qu$question]],
                            quota_id = k, code = qu$code)
       qls[[k]] <- list(quotals_id = k, quotals_quota_id = k,
                        quotals_language = lang,
-                       quotals_name = qu$name %||% qu$question,
-                       quotals_message = qu$message %||% "",
+                       quotals_name = quota_name,
+                       quotals_message = loc_text(qu$message, lang),
                        quotals_url = "", quotals_urldescrip = "")
     }
     add_section(doc, "quota",
@@ -400,9 +428,11 @@ lss_emitter <- function(spec, sid, settings) {
 
   ls_row <- c(
     list(surveyls_survey_id = sid, surveyls_language = lang,
-         surveyls_title = spec$title,
-         surveyls_welcometext = as_html_block(spec$welcome),
-         surveyls_endtext = as_html_block(spec$end_text)),
+         surveyls_title = loc_text(spec$title, lang),
+         surveyls_welcometext = as_html_block(loc_text(spec$welcome, lang,
+                                                       default = NULL)),
+         surveyls_endtext = as_html_block(loc_text(spec$end_text, lang,
+                                                   default = NULL))),
     lss_default_language_settings)
   add_section(doc, "surveys_languagesettings", names(ls_row), list(ls_row))
 

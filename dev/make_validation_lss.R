@@ -14,7 +14,7 @@ out <- file.path(out_dir, "lssdoc_0.2.0_validation.lss")
 # The wording is deliberately accented: the import must round-trip UTF-8.
 spec <- lss_spec(
   title = "lssdoc 0.2.0 - validation d'import (toutes les familles de questions)",
-  language = "fr",
+  languages = "fr",
   welcome = c(
     "Questionnaire de validation technique généré par lssdoc.",
     "Chaque question porte son type dans son code (Q01SingleOther = question 1, liste simple avec option Autre)."

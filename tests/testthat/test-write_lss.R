@@ -495,3 +495,134 @@ test_that("read_lss() stays quiet at the targeted DBVersion", {
   expect_no_warning(lss <- read_lss(tmp))
   expect_identical(lss$db_version, LSS_DBVERSION)
 })
+
+# ---- languages --------------------------------------------------------------
+
+one_group <- list(list(title = "G", questions = list(
+  list(code = "q1", kind = "text", text = "Q"))))
+
+bilingual_spec <- function() {
+  lss_spec(
+    title = c(fr = "Enquete", en = "Survey"),
+    languages = c("fr", "en"),
+    welcome = list(fr = c("Bonjour", "Merci"), en = "Hello"),
+    end_text = c(fr = "Fin", en = "The end"),
+    groups = list(list(
+      title = c(fr = "Profil", en = "Profile"),
+      questions = list(
+        list(code = "q1", kind = "single",
+             text = c(fr = "Votre statut ?", en = "Your status?"),
+             help = c(fr = "Une seule reponse", en = "One answer only"),
+             options = list(
+               list(text = c(fr = "Employe", en = "Employee")),
+               list(text = c(fr = "Independant", en = "Self-employed")),
+               list(text = c(fr = "Autre", en = "Other"), other = TRUE)))))),
+    quotas = list(list(question = "q1", code = "2",
+                       name = c(fr = "Independants", en = "Self-employed"),
+                       message = c(fr = "Merci", en = "Thanks")))
+  )
+}
+
+test_that("language is a backward-compatible alias for languages", {
+  by_alias <- lss_spec(title = "T", groups = one_group, language = "fr")
+  by_vector <- lss_spec(title = "T", groups = one_group, languages = "fr")
+  expect_identical(by_alias, by_vector)
+  expect_identical(by_alias, lss_spec(title = "T", groups = one_group))
+  expect_identical(by_vector$languages, "fr")
+  expect_identical(by_vector$language, "fr")
+
+  # agreeing on the primary language is fine; disagreeing is not
+  expect_identical(
+    lss_spec(title = "T", groups = one_group,
+             languages = "de", language = "de")$language, "de")
+  expect_error(
+    lss_spec(title = "T", groups = one_group,
+             languages = c("fr", "en"), language = "en"),
+    class = "lssdoc_bad_spec")
+  expect_error(
+    lss_spec(title = "T", groups = one_group, languages = c("fr", "fr")),
+    class = "lssdoc_bad_spec")
+})
+
+test_that("per-language texts are stored as a named list over the languages", {
+  spec <- bilingual_spec()
+  expect_identical(spec$languages, c("fr", "en"))
+  expect_identical(spec$language, "fr")
+  expect_identical(spec$title, list(fr = "Enquete", en = "Survey"))
+  expect_identical(spec$welcome, list(fr = c("Bonjour", "Merci"), en = "Hello"))
+  expect_identical(spec$end_text, list(fr = "Fin", en = "The end"))
+
+  g <- spec$groups[[1]]
+  expect_identical(g$title, list(fr = "Profil", en = "Profile"))
+  q <- g$questions[[1]]
+  expect_identical(q$text, list(fr = "Votre statut ?", en = "Your status?"))
+  expect_identical(q$help, list(fr = "Une seule reponse", en = "One answer only"))
+  expect_identical(q$options[[1]]$text, list(fr = "Employe", en = "Employee"))
+  expect_identical(spec$quotas[[1]]$message, list(fr = "Merci", en = "Thanks"))
+
+  # a plain string stays a string, stored under the primary language
+  mono <- lss_spec(title = "T", groups = one_group)
+  expect_identical(mono$title, list(fr = "T"))
+})
+
+test_that("write_lss() refuses a multi-language spec, for now", {
+  err <- expect_error(write_lss(bilingual_spec(), tempfile(fileext = ".lss")),
+                      class = "lssdoc_unsupported_multilang")
+  expect_match(conditionMessage(err), "0.3.0", fixed = TRUE)
+  expect_match(conditionMessage(err), "en", fixed = TRUE)
+})
+
+test_that("a declared language with no text is refused", {
+  err <- expect_error(
+    lss_spec(title = c(fr = "T", en = "T"), languages = c("fr", "en"),
+             groups = list(list(title = c(fr = "G", en = "G"), questions = list(
+               list(code = "q1", kind = "text", text = c(fr = "Q")))))),
+    class = "lssdoc_bad_spec")
+  expect_match(conditionMessage(err), "en", fixed = TRUE)
+
+  # a plain string covers the primary language only
+  expect_error(
+    lss_spec(title = "T", languages = c("fr", "en"), groups = one_group),
+    class = "lssdoc_bad_spec")
+})
+
+test_that("texts cannot use an undeclared language, nor skip the primary one", {
+  err <- expect_error(
+    lss_spec(title = c(fr = "T", de = "T"), groups = one_group),
+    class = "lssdoc_bad_spec")
+  expect_match(conditionMessage(err), "de", fixed = TRUE)
+  expect_error(
+    lss_spec(title = c(en = "T"), languages = "fr", groups = one_group),
+    class = "lssdoc_bad_spec")
+})
+
+test_that("a monolingual spec still round-trips through write and read", {
+  spec <- lss_spec(
+    title = "Titre", welcome = "Bienvenue", end_text = "Fin",
+    groups = list(list(title = "Groupe", questions = list(
+      list(code = "q1", kind = "single", text = "Question ?", help = "Aide",
+           options = list(list(text = "Oui"), list(text = "Non"),
+                          list(text = "Autre", other = TRUE)))))),
+    quotas = list(list(question = "q1", code = "2",
+                       name = "Refus", message = "Merci")))
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  suppressMessages(write_lss(spec, out))
+  lss <- read_lss(out)
+
+  expect_identical(lss$languages, "fr")
+  ls_row <- as.data.frame(lss$survey_language_settings)
+  expect_identical(ls_row$surveyls_title, "Titre")
+  expect_identical(ls_row$surveyls_welcometext, "<p>Bienvenue</p>")
+  expect_identical(ls_row$surveyls_endtext, "<p>Fin</p>")
+  expect_identical(as.data.frame(lss$group_l10ns)$group_name, "Groupe")
+  ql <- as.data.frame(lss$question_l10ns)
+  expect_identical(ql$question, "Question ?")
+  expect_identical(ql$help, "Aide")
+  expect_identical(as.data.frame(lss$answer_l10ns)$answer, c("Oui", "Non"))
+  at <- as.data.frame(lss$question_attributes)
+  expect_identical(at$value[at$attribute == "other_replace_text"], "Autre")
+  qls <- as.data.frame(lss$quota_languagesettings)
+  expect_identical(qls$quotals_name, "Refus")
+  expect_identical(qls$quotals_message, "Merci")
+})

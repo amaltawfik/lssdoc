@@ -7,7 +7,8 @@
 lss_spec(
   title,
   groups,
-  language = "fr",
+  languages = NULL,
+  language = NULL,
   welcome = NULL,
   end_text = NULL,
   quotas = NULL
@@ -20,8 +21,13 @@ lss_spec(
 (character) and \code{questions} (list of question specifications, see
 Details).}
 
-\item{language}{Character. Single language code of the survey (e.g.
-\code{"fr"}). Multi-language authoring is not supported yet.}
+\item{languages}{Character vector of language codes, the primary
+language first (e.g. \code{c("fr", "en")}). Defaults to \code{"fr"}. See the
+\emph{Languages} section.}
+
+\item{language}{Character. Backward-compatible alias for a
+single-language survey: \code{language = "fr"} is \code{languages = "fr"}.
+Passing both is allowed only when \code{language} is \code{languages[1]}.}
 
 \item{welcome}{Character vector of welcome-text paragraphs, or a single
 string starting with \code{<} used verbatim as HTML. Optional.}
@@ -96,10 +102,41 @@ position puts it after.
 attributes passed through verbatim (e.g. \code{display_columns}).
 }
 }
+\section{Languages}{
+
+\code{languages} declares the survey languages, the primary one first;
+\code{languages[1]} is the language \code{\link[=write_lss]{write_lss()}} emits. Every localizable
+text -- survey title, welcome and end texts, group titles, question
+texts and help, option, row and column labels, the "other" label, quota
+names and messages -- accepts either a plain string (read as the
+primary language) or a named character vector or list keyed by language
+code:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{lss_spec(
+  title = c(fr = "Enquete", en = "Survey"),
+  languages = c("fr", "en"),
+  groups = list(list(
+    title = c(fr = "Profil", en = "Profile"),
+    questions = list(list(
+      code = "q1", kind = "yesno",
+      text = c(fr = "Etes-vous d'accord ?", en = "Do you agree?")))))
+)
+}\if{html}{\out{</div>}}
+
+The spec keeps one canonical form (a named list over the declared
+languages) and is strict: as soon as several languages are declared,
+every text must supply every one of them. A missing translation is
+precisely what \code{\link[=audit_lss]{audit_lss()}} flags when reading a \code{.lss}, so the spec
+refuses to author one. In this version \code{\link[=write_lss]{write_lss()}} emits the primary
+language only, and errors with class \code{lssdoc_unsupported_multilang} on
+a spec that declares more than one; multi-language emission is planned
+for 0.3.0.
+}
+
 \examples{
 spec <- lss_spec(
   title = "Demo",
-  language = "fr",
+  languages = "fr",
   groups = list(list(
     title = "Profil",
     questions = list(

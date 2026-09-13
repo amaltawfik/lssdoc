@@ -60,6 +60,17 @@ separated by \verb{;}.
 overridable through the question's \code{attributes}.
 }
 }
+\section{Languages}{
+
+The spec model is multilingual (\code{\link[=lss_spec]{lss_spec()}} accepts \code{languages} and
+per-language texts); the emitter is not yet. This version writes the
+primary language -- \code{languages[1]} -- only, exactly as it did when a
+spec could hold a single language. A spec declaring more than one
+language raises a classed error (\code{lssdoc_unsupported_multilang}) rather
+than silently dropping the translations; multi-language emission is
+planned for 0.3.0.
+}
+
 \examples{
 spec <- lss_spec(
   title = "Demo",

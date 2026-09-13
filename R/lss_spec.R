@@ -14,8 +14,12 @@
 #' @param groups List of groups. Each group is a list with `title`
 #'   (character) and `questions` (list of question specifications, see
 #'   Details).
-#' @param language Character. Single language code of the survey (e.g.
-#'   `"fr"`). Multi-language authoring is not supported yet.
+#' @param languages Character vector of language codes, the primary
+#'   language first (e.g. `c("fr", "en")`). Defaults to `"fr"`. See the
+#'   *Languages* section.
+#' @param language Character. Backward-compatible alias for a
+#'   single-language survey: `language = "fr"` is `languages = "fr"`.
+#'   Passing both is allowed only when `language` is `languages[1]`.
 #' @param welcome Character vector of welcome-text paragraphs, or a single
 #'   string starting with `<` used verbatim as HTML. Optional.
 #' @param end_text Character vector of end-page paragraphs, or a single
@@ -74,10 +78,40 @@
 #' * `attributes` -- optional named list of extra global question
 #'   attributes passed through verbatim (e.g. `display_columns`).
 #'
+#' @section Languages:
+#' `languages` declares the survey languages, the primary one first;
+#' `languages[1]` is the language [write_lss()] emits. Every localizable
+#' text -- survey title, welcome and end texts, group titles, question
+#' texts and help, option, row and column labels, the "other" label, quota
+#' names and messages -- accepts either a plain string (read as the
+#' primary language) or a named character vector or list keyed by language
+#' code:
+#'
+#' ```r
+#' lss_spec(
+#'   title = c(fr = "Enquete", en = "Survey"),
+#'   languages = c("fr", "en"),
+#'   groups = list(list(
+#'     title = c(fr = "Profil", en = "Profile"),
+#'     questions = list(list(
+#'       code = "q1", kind = "yesno",
+#'       text = c(fr = "Etes-vous d'accord ?", en = "Do you agree?")))))
+#' )
+#' ```
+#'
+#' The spec keeps one canonical form (a named list over the declared
+#' languages) and is strict: as soon as several languages are declared,
+#' every text must supply every one of them. A missing translation is
+#' precisely what [audit_lss()] flags when reading a `.lss`, so the spec
+#' refuses to author one. In this version [write_lss()] emits the primary
+#' language only, and errors with class `lssdoc_unsupported_multilang` on
+#' a spec that declares more than one; multi-language emission is planned
+#' for 0.3.0.
+#'
 #' @examples
 #' spec <- lss_spec(
 #'   title = "Demo",
-#'   language = "fr",
+#'   languages = "fr",
 #'   groups = list(list(
 #'     title = "Profil",
 #'     questions = list(
@@ -100,20 +134,15 @@
 #' @export
 lss_spec <- function(title,
                      groups,
-                     language = "fr",
+                     languages = NULL,
+                     language = NULL,
                      welcome = NULL,
                      end_text = NULL,
                      quotas = NULL) {
-  if (!is.character(title) || length(title) != 1L || !nzchar(title)) {
+  languages <- resolve_languages(languages, language)
+  if (is.null(title) || (!is.character(title) && !is.list(title))) {
     lssdoc_abort("{.arg title} must be a single non-empty string.",
                  class = "lssdoc_bad_spec")
-  }
-  if (!is.character(language) || length(language) != 1L || !nzchar(language)) {
-    lssdoc_abort(
-      c("{.arg language} must be a single language code.",
-        "i" = "Multi-language authoring is not supported yet."),
-      class = "lssdoc_bad_spec"
-    )
   }
   if (!is.list(groups) || !length(groups)) {
     lssdoc_abort("{.arg groups} must be a non-empty list of groups.",
@@ -121,11 +150,17 @@ lss_spec <- function(title,
   }
 
   spec <- list(
-    title = title, language = language,
+    title = title, languages = languages, language = languages[[1L]],
     welcome = welcome, end_text = end_text,
     groups = groups, quotas = quotas %||% list()
   )
   spec <- spec_normalize(spec)
+  primary_title <- loc_text(spec$title)
+  if (!is.character(primary_title) || length(primary_title) != 1L ||
+      !nzchar(primary_title)) {
+    lssdoc_abort("{.arg title} must be a single non-empty string.",
+                 class = "lssdoc_bad_spec")
+  }
   spec_validate(spec)
   structure(spec, class = "lss_spec")
 }
@@ -135,7 +170,9 @@ print.lss_spec <- function(x, ...) {
   n_q <- sum(vapply(x$groups, function(g) {
     sum(vapply(g$questions, function(q) q$kind != "display", logical(1)))
   }, integer(1)))
-  cli::cli_text("<lss_spec> {.val {x$title}} ({x$language})")
+  title <- loc_text(x$title, x$language)
+  langs <- x$languages %||% x$language
+  cli::cli_text("<lss_spec> {.val {title}} ({langs})")
   cli::cli_text("{length(x$groups)} group{?s}, {n_q} question{?s}, {length(x$quotas)} quota{?s}")
   invisible(x)
 }
@@ -164,9 +201,164 @@ no_option_kinds <- c("text", "shorttext", "hugetext", "numeric", "date",
                      "yesno", "gender", "fivepoint", "display")
 other_kinds <- c("single", "dropdown", "multiple")
 
+# ---- languages and localized texts ------------------------------------------
+
+#' Resolve the declared languages from `languages` / `language`
+#'
+#' `language` is the original single-language argument, kept as an alias:
+#' `languages[1]` is the primary language, the one `write_lss()` emits.
+#' Giving both is allowed as long as they agree on the primary language.
+#' @keywords internal
+#' @noRd
+resolve_languages <- function(languages, language) {
+  if (!is.null(language)) {
+    if (!is.character(language) || length(language) != 1L || is.na(language) ||
+        !nzchar(trimws(language))) {
+      lssdoc_abort("{.arg language} must be a single non-empty language code.",
+                   class = "lssdoc_bad_spec")
+    }
+    language <- trimws(language)
+  }
+  if (!is.null(languages)) {
+    if (!is.character(languages) || !length(languages) || anyNA(languages) ||
+        !all(nzchar(trimws(languages)))) {
+      lssdoc_abort(
+        "{.arg languages} must be a character vector of non-empty language codes.",
+        class = "lssdoc_bad_spec"
+      )
+    }
+    languages <- trimws(languages)
+    repeated <- unique(languages[duplicated(languages)])
+    if (length(repeated)) {
+      lssdoc_abort(
+        "{.arg languages} must be unique: {.val {repeated}} appear{?s} twice.",
+        class = "lssdoc_bad_spec"
+      )
+    }
+  }
+  if (is.null(languages)) {
+    return(language %||% "fr")
+  }
+  if (!is.null(language) && !identical(language, languages[[1L]])) {
+    primary <- languages[[1L]]
+    lssdoc_abort(
+      c("{.arg language} and {.arg languages} disagree.",
+        "x" = "{.arg language} is {.val {language}}, but the primary language {.code languages[1]} is {.val {primary}}.",
+        "i" = "Pass {.arg languages} alone, or make {.arg language} its first element."),
+      class = "lssdoc_bad_spec"
+    )
+  }
+  languages
+}
+
+#' Normalize one localizable text to a named list over the declared languages
+#'
+#' Every user-facing text of a spec accepts either a plain string (the
+#' primary language) or a named character vector / named list keyed by
+#' language code. Internally there is exactly one representation -- a
+#' named list ordered as `languages` -- so the emitter never has to guess.
+#' Multi-language specs are strict: a declared language with no text would
+#' import as an empty question, which is precisely what `audit_lss()`
+#' flags on read, so the spec refuses to author it.
+#'
+#' @param x The user-supplied text, or `NULL`.
+#' @param languages The declared language codes; the first is primary.
+#' @param field A human label for the field, already brace-escaped, used
+#'   in error messages.
+#' @return A named list over the declared languages, or `NULL` when the
+#'   text is absent (`NULL` or empty).
+#' @keywords internal
+#' @noRd
+spec_localize <- function(x, languages, field) {
+  primary <- languages[[1L]]
+  bad_shape <- function() {
+    lssdoc_abort(
+      c(paste0("The ", field, " must be a string, or a named list or vector keyed by language code."),
+        "i" = "Declared language{?s}: {.val {languages}}."),
+      class = "lssdoc_bad_spec"
+    )
+  }
+
+  if (is.null(x)) return(NULL)
+  if (is.list(x)) {
+    if (!length(x) || is.null(names(x)) || any(!nzchar(names(x)))) bad_shape()
+    ok <- vapply(x, function(v) is.character(v) && length(v) >= 1L && !anyNA(v),
+                 logical(1))
+    if (!all(ok)) {
+      lssdoc_abort(
+        paste0("The ", field, " must be a character string for every language."),
+        class = "lssdoc_bad_spec"
+      )
+    }
+    value <- lapply(x, as.character)
+  } else if (is.character(x)) {
+    if (anyNA(x)) bad_shape()
+    if (is.null(names(x))) {
+      # a plain string carries no language of its own: it is the primary
+      # text, and an empty one counts as no text at all
+      if (!length(x) || all(!nzchar(trimws(x)))) return(NULL)
+      value <- stats::setNames(list(x), primary)
+    } else {
+      if (any(!nzchar(names(x)))) bad_shape()
+      value <- as.list(x)
+    }
+  } else {
+    bad_shape()
+  }
+
+  repeated <- unique(names(value)[duplicated(names(value))])
+  if (length(repeated)) {
+    lssdoc_abort(
+      paste0("The ", field, " gives {.val {repeated}} more than once."),
+      class = "lssdoc_bad_spec"
+    )
+  }
+  unknown <- setdiff(names(value), languages)
+  if (length(unknown)) {
+    lssdoc_abort(
+      c(paste0("The ", field, " uses undeclared language code{?s} {.val {unknown}}."),
+        "i" = "Declared language{?s}: {.val {languages}}."),
+      class = "lssdoc_bad_spec"
+    )
+  }
+  if (!primary %in% names(value)) {
+    lssdoc_abort(
+      c(paste0("The ", field, " does not give the primary language {.val {primary}}."),
+        "i" = "{.code languages[1]} is the language {.fn write_lss} emits."),
+      class = "lssdoc_bad_spec"
+    )
+  }
+  if (length(languages) > 1L) {
+    absent <- setdiff(languages, names(value))
+    if (length(absent)) {
+      lssdoc_abort(
+        c(paste0("The ", field, " has no text for {.val {absent}}."),
+          "i" = "Every declared language needs every text: a missing translation is exactly what {.fn audit_lss} flags on read."),
+        class = "lssdoc_bad_spec"
+      )
+    }
+  }
+  value[intersect(languages, names(value))]
+}
+
+#' Read one language out of a canonical localized text
+#'
+#' Falls back to the primary (first) text when the language is absent, and
+#' returns `x` untouched when it is not a localized value yet, so the
+#' validators work on specs built by hand as well.
+#' @keywords internal
+#' @noRd
+loc_text <- function(x, language = NULL, default = "") {
+  if (is.null(x)) return(default)
+  if (!is.list(x)) return(x)
+  if (!length(x)) return(default)
+  if (!is.null(language) && !is.null(x[[language]])) return(x[[language]])
+  x[[1L]]
+}
+
 # ---- normalization ---------------------------------------------------------
 
-#' Fill in defaults and auto-number option codes
+#' Fill in defaults, localize every text, and auto-number option codes
 #'
 #' Options without an explicit `code` are numbered `1..n` in order. The
 #' `other` option is skipped: LimeSurvey codes it natively (`-oth-`), and
@@ -174,41 +366,69 @@ other_kinds <- c("single", "dropdown", "multiple")
 #' @keywords internal
 #' @noRd
 spec_normalize <- function(spec) {
-  spec$groups <- lapply(spec$groups, function(g) {
+  langs <- spec$languages
+  spec$title <- spec_localize(spec$title, langs, "survey title")
+  spec$welcome <- spec_localize(spec$welcome, langs, "welcome text")
+  spec$end_text <- spec_localize(spec$end_text, langs, "end text")
+
+  spec$groups <- lapply(seq_along(spec$groups), function(gi) {
+    g <- spec$groups[[gi]]
+    g$title <- spec_localize(g$title, langs, paste0("title of group ", gi))
     g$questions <- lapply(g$questions, function(q) {
+      label <- paste0("question ", dQuote(esc(q$code %||% ""), FALSE))
       q$mandatory <- isTRUE(q$mandatory)
+      q$text <- spec_localize(q$text, langs, paste0("text of ", label))
+      q$help <- spec_localize(q$help, langs, paste0("help of ", label))
       for (field in c("options", "rows", "columns")) {
         if (!is.null(q[[field]])) {
-          q[[field]] <- normalize_options(q[[field]])
+          q[[field]] <- normalize_options(q[[field]], langs,
+                                          paste0(field, " of ", label))
         }
       }
       q
     })
     g
   })
+
+  spec$quotas <- lapply(seq_along(spec$quotas), function(k) {
+    qu <- spec$quotas[[k]]
+    qu$name <- spec_localize(qu$name, langs, paste0("name of quota ", k))
+    qu$message <- spec_localize(qu$message, langs, paste0("message of quota ", k))
+    qu
+  })
+
   spec
 }
 
-normalize_options <- function(options) {
+normalize_options <- function(options, languages, field) {
   n <- 0L
-  lapply(options, function(o) {
+  out <- vector("list", length(options))
+  for (k in seq_along(options)) {
+    o <- options[[k]]
     if (is.character(o)) o <- list(text = o)
+    if (!is.list(o)) {
+      lssdoc_abort(
+        paste0("Every item of the ", field, " must be a string or a list."),
+        class = "lssdoc_bad_spec"
+      )
+    }
     o$other <- isTRUE(o$other)
     o$exclusive <- isTRUE(o$exclusive)
+    o$text <- spec_localize(o$text, languages,
+                            paste0("text of item ", k, " in the ", field))
     if (o$other) {
       o$code <- NULL
-      return(o)
-    }
-    if (is.null(o$code)) {
-      n <<- n + 1L
+    } else if (is.null(o$code)) {
+      n <- n + 1L
       o$code <- as.character(n)
     } else {
       o$code <- as.character(o$code)
       num <- suppressWarnings(as.integer(o$code))
-      if (!is.na(num)) n <<- max(n, num)
+      if (!is.na(num)) n <- max(n, num)
     }
-    o
-  })
+    out[[k]] <- o
+  }
+  out
 }
 
 # ---- validation ------------------------------------------------------------
@@ -239,14 +459,14 @@ spec_validate <- function(spec) {
   defined <- list()
 
   for (g in spec$groups) {
-    if (!is.character(g$title %||% "") || length(g$title %||% "") != 1L ||
-        !nzchar(g$title %||% "")) {
+    g_title <- loc_text(g$title)
+    if (!is.character(g_title) || length(g_title) != 1L || !nzchar(g_title)) {
       lssdoc_abort("Every group needs a non-empty {.field title}.",
                    class = "lssdoc_bad_spec")
     }
     if (!is.list(g$questions) || !length(g$questions)) {
       lssdoc_abort(
-        paste0("Group {.val ", esc(g$title), "} has no questions."),
+        paste0("Group {.val ", esc(g_title), "} has no questions."),
         class = "lssdoc_bad_spec"
       )
     }
@@ -271,8 +491,8 @@ spec_validate <- function(spec) {
           "Unknown kind {.val ", q$kind %||% "", "}: use one of ",
           paste0('"', spec_kinds, '"', collapse = ", "), "."))
       }
-      if (!is.character(q$text %||% "") || length(q$text %||% "") != 1L ||
-          !nzchar(q$text %||% "")) {
+      q_text <- loc_text(q$text)
+      if (!is.character(q_text) || length(q_text) != 1L || !nzchar(q_text)) {
         spec_abort(code, "x" = "The question {.field text} is empty.")
       }
 
@@ -359,7 +579,10 @@ validate_options <- function(q) {
         "} in {.field ", field,
         "}: 1-5 letters or digits (LimeSurvey stores answer codes in 5 characters)."))
     }
-    empty <- vapply(opts, function(o) !nzchar(trimws(o$text %||% "")), logical(1))
+    empty <- vapply(opts, function(o) {
+      txt <- loc_text(o$text)
+      !is.character(txt) || length(txt) != 1L || !nzchar(trimws(txt))
+    }, logical(1))
     if (any(empty)) {
       spec_abort(q$code, "x" = paste0("Empty option text in {.field ", field, "}."))
     }
