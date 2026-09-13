@@ -284,7 +284,9 @@ Run `citation("lssdoc")` for the up-to-date citation, or cite as:
 
 ```{r citation, echo = FALSE, results = "asis"}
 meta <- as.list(read.dcf("DESCRIPTION")[1, ])
-cat(format(utils::readCitationFile("inst/CITATION", meta = meta), style = "text"))
+txt  <- format(utils::readCitationFile("inst/CITATION", meta = meta), style = "text")
+# Fenced code block: pandoc leaves the quotes straight and spell_check() skips it.
+writeLines(c("```", gsub("*", "", txt, fixed = TRUE), "```"))
 ```
 
 ## License
