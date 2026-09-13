@@ -12,8 +12,10 @@ This is a feature release (0.2.0), about three months after 0.1.1.
 
 ## R CMD check results
 
-<!-- Fill in from devtools::check() and win-builder before submitting. -->
-(pending)
+0 errors | 0 warnings | 0 notes
+
+Locally (`devtools::check()`) and on win-builder for R-release, R-oldrelease
+and R-devel, all three with `Status: OK` and no NOTE.
 
 * If flagged, "LimeSurvey" (the survey software the package reads and
   writes) and "methodologists" (a correctly spelled English term) in the
@@ -26,8 +28,10 @@ This is a feature release (0.2.0), about three months after 0.1.1.
   * macOS-latest (R release)
   * windows-latest (R release)
   * ubuntu-latest (R devel, release, oldrel-1)
-<!-- Add win-builder (release, devel, oldrelease) and R-hub results after
-     running dev/02_release_cran.R steps 04-05. -->
+* win-builder (Windows Server 2022 x64):
+  * R-release 4.6.1 (2026-06-24)
+  * R-oldrelease 4.5.3 (2026-03-11)
+  * R-devel (2026-09-12 r90533)
 
 ## Notes for the reviewer
 
