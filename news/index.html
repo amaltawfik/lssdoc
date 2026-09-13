@@ -47,9 +47,17 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="lssdoc-020">lssdoc 0.2.0<a class="anchor" aria-label="anchor" href="#lssdoc-020"></a></h2>
-<ul><li><p>New experimental authoring layer: <code><a href="../reference/lss_spec.html">lss_spec()</a></code> builds and deeply validates a survey specification (21 question kinds attested by a corpus of real exports, option codes, exclusives, caps, display conditions in a minimal syntax, end-of-survey quotas), and <code><a href="../reference/write_lss.html">write_lss()</a></code> emits it as a LimeSurvey 6 (DBVersion 700) <code>.lss</code> file that imports directly. Validation covers what LimeSurvey silently accepts and breaks: localized attributes without a language code, conditions citing questions defined later or multiple-choice targets, caps at or above the option count, an “other” option marked exclusive, malformed option codes. The written file round-trips through <code><a href="../reference/read_lss.html">read_lss()</a></code> and <code><a href="../reference/audit_lss.html">audit_lss()</a></code>. The specification is language-aware: <code>languages = c("fr", "en")</code> declares the survey languages and every text (title, welcome and end texts, group titles, question texts and help, option labels, quota names and messages) can be given per language as a named vector or list, but this version emits the primary language only – multilingual emission follows in 0.3.0. The emitted format was validated by importing a generated 21-question survey, covering every supported question kind, into LimeSurvey 7.0.0-beta1 (build 260121), which imported the DBVersion 700 file without warnings and re-exported it with every question, subquestion, answer, attribute and relevance equation intact (DBVersion still 700).</p></li>
-<li><p>The table codebook’s “Type” column no longer wraps one-word labels (such as “Computed”) onto a second line.</p></li>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<ul><li><p>New experimental authoring layer. <code><a href="../reference/lss_spec.html">lss_spec()</a></code> describes a questionnaire in R – groups, 21 question kinds, answer options (including “other” and exclusive choices), display conditions and quotas – and validates it against what LimeSurvey accepts. <code><a href="../reference/write_lss.html">write_lss()</a></code> then writes it as a LimeSurvey 6 <code>.lss</code> file ready to import. Both functions are experimental and their interface may change.</p></li>
+<li><p><code><a href="../reference/lss_spec.html">lss_spec()</a></code> accepts texts in several languages (<code>languages = c("fr", "en")</code>, each text given as a named vector), but <code><a href="../reference/write_lss.html">write_lss()</a></code> emits the primary language only for now. Multilingual output is planned for 0.3.0.</p></li>
 </ul></div>
+<div class="section level3">
+<h3 id="minor-improvements-and-bug-fixes-0-2-0">Minor improvements and bug fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-bug-fixes-0-2-0"></a></h3>
+<ul><li><p><code><a href="../reference/read_lss.html">read_lss()</a></code> now warns (class <code>lssdoc_newer_dbversion</code>) when a file comes from a newer LimeSurvey than the package targets, instead of reading it silently.</p></li>
+<li><p>In the table layout, the “Type” column no longer wraps one-word labels such as “Computed” onto a second line.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="lssdoc-011">lssdoc 0.1.1<a class="anchor" aria-label="anchor" href="#lssdoc-011"></a></h2><p class="text-muted">CRAN release: 2026-06-18</p>
 <ul><li>
