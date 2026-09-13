@@ -1,4 +1,4 @@
-# lssdoc (development version)
+# lssdoc 0.2.0
 
 * New experimental authoring layer: `lss_spec()` builds and deeply validates
   a survey specification (21 question kinds attested by a corpus of real

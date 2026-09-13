@@ -443,3 +443,55 @@ test_that("implicit-scale and row-only kinds reject stray options", {
       list(code = "q", kind = "text", text = "?", relevance = "yn = X"))))),
     class = "lssdoc_bad_spec")
 })
+
+# ---- schema version (LSS_DBVERSION) ----------------------------------------
+
+test_that("an unknown kind is rejected, never silently degraded", {
+  expect_error(minimal(code = "q", kind = "carrousel", text = "?"),
+               class = "lssdoc_bad_spec")
+  expect_error(minimal(code = "q", kind = "", text = "?"),
+               class = "lssdoc_bad_spec")
+})
+
+test_that("write_lss() emits the DBVersion the package targets", {
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  write_lss(minimal(code = "q1", kind = "text", text = "Votre avis ?"), out)
+
+  xml <- rawToChar(readBin(out, "raw", file.size(out)))
+  expect_true(grepl("<DBVersion>700</DBVersion>", xml, fixed = TRUE,
+                    useBytes = TRUE))
+  expect_true(grepl(paste0("<DBVersion>", LSS_DBVERSION, "</DBVersion>"),
+                    xml, fixed = TRUE, useBytes = TRUE))
+})
+
+# Smallest document `read_lss()` accepts: doc type, DBVersion, languages.
+db_version_fixture <- function(version) {
+  tmp <- tempfile(fileext = ".lss")
+  writeLines(c(
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    "<document>",
+    "<LimeSurveyDocType>Survey</LimeSurveyDocType>",
+    paste0("<DBVersion>", version, "</DBVersion>"),
+    "<languages><language>en</language></languages>",
+    "</document>"
+  ), tmp)
+  tmp
+}
+
+test_that("read_lss() warns when the export is newer than LSS_DBVERSION", {
+  tmp <- db_version_fixture(999)
+  on.exit(unlink(tmp), add = TRUE)
+
+  expect_warning(lss <- read_lss(tmp), class = "lssdoc_newer_dbversion")
+  expect_s3_class(lss, "lss")
+  expect_identical(lss$db_version, "999")
+})
+
+test_that("read_lss() stays quiet at the targeted DBVersion", {
+  tmp <- db_version_fixture(LSS_DBVERSION)
+  on.exit(unlink(tmp), add = TRUE)
+
+  expect_no_warning(lss <- read_lss(tmp))
+  expect_identical(lss$db_version, LSS_DBVERSION)
+})

@@ -26,14 +26,17 @@ for the rationale.}
 Invisibly, the path to the written file.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
+\details{
 \strong{Experimental.} Turn an \code{\link[=lss_spec]{lss_spec()}} specification into a
-LimeSurvey 6 structure file (\code{.lss}, DBVersion 700) that imports
-directly through \emph{Create survey -> Import}. The emitted file can be
+LimeSurvey structure file (\code{.lss}) that imports directly through
+\emph{Create survey -> Import}. The output targets LimeSurvey 6
+(DBVersion 700). The emitted file can be
 read back with \code{\link[=read_lss]{read_lss()}}, checked with \code{\link[=audit_lss]{audit_lss()}} and rendered
 with \code{\link[=render_questionnaire]{render_questionnaire()}} -- so the document reviewers read is
 produced from the very file LimeSurvey receives.
-}
-\details{
+
 Mapping choices, each validated against real LimeSurvey 6 imports:
 \itemize{
 \item Each kind maps to a LimeSurvey type and theme attested by a corpus

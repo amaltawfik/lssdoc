@@ -1,5 +1,7 @@
 #' Build and validate a survey specification
 #'
+#' `r lifecycle::badge("experimental")`
+#'
 #' \strong{Experimental.} Assemble a survey specification -- the
 #' authoring-side counterpart of the `lss` object -- that [write_lss()]
 #' can turn into an importable LimeSurvey `.lss` file. The specification

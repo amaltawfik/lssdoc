@@ -41,6 +41,9 @@ An object of class \code{lss_spec}: the validated specification with
 normalized questions (auto-numbered option codes filled in).
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
+\details{
 \strong{Experimental.} Assemble a survey specification -- the
 authoring-side counterpart of the \code{lss} object -- that \code{\link[=write_lss]{write_lss()}}
 can turn into an importable LimeSurvey \code{.lss} file. The specification
@@ -48,8 +51,7 @@ is validated in depth at construction time, because LimeSurvey itself
 imports silently: a mistyped attribute, a filter referencing a missing
 answer code, or a cap larger than the option list are all accepted on
 import and only surface once respondents hit them.
-}
-\details{
+
 Each question is a list with fields:
 \itemize{
 \item \code{code} -- stable technical code (letters then letters/digits, at most

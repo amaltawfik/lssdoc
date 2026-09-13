@@ -1,3 +1,9 @@
+# Target LimeSurvey schema version. `write_lss()` emits it as `<DBVersion>`
+# and `read_lss()` compares the file it reads against it: the package
+# targets LimeSurvey 6.x. Bump this constant here -- and only here -- when
+# LimeSurvey changes its `.lss` schema, and record the bump in NEWS.md.
+LSS_DBVERSION <- "700"
+
 # Default values for the `surveys` and `surveys_languagesettings` sections
 # of an emitted `.lss` file.
 #

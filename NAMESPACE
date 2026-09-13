@@ -10,6 +10,7 @@ export(read_lss)
 export(render_audit)
 export(render_questionnaire)
 export(write_lss)
+importFrom(lifecycle,deprecated)
 importFrom(rlang,
   abort,
   warn

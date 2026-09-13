@@ -1,8 +1,11 @@
 #' Write a survey specification to an importable `.lss` file
 #'
+#' `r lifecycle::badge("experimental")`
+#'
 #' \strong{Experimental.} Turn an [lss_spec()] specification into a
-#' LimeSurvey 6 structure file (`.lss`, DBVersion 700) that imports
-#' directly through *Create survey -> Import*. The emitted file can be
+#' LimeSurvey structure file (`.lss`) that imports directly through
+#' *Create survey -> Import*. The output targets LimeSurvey 6
+#' (DBVersion 700). The emitted file can be
 #' read back with [read_lss()], checked with [audit_lss()] and rendered
 #' with [render_questionnaire()] -- so the document reviewers read is
 #' produced from the very file LimeSurvey receives.
@@ -303,7 +306,7 @@ lss_emitter <- function(spec, sid, settings) {
 
   doc <- xml2::xml_new_root("document")
   xml2::xml_add_child(doc, "LimeSurveyDocType", "Survey")
-  xml2::xml_add_child(doc, "DBVersion", "700")
+  xml2::xml_add_child(doc, "DBVersion", LSS_DBVERSION)
   langs <- xml2::xml_add_child(doc, "languages")
   xml2::xml_add_child(langs, "language", lang)
 
