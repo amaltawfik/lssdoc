@@ -98,6 +98,10 @@ identifiers and settings. <code>read_lss()</code> reads every section into a tid
 data frame without mutating any user-facing identifier or text. A
 field that is present but empty (e.g. <code>&lt;help/&gt;</code>) is read as <code>""</code>; a
 field that is absent from a row is read as <code>NA</code>.</p>
+<p>Failure is graceful by construction: a malformed, truncated, or
+non-UTF-8 file is refused in R with a classed <code>lssdoc_invalid_xml</code>
+error before or instead of any libxml2 diagnostic, and the parser is
+never allowed to fetch an external DTD or entity over the network.</p>
     </div>
 
     <div class="section level2">

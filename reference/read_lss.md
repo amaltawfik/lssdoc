@@ -42,6 +42,11 @@ data frame without mutating any user-facing identifier or text. A field
 that is present but empty (e.g. `<help/>`) is read as `""`; a field that
 is absent from a row is read as `NA`.
 
+Failure is graceful by construction: a malformed, truncated, or
+non-UTF-8 file is refused in R with a classed `lssdoc_invalid_xml` error
+before or instead of any libxml2 diagnostic, and the parser is never
+allowed to fetch an external DTD or entity over the network.
+
 ## Examples
 
 ``` r

@@ -38,7 +38,7 @@ Reading needs no suggested package: only xml2 and
 file can be turned into a `.lss` on a bare installation. officer and
 flextable are needed to WRITE a form, never to read one.
 
-The contract the document must honour – all of it written by
+The contract the document must honor – all of it written by
 [`write_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/write_form_docx.md),
 and spelled out in the blank template's hints:
 
@@ -66,8 +66,8 @@ and spelled out in the blank template's hints:
   mini-language of
   [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   (`Q1 = 1`, `Q2 in [1, autre]`, `count(Q3) >= 2`); its keywords are
-  matched whatever Word capitalized, and question and answer codes are
-  never recased.
+  matched whatever Word capitalized, and the case of a question or
+  answer code is never changed.
 
 - when the survey declares several languages, every localizable key is
   suffixed with a language code – `Wording [fr]`, `Wording [en]` – and
@@ -109,7 +109,7 @@ if (requireNamespace("officer", quietly = TRUE) &&
   spec <- read_form_docx(form)
   spec
 }
-#> ✔ Wrote /tmp/Rtmpk3zuc8/file1a0d4f43d69d.docx (2 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpiFssME/file1a518ef1809.docx (2 questions, 2 groups, 1 quota).
 #> <lss_spec> "Questionnaire d'exemple lssdoc" (fr)
 #> 2 groups, 2 questions, 1 quota
 ```

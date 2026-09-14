@@ -21,7 +21,7 @@
   [`check_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/check_form_docx.md)
   reports every problem in a form at once (block, question code and
   field named), so an author can fix them in one pass. The form
-  round-trips losslessly and is read with `xml2` only (Word is not
+  round-trips without loss and is read with `xml2` only (Word is not
   required to read it, only to fill it in).
 
 - [`as_lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/as_lss_spec.md)
@@ -37,9 +37,22 @@
   language, both reported. Nothing is lost silently.
 
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
-  gains an optional localised group `description` and an optional quota
+  gains an optional localized group `description` and an optional quota
   `limit`, both written by
   [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md).
+
+### Bug fixes
+
+- [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
+  now fails with a clear `lssdoc_invalid_xml` error on any malformed,
+  truncated or non-UTF-8 file, on every platform. The encoding is
+  validated in R and the file is checked for a complete `document`
+  envelope *before* the XML parser is called at all, so a fatal parser
+  error can no longer terminate the R session as it did on CRAN’s
+  r-devel-linux-x86_64-fedora-gcc build (the same family of crash 0.1.1
+  had fixed for files that do not start with an XML tag). Files with a
+  UTF-16 byte-order mark are transcoded instead of being refused, and
+  the parser is called with network access disabled.
 
 ## lssdoc 0.2.0
 
