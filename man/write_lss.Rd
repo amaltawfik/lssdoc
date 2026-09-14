@@ -40,7 +40,7 @@ produced from the very file LimeSurvey receives.
 Mapping choices, each validated against real LimeSurvey 6 imports:
 \itemize{
 \item Each kind maps to a LimeSurvey type and theme attested by a corpus
-of real exports (see \code{lss_kind_map} in the sources). Options of
+of real exports (see \code{lss_kinds} in the sources). Options of
 single-choice lists, rankings and array columns are emitted as
 \code{answers}; options of multiple-choice questions, item batteries and
 array rows as \code{subquestions}; scalar kinds and implicit scales

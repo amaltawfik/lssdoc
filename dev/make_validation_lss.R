@@ -1,4 +1,4 @@
-# Kitchen-sink survey exercising every `spec_kinds` entry, for a manual import
+# Kitchen-sink survey exercising every `lss_kinds` entry, for a manual import
 # test in a real LimeSurvey 6 before releasing lssdoc 0.2.0.
 # Run from the package root: Rscript dev/make_validation_lss.R
 # Output under dev/validation/ is git-ignored regenerable output: commit only this script.
@@ -171,7 +171,7 @@ if (length(warned)) {
 kinds <- unlist(lapply(spec$groups, function(g) {
   vapply(g$questions, function(q) q$kind, character(1))
 }))
-missing <- setdiff(spec_kinds, kinds)
+missing <- setdiff(lss_kinds$kind, kinds)
 if (length(missing)) {
   stop("kinds not exercised: ", paste(missing, collapse = ", "))
 }

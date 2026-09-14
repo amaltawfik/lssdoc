@@ -28,7 +28,7 @@
 #' Mapping choices, each validated against real LimeSurvey 6 imports:
 #'
 #' * Each kind maps to a LimeSurvey type and theme attested by a corpus
-#'   of real exports (see `lss_kind_map` in the sources). Options of
+#'   of real exports (see `lss_kinds` in the sources). Options of
 #'   single-choice lists, rankings and array columns are emitted as
 #'   `answers`; options of multiple-choice questions, item batteries and
 #'   array rows as `subquestions`; scalar kinds and implicit scales
@@ -140,7 +140,7 @@ write_lss <- function(spec, file, sid = 100001L, settings = list()) {
 #' @noRd
 translate_relevance <- function(expr, defined) {
   expr <- trimws(expr %||% "")
-  if (!nzchar(expr)) return("1")
+  if (!nzchar(expr)) return(lss_spec_defaults$relevance)
   ls_code <- function(x) ifelse(tolower(trimws(x)) == "autre", "-oth-", trimws(x))
 
   m <- regmatches(expr, regexec(
@@ -169,35 +169,6 @@ translate_relevance <- function(expr, defined) {
 }
 
 # ---- emission --------------------------------------------------------------
-
-# One entry per supported kind. Every mapping below is attested by the
-# reference corpus of real exports (where each type's options live --
-# answers, subquestions, or neither -- and its LimeSurvey 6 theme name).
-# Types needing an unproven mechanism (dual-scale subquestions for array
-# texts/numbers, unattested LS6 theme names) are deliberately absent.
-lss_kind_map <- list(
-  single        = list(type = "L", theme = "listradio"),
-  dropdown      = list(type = "!", theme = "list_dropdown"),
-  singlecomment = list(type = "O", theme = "list_with_comment"),
-  multiple      = list(type = "M", theme = "multiplechoice"),
-  array         = list(type = "F", theme = "arrays/array"),
-  array5        = list(type = "A", theme = "arrays/5point"),
-  array10       = list(type = "B", theme = "arrays/10point"),
-  arrayyesno    = list(type = "C", theme = "arrays/yesnouncertain"),
-  arraytrend    = list(type = "E", theme = "arrays/increasesamedecrease"),
-  ranking       = list(type = "R", theme = "ranking"),
-  multitext     = list(type = "Q", theme = "multipleshorttext"),
-  multinumeric  = list(type = "K", theme = "multiplenumeric"),
-  text          = list(type = "T", theme = "longfreetext"),
-  shorttext     = list(type = "S", theme = "shortfreetext"),
-  hugetext      = list(type = "U", theme = "hugefreetext"),
-  numeric       = list(type = "N", theme = "numerical"),
-  date          = list(type = "D", theme = "date"),
-  yesno         = list(type = "Y", theme = "yesno"),
-  gender        = list(type = "G", theme = "gender"),
-  fivepoint     = list(type = "5", theme = "5pointchoice"),
-  display       = list(type = "X", theme = "boilerplate")
-)
 
 #' Build the XML document for a validated spec
 #' @keywords internal
@@ -230,13 +201,13 @@ lss_emitter <- function(spec, sid, settings) {
 
     for (qi in seq_along(g$questions)) {
       q <- g$questions[[qi]]
-      map <- lss_kind_map[[q$kind]]
+      map <- kind_row(q$kind)
       st$qid <- st$qid + 1L
       parent <- st$qid
       qid_of[[q$code]] <- parent
 
-      other_opt <- Filter(function(o) isTRUE(o$other), q$options %||% list())
-      opts <- Filter(function(o) !isTRUE(o$other), q$options %||% list())
+      other_opt <- Filter(function(o) isTRUE(o$other), q[["options"]] %||% list())
+      opts <- Filter(function(o) !isTRUE(o$other), q[["options"]] %||% list())
 
       st$questions[[length(st$questions) + 1L]] <- list(
         qid = parent, parent_qid = 0L, sid = sid, gid = st$gid,
@@ -282,27 +253,18 @@ lss_emitter <- function(spec, sid, settings) {
         }
       }
 
-      switch(q$kind,
-        single        = add_answers(opts),
-        dropdown      = add_answers(opts),
-        singlecomment = add_answers(opts),
-        ranking       = add_answers(opts),
-        multiple      = add_subquestions(opts),
-        multitext     = add_subquestions(opts),
-        multinumeric  = add_subquestions(opts),
-        array         = { add_subquestions(q$rows); add_answers(q$columns) },
-        array5        = add_subquestions(q$rows),
-        array10       = add_subquestions(q$rows),
-        arrayyesno    = add_subquestions(q$rows),
-        arraytrend    = add_subquestions(q$rows)
-      )
+      # subquestions before answers: the array branch emitted rows then
+      # columns, and that order fixes every qid / aid / lid in the file
+      pick <- function(field) if (identical(field, "options")) opts else q[[field]]
+      if (!is.na(map$subquestions_from)) add_subquestions(pick(map$subquestions_from))
+      if (!is.na(map$answers_from)) add_answers(pick(map$answers_from))
 
       attr_add <- function(name, value, language = "") {
         st$qattrs[[length(st$qattrs) + 1L]] <- list(
           qid = parent, attribute = name, value = value, language = language)
       }
       if (!is.null(q$max_answers)) attr_add("max_answers", q$max_answers)
-      if (q$kind == "ranking" &&
+      if (isTRUE(map$implicit_min_answers) &&
           (isTRUE(q$mandatory) || !is.null(q$max_answers)) &&
           is.null((q$attributes %||% list())[["min_answers"]])) {
         attr_add("min_answers", 1L)
@@ -320,7 +282,7 @@ lss_emitter <- function(spec, sid, settings) {
         }
       }
       excl <- option_codes(Filter(function(o) isTRUE(o$exclusive), opts))
-      if (q$kind == "multiple" && length(excl)) {
+      if (isTRUE(map$exclusive_allowed) && length(excl)) {
         attr_add("exclude_all_others", paste(excl, collapse = ";"))
       }
       for (nm in names(q$attributes %||% list())) {
@@ -438,8 +400,10 @@ lss_emitter <- function(spec, sid, settings) {
 
   list(doc = doc,
        n_groups = length(st$groups),
-       n_questions = sum(vapply(st$questions,
-                                function(q) q$type != "X", logical(1))))
+       n_questions = sum(vapply(
+         st$questions,
+         function(q) q$type %in% lss_kinds$type[lss_kinds$collects_response],
+         logical(1))))
 }
 
 #' Wrap plain paragraphs in <p> tags; pass HTML through verbatim

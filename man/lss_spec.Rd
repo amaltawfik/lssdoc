@@ -72,17 +72,19 @@ the scale is implicit). Item batteries: \code{"multitext"},
 \code{"text"}, \code{"shorttext"}, \code{"hugetext"}, \code{"numeric"}, \code{"date"},
 \code{"yesno"} (implicit Y/N), \code{"gender"} (implicit M/F), \code{"fivepoint"}
 (implicit 1-5). Plus \code{"display"} (text shown without input). Every
-kind maps to a LimeSurvey type attested by real exports; types that
-would require an unverified mechanism (dual-scale arrays of texts or
-numbers, equations, file upload) are deliberately not supported yet.
+kind maps to a LimeSurvey type attested by real exports; eight
+further LimeSurvey types are deferred, each with its own reason, in
+\code{lss_kinds_deferred} in the sources.
 \item \code{text} -- the question wording. \code{mandatory} -- logical, default
 \code{FALSE}. \code{help} -- optional help text shown under the wording.
-\item \code{options} -- for \code{single}, \code{multiple} and \code{ranking}: list of options,
-each a list with \code{text} and optionally \code{code}, \code{other = TRUE}
-(native LimeSurvey "other" with a free-text field; \code{single} and
-\code{multiple} only) and \code{exclusive = TRUE} (\code{multiple} only; unchecks
-every other box). Options without a \code{code} are numbered \verb{1..n} in
-order, skipping the \code{other} option, which LimeSurvey codes natively.
+\item \code{options} -- for every kind that takes an option list (\code{single},
+\code{dropdown}, \code{singlecomment}, \code{multiple}, \code{ranking}, \code{multitext},
+\code{multinumeric}): list of options, each a list with \code{text} and
+optionally \code{code}, \code{other = TRUE} (native LimeSurvey "other" with a
+free-text field; \code{single}, \code{dropdown} and \code{multiple} only) and
+\code{exclusive = TRUE} (\code{multiple} only; unchecks every other box).
+Options without a \code{code} are numbered \verb{1..n} in order, skipping the
+\code{other} option, which LimeSurvey codes natively.
 \item \code{rows} / \code{columns} -- for \code{array}: the subquestions and the answer
 scale, same shape as \code{options}.
 \item \code{relevance} -- display condition in a minimal syntax:

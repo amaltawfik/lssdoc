@@ -626,3 +626,227 @@ test_that("a monolingual spec still round-trips through write and read", {
   expect_identical(qls$quotals_name, "Refus")
   expect_identical(qls$quotals_message, "Merci")
 })
+
+# ---- the consolidated kind table --------------------------------------------
+
+test_that("lss_kinds holds one complete row per authorable kind", {
+  expect_s3_class(lss_kinds, "data.frame")
+  expect_identical(nrow(lss_kinds), 21L)
+  expect_false(as.logical(anyDuplicated(lss_kinds$kind)))
+  expect_false(as.logical(anyDuplicated(lss_kinds$type)))
+  expect_false(as.logical(anyDuplicated(lss_kinds$theme)))
+
+  # row order is user-visible: it is pasted into the unknown-kind error
+  expect_identical(
+    lss_kinds$kind,
+    c("single", "dropdown", "singlecomment", "multiple",
+      "array", "array5", "array10", "arrayyesno", "arraytrend", "ranking",
+      "multitext", "multinumeric", "text", "shorttext", "hugetext",
+      "numeric", "date", "yesno", "gender", "fivepoint", "display")
+  )
+
+  # every kind maps to a LimeSurvey type letter and a theme name
+  expect_true(all(nzchar(lss_kinds$type)))
+  expect_true(all(nchar(lss_kinds$type) == 1L))
+  expect_true(all(nzchar(lss_kinds$theme)))
+  expect_identical(
+    lss_kinds$type,
+    c("L", "!", "O", "M", "F", "A", "B", "C", "E", "R", "Q", "K",
+      "T", "S", "U", "N", "D", "Y", "G", "5", "X")
+  )
+  expect_identical(
+    lss_kinds$theme,
+    c("listradio", "list_dropdown", "list_with_comment", "multiplechoice",
+      "arrays/array", "arrays/5point", "arrays/10point",
+      "arrays/yesnouncertain", "arrays/increasesamedecrease", "ranking",
+      "multipleshorttext", "multiplenumeric", "longfreetext",
+      "shortfreetext", "hugefreetext", "numerical", "date", "yesno",
+      "gender", "5pointchoice", "boilerplate")
+  )
+})
+
+test_that("the accessors reproduce the former per-kind vectors", {
+  # relevance targets: `=` / `in` (formerly single_valued_kinds)
+  expect_identical(
+    kinds_where("relevance_role", "scalar"),
+    c("single", "dropdown", "singlecomment", "yesno", "gender", "fivepoint")
+  )
+  # count() targets
+  expect_identical(kinds_where("relevance_role", "count"), "multiple")
+
+  # kinds carrying no options and no rows (formerly no_option_kinds)
+  expect_identical(
+    kinds_where("options", "forbidden"),
+    c("text", "shorttext", "hugetext", "numeric", "date",
+      "yesno", "gender", "fivepoint", "display")
+  )
+  # row-only arrays: rows required, implicit scale (formerly row_only_kinds)
+  expect_identical(
+    intersect(kinds_where("rows", "required"),
+              kinds_where("columns", "forbidden")),
+    c("array5", "array10", "arrayyesno", "arraytrend")
+  )
+  # the only kind needing both rows and columns
+  expect_identical(
+    intersect(kinds_where("rows", "required"),
+              kinds_where("columns", "required")),
+    "array"
+  )
+  # native other option (formerly other_kinds)
+  expect_identical(kinds_where("other_allowed"),
+                   c("single", "dropdown", "multiple"))
+  expect_identical(kinds_where("exclusive_allowed"), "multiple")
+  expect_identical(kinds_where("quota_target"), "single")
+  expect_identical(kinds_where("implicit_min_answers"), "ranking")
+  expect_identical(kinds_where("collects_response", FALSE), "display")
+  expect_identical(kinds_where("max_answers_rule", "below_n"), "multiple")
+  expect_identical(kinds_where("max_answers_rule", "at_most_n"), "ranking")
+
+  # minimum option counts (formerly option_kinds), names and integer type
+  minima <- stats::setNames(lss_kinds$min_options, lss_kinds$kind)
+  expect_identical(
+    minima[!is.na(minima)],
+    c(single = 2L, dropdown = 2L, singlecomment = 2L, multiple = 2L,
+      ranking = 2L, multitext = 1L, multinumeric = 1L)
+  )
+
+  # emission routing (formerly the switch() in lss_emitter)
+  expect_identical(kinds_where("answers_from", "options"),
+                   c("single", "dropdown", "singlecomment", "ranking"))
+  expect_identical(kinds_where("answers_from", "columns"), "array")
+  expect_identical(kinds_where("subquestions_from", "options"),
+                   c("multiple", "multitext", "multinumeric"))
+  expect_identical(kinds_where("subquestions_from", "rows"),
+                   c("array", "array5", "array10", "arrayyesno", "arraytrend"))
+})
+
+test_that("the kind accessors are total and type-stable", {
+  expect_true(is_kind("single"))
+  expect_false(is_kind("nonsense"))
+  expect_false(is_kind(NULL))
+  expect_false(is_kind(1))
+  expect_false(is_kind(character(0)))
+  expect_false(is_kind(c("single", "text")))
+  expect_false(is_kind(NA_character_))
+
+  expect_identical(kind_field("text", "min_options"), NA_integer_)
+  expect_identical(kind_field("multitext", "min_options"), 1L)
+  expect_identical(kind_field("single", "min_options"), 2L)
+  expect_identical(kind_field("nonsense", "type"), NA)
+  expect_identical(kind_field(NULL, "type"), NA)
+  expect_identical(kind_field("display", "collects_response"), FALSE)
+
+  # implicit scales: a character vector, or NULL so `%||%` falls back
+  expect_identical(kind_implicit_codes("yesno"), c("Y", "N"))
+  expect_identical(kind_implicit_codes("gender"), c("M", "F"))
+  expect_identical(kind_implicit_codes("fivepoint"), as.character(1:5))
+  expect_null(kind_implicit_codes("single"))
+  expect_null(kind_implicit_codes("text"))
+  expect_null(kind_implicit_codes("nonsense"))
+
+  row <- kind_row("array")
+  expect_identical(nrow(row), 1L)
+  expect_identical(row$type, "F")
+  expect_identical(row$theme, "arrays/array")
+})
+
+test_that("the write-side table joins the read-side type taxonomy", {
+  rt <- lss_question_types()
+  expect_true(all(lss_kinds$type %in% rt$code))
+  m <- match(lss_kinds$type, rt$code)
+  expect_identical(rt$has_answers[m], !is.na(lss_kinds$answers_from))
+  expect_identical(rt$has_subquestions[m], !is.na(lss_kinds$subquestions_from))
+  expect_identical(rt$display_only[m], !lss_kinds$collects_response)
+})
+
+test_that("lss_kinds_reference() flattens the table for documentation", {
+  ref <- lss_kinds_reference()
+  expect_s3_class(ref, "data.frame")
+  expect_identical(nrow(ref), nrow(lss_kinds))
+  expect_identical(ref$kind, lss_kinds$kind)
+  expect_identical(ref$label, lss_kinds$label)
+
+  # knitr-ready: every cell short text, no list column, no NA, no logical
+  expect_true(all(vapply(ref, is.character, logical(1))))
+  expect_false(anyNA(unlist(ref, use.names = FALSE)))
+
+  expect_identical(ref$implicit_codes[ref$kind == "yesno"], "Y, N")
+  expect_identical(ref$implicit_codes[ref$kind == "fivepoint"], "1, 2, 3, 4, 5")
+  expect_identical(ref$implicit_codes[ref$kind == "single"], "")
+  expect_identical(ref$other[ref$kind == "dropdown"], "yes")
+  expect_identical(ref$other[ref$kind == "ranking"], "")
+  expect_identical(ref$min_options[ref$kind == "single"], "2")
+  expect_identical(ref$min_options[ref$kind == "text"], "")
+  expect_identical(ref$relevance[ref$kind == "multiple"], "count")
+  expect_identical(ref$relevance[ref$kind == "text"], "")
+  expect_identical(ref$max_answers[ref$kind == "ranking"], "at_most_n")
+  expect_identical(ref$collects_response[ref$kind == "display"], "")
+})
+
+test_that("lss_kinds_deferred gives a reason for every excluded type", {
+  expect_s3_class(lss_kinds_deferred, "data.frame")
+  expect_identical(lss_kinds_deferred$type,
+                   c("P", "H", "1", ";", ":", "*", "|", "I"))
+  expect_true(all(nzchar(lss_kinds_deferred$reason)))
+
+  # deferred means: a real LimeSurvey type that is not authorable
+  expect_length(intersect(lss_kinds_deferred$type, lss_kinds$type), 0L)
+  rt <- lss_question_types()
+  expect_true(all(lss_kinds_deferred$type %in% rt$code))
+  expect_identical(lss_kinds_deferred$label,
+                   rt$label[match(lss_kinds_deferred$type, rt$code)])
+  # authorable plus deferred covers the whole read-side taxonomy
+  expect_identical(sort(c(lss_kinds$type, lss_kinds_deferred$type)),
+                   sort(rt$code))
+})
+
+test_that("lss_spec_defaults is the single source of the authoring defaults", {
+  expect_identical(lss_spec_defaults$mandatory, FALSE)
+  expect_identical(lss_spec_defaults$relevance, "1")
+  expect_identical(lss_spec_defaults$other, FALSE)
+  expect_identical(lss_spec_defaults$exclusive, FALSE)
+  expect_identical(lss_spec_defaults$option_code_from, 1L)
+  expect_identical(lss_spec_defaults$language, "fr")
+  expect_identical(lss_spec_defaults$primary_language, 1L)
+
+  # a spec that declares none of them comes out carrying exactly these
+  spec <- lss_spec(title = "T", groups = list(list(
+    title = "G",
+    questions = list(list(code = "q1", kind = "single", text = "Q ?",
+                          options = list("A", "B"))))))
+  q <- spec$groups[[1L]]$questions[[1L]]
+  expect_identical(spec$language, lss_spec_defaults$language)
+  expect_identical(q$mandatory, lss_spec_defaults$mandatory)
+  expect_null(q$relevance)
+  expect_identical(vapply(q$options, function(o) o$code, character(1)),
+                   c("1", "2"))
+  expect_identical(vapply(q$options, function(o) o$other, logical(1)),
+                   rep(lss_spec_defaults$other, 2L))
+  expect_identical(translate_relevance(NULL, list()),
+                   lss_spec_defaults$relevance)
+})
+
+# ---- user-visible output, pinned -------------------------------------------
+
+test_that("print.lss_spec() output is stable", {
+  spec <- lss_spec(
+    title = c(fr = "Enquete", en = "Survey"),
+    languages = c("fr", "en"),
+    groups = list(list(
+      title = c(fr = "Profil", en = "Profile"),
+      questions = list(
+        list(code = "q1", kind = "yesno",
+             text = c(fr = "Etes-vous d'accord ?", en = "Do you agree?")),
+        list(code = "note", kind = "display",
+             text = c(fr = "Merci.", en = "Thanks."))))))
+  expect_snapshot(print(spec))
+})
+
+test_that("the unknown-kind error lists every authorable kind", {
+  expect_snapshot(
+    error = TRUE,
+    lss_spec(title = "T", groups = list(list(
+      title = "G",
+      questions = list(list(code = "q1", kind = "wat", text = "Texte ?")))))
+  )
+})
