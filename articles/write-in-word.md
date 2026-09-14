@@ -50,8 +50,15 @@ independently of the questionnaire’s own languages.
 
 template <- tempfile(fileext = ".docx")
 lss_template_docx(template, lang = "en")
-#> ✔ Wrote /tmp/Rtmpq3bXRX/file1b2260dc2b97.docx (21 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpiwWOm7/file1bf132860f4a.docx (21 questions, 2 groups, 1 quota).
 ```
+
+The person who writes the questionnaire often does not use R at all. The
+same blank forms can be downloaded from the [package
+website](https://amaltawfik.github.io/lssdoc/): a short one to fill in,
+in each of the five interface languages, and a longer one showing every
+question type. They are regenerated whenever the site is built, so the
+form offered there is always the one the current version reads.
 
 Open the file in Word. It is a sequence of two-column tables, one per
 block, in the order of the questionnaire:
@@ -206,7 +213,7 @@ one.
 check_form_docx(template)
 #> 
 #> ── lssdoc form check ───────────────────────────────────────────────────────────
-#> File: /tmp/Rtmpq3bXRX/file1b2260dc2b97.docx
+#> File: /tmp/RtmpiwWOm7/file1bf132860f4a.docx
 #> ✔ No problems found: the form reads.
 ```
 
@@ -241,7 +248,7 @@ spec
 
 lss_file <- tempfile(fileext = ".lss")
 write_lss(spec, lss_file)
-#> ✔ Wrote /tmp/Rtmpq3bXRX/file1b22632f4fde.lss (20 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpiwWOm7/file1bf14e877cc2.lss (20 questions, 2 groups, 1 quota).
 ```
 
 Import the file in LimeSurvey (*Surveys → Create → Import*). All
@@ -263,7 +270,7 @@ back <- read_lss(lss_file)
 audit_lss(back)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/Rtmpq3bXRX/file1b22632f4fde.lss
+#> File: /tmp/RtmpiwWOm7/file1bf14e877cc2.lss
 #> Languages: "en"
 #> ✔ No anomalies detected.
 ```
@@ -307,7 +314,7 @@ write_form_docx(lss, form, lang = "en", strict = FALSE)
 #>   showsurveypolicynotice and 41 more have no place in a specification;
 #>   write_lss() re-emits its own defaults
 #> ℹ Review the result, or fix the survey in the Word authoring form.
-#> ✔ Wrote /tmp/Rtmpq3bXRX/file1b22a8921c5.docx (43 questions, 6 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpiwWOm7/file1bf16bbba1ee.docx (43 questions, 6 groups, 1 quota).
 ```
 
 The conversion is honest about its limits. Question types the form does
