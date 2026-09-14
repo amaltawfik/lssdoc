@@ -54,23 +54,31 @@ declared languages. No new dependency: reading a form uses only
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 note
 
-Locally (`devtools::check()`).
-<!-- Add the win-builder verdicts (release, devel, oldrelease) once received. -->
-
+* "Days since last update: 1" -- this release follows 0.2.0 closely only
+  because it corrects the ERROR you reported on
+  r-devel-linux-x86_64-fedora-gcc, well inside the 2026-10-05 deadline.
+  The authoring feature was already finished and tested when your e-mail
+  arrived, so it travels with the correction rather than delaying it.
 * If flagged, "LimeSurvey" (the survey software the package reads and
   writes) and "methodologists" (a correctly spelled English term) in the
   DESCRIPTION are intentional.
 
+<!-- Add the win-builder verdicts (release, devel, oldrelease) once received. -->
+
 ## Test environments
 
-* Local: Windows 11, R 4.6.1
+* Local: Windows 11, R 4.6.1 (`devtools::check(remote = TRUE, manual = TRUE)`)
 * GitHub Actions (r-lib/actions, R CMD check, `error-on = "warning"`):
   * macOS-latest (R release)
   * windows-latest (R release)
   * ubuntu-latest (R devel, release, oldrel-1)
-<!-- Add the win-builder results (release, devel, oldrelease) once received. -->
+* win-builder (Windows Server 2022 x64), each `Status: 1 NOTE`, the
+  "Days since last update" note above being the only one:
+  * R-release 4.6.1 (2026-06-24)
+  * R-devel (2026-09-13 r90534)
+  * R-oldrelease 4.5.3 (2026-03-11)
 
 ## Notes for the reviewer
 
