@@ -89,19 +89,20 @@ Each question is a list with fields:
   `"numeric"`, `"date"`, `"yesno"` (implicit Y/N), `"gender"` (implicit
   M/F), `"fivepoint"` (implicit 1-5). Plus `"display"` (text shown
   without input). Every kind maps to a LimeSurvey type attested by real
-  exports; types that would require an unverified mechanism (dual-scale
-  arrays of texts or numbers, equations, file upload) are deliberately
-  not supported yet.
+  exports; eight further LimeSurvey types are deferred, each with its
+  own reason, in `lss_kinds_deferred` in the sources.
 
 - `text` – the question wording. `mandatory` – logical, default `FALSE`.
   `help` – optional help text shown under the wording.
 
-- `options` – for `single`, `multiple` and `ranking`: list of options,
-  each a list with `text` and optionally `code`, `other = TRUE` (native
-  LimeSurvey "other" with a free-text field; `single` and `multiple`
-  only) and `exclusive = TRUE` (`multiple` only; unchecks every other
-  box). Options without a `code` are numbered `1..n` in order, skipping
-  the `other` option, which LimeSurvey codes natively.
+- `options` – for every kind that takes an option list (`single`,
+  `dropdown`, `singlecomment`, `multiple`, `ranking`, `multitext`,
+  `multinumeric`): list of options, each a list with `text` and
+  optionally `code`, `other = TRUE` (native LimeSurvey "other" with a
+  free-text field; `single`, `dropdown` and `multiple` only) and
+  `exclusive = TRUE` (`multiple` only; unchecks every other box).
+  Options without a `code` are numbered `1..n` in order, skipping the
+  `other` option, which LimeSurvey codes natively.
 
 - `rows` / `columns` – for `array`: the subquestions and the answer
   scale, same shape as `options`.

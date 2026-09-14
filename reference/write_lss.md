@@ -57,7 +57,7 @@ LimeSurvey receives.
 Mapping choices, each validated against real LimeSurvey 6 imports:
 
 - Each kind maps to a LimeSurvey type and theme attested by a corpus of
-  real exports (see `lss_kind_map` in the sources). Options of
+  real exports (see `lss_kinds` in the sources). Options of
   single-choice lists, rankings and array columns are emitted as
   `answers`; options of multiple-choice questions, item batteries and
   array rows as `subquestions`; scalar kinds and implicit scales
@@ -112,11 +112,11 @@ spec <- lss_spec(
 )
 out <- tempfile(fileext = ".lss")
 write_lss(spec, out)
-#> ✔ Wrote /tmp/Rtmps1Tv6X/file1952551fc75.lss (1 question, 1 group, 0 quotas).
+#> ✔ Wrote /tmp/RtmpaVgTgj/file1a1a220ebff0.lss (1 question, 1 group, 0 quotas).
 audit_lss(out)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/Rtmps1Tv6X/file1952551fc75.lss
+#> File: /tmp/RtmpaVgTgj/file1a1a220ebff0.lss
 #> Languages: "fr"
 #> ✔ No anomalies detected.
 ```

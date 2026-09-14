@@ -96,7 +96,7 @@ read back with <code><a href="read_lss.html">read_lss()</a></code>, checked with
 with <code><a href="render_questionnaire.html">render_questionnaire()</a></code> – so the document reviewers read is
 produced from the very file LimeSurvey receives.</p>
 <p>Mapping choices, each validated against real LimeSurvey 6 imports:</p><ul><li><p>Each kind maps to a LimeSurvey type and theme attested by a corpus
-of real exports (see <code>lss_kind_map</code> in the sources). Options of
+of real exports (see <code>lss_kinds</code> in the sources). Options of
 single-choice lists, rankings and array columns are emitted as
 <code>answers</code>; options of multiple-choice questions, item batteries and
 array rows as <code>subquestions</code>; scalar kinds and implicit scales
@@ -144,11 +144,11 @@ planned for 0.3.0.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".lss"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">write_lss</span><span class="op">(</span><span class="va">spec</span>, <span class="va">out</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmps1Tv6X/file1952551fc75.lss</span> (1 question, 1 group, 0 quotas).</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpaVgTgj/file1a1a220ebff0.lss</span> (1 question, 1 group, 0 quotas).</span>
 <span class="r-in"><span><span class="fu"><a href="audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc audit</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────────────────</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmps1Tv6X/file1952551fc75.lss</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpaVgTgj/file1a1a220ebff0.lss</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">Languages</span>: <span style="color: #0000BB;">"fr"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> No anomalies detected.</span>
 </code></pre></div>

@@ -4,6 +4,8 @@
 
 ## lssdoc 0.2.0
 
+CRAN release: 2026-09-13
+
 ### New features
 
 - New experimental authoring layer.

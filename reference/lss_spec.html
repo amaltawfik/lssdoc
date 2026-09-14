@@ -134,17 +134,19 @@ the scale is implicit). Item batteries: <code>"multitext"</code>,
 <code>"text"</code>, <code>"shorttext"</code>, <code>"hugetext"</code>, <code>"numeric"</code>, <code>"date"</code>,
 <code>"yesno"</code> (implicit Y/N), <code>"gender"</code> (implicit M/F), <code>"fivepoint"</code>
 (implicit 1-5). Plus <code>"display"</code> (text shown without input). Every
-kind maps to a LimeSurvey type attested by real exports; types that
-would require an unverified mechanism (dual-scale arrays of texts or
-numbers, equations, file upload) are deliberately not supported yet.</p></li>
+kind maps to a LimeSurvey type attested by real exports; eight
+further LimeSurvey types are deferred, each with its own reason, in
+<code>lss_kinds_deferred</code> in the sources.</p></li>
 <li><p><code>text</code> – the question wording. <code>mandatory</code> – logical, default
 <code>FALSE</code>. <code>help</code> – optional help text shown under the wording.</p></li>
-<li><p><code>options</code> – for <code>single</code>, <code>multiple</code> and <code>ranking</code>: list of options,
-each a list with <code>text</code> and optionally <code>code</code>, <code>other = TRUE</code>
-(native LimeSurvey "other" with a free-text field; <code>single</code> and
-<code>multiple</code> only) and <code>exclusive = TRUE</code> (<code>multiple</code> only; unchecks
-every other box). Options without a <code>code</code> are numbered <code>1..n</code> in
-order, skipping the <code>other</code> option, which LimeSurvey codes natively.</p></li>
+<li><p><code>options</code> – for every kind that takes an option list (<code>single</code>,
+<code>dropdown</code>, <code>singlecomment</code>, <code>multiple</code>, <code>ranking</code>, <code>multitext</code>,
+<code>multinumeric</code>): list of options, each a list with <code>text</code> and
+optionally <code>code</code>, <code>other = TRUE</code> (native LimeSurvey "other" with a
+free-text field; <code>single</code>, <code>dropdown</code> and <code>multiple</code> only) and
+<code>exclusive = TRUE</code> (<code>multiple</code> only; unchecks every other box).
+Options without a <code>code</code> are numbered <code>1..n</code> in order, skipping the
+<code>other</code> option, which LimeSurvey codes natively.</p></li>
 <li><p><code>rows</code> / <code>columns</code> – for <code>array</code>: the subquestions and the answer
 scale, same shape as <code>options</code>.</p></li>
 <li><p><code>relevance</code> – display condition in a minimal syntax:
