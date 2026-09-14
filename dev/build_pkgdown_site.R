@@ -164,6 +164,7 @@ if (!file.exists(nojekyll)) {
 # site build, so they cannot drift from the current renderer.
 
 rendered_examples <- character(0)
+form_templates <- character(0)
 if (requireNamespace("officer", quietly = TRUE) &&
     requireNamespace("flextable", quietly = TRUE) &&
     requireNamespace("pkgload", quietly = TRUE)) {
@@ -183,6 +184,36 @@ if (requireNamespace("officer", quietly = TRUE) &&
     }
     rendered_examples <- targets[file.exists(targets)]
   }
+
+  # --- downloadable blank authoring forms ------------------------------------
+  # A questionnaire author who does not use R can download a blank Word form
+  # here, fill it in, and hand it back to someone who runs read_form_docx().
+  # Same rule as the rendered examples above: generated at site-build time,
+  # never committed, never shipped to CRAN. Each form carries the
+  # template-version marker of the package that built the site, so what the
+  # website offers is always what this version's reader expects.
+  # The types a real questionnaire almost always needs, in the order an
+  # author meets them: a single choice, a multiple choice, a yes/no, a
+  # Likert grid, free text, a number, a date, and a text-only block.
+  starter_kinds <- c("single", "multiple", "yesno", "array", "text",
+                     "numeric", "date", "display")
+  form_langs <- c("en", "fr", "de", "es", "it")
+  form_targets <- stats::setNames(
+    file.path(docs_dir, sprintf("lssdoc-form-%s.docx", form_langs)),
+    form_langs
+  )
+  for (lang in form_langs) {
+    lssdoc::lss_template_docx(
+      form_targets[[lang]], lang = lang, kinds = starter_kinds
+    )
+  }
+  # The long form: one example question for every supported type, so the
+  # author can see every field a type carries and delete what they do not
+  # need. `kinds` is left at its default, which is the whole table.
+  all_types <- file.path(docs_dir, "lssdoc-form-all-types-en.docx")
+  lssdoc::lss_template_docx(all_types, lang = "en")
+  form_targets <- c(form_targets, "all types" = all_types)
+  form_templates <- form_targets[file.exists(form_targets)]
 }
 
 # --- post-build cleanup ------------------------------------------------------
@@ -211,3 +242,4 @@ report("Removed legacy pkgdown pages", removed_legacy)
 report("Removed generated reference artifacts", removed_artifacts)
 report("Fixed HTML encoding artifacts", fixed_html)
 report("Rendered downloadable examples", rendered_examples)
+report("Rendered blank authoring forms", form_templates)

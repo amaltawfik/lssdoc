@@ -48,8 +48,10 @@ declared languages. No new dependency: reading a form uses only
 
 ## R CMD check results
 
-<!-- Fill in from devtools::check() and win-builder before submitting. -->
-(pending)
+0 errors | 0 warnings | 0 notes
+
+Locally (`devtools::check()`).
+<!-- Add the win-builder verdicts (release, devel, oldrelease) once received. -->
 
 * If flagged, "LimeSurvey" (the survey software the package reads and
   writes) and "methodologists" (a correctly spelled English term) in the

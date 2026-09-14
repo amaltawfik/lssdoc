@@ -56,6 +56,14 @@ template <- tempfile(fileext = ".docx")
 lss_template_docx(template, lang = "en")
 ```
 
+The person who writes the questionnaire often does not use R at all. The
+same blank forms can be downloaded from the
+[package website](https://amaltawfik.github.io/lssdoc/): a short one to
+fill in, in each of the five interface languages, and a longer one
+showing every question type. They are regenerated whenever the site is
+built, so the form offered there is always the one the current version
+reads.
+
 Open the file in Word. It is a sequence of two-column tables, one per
 block, in the order of the questionnaire:
 

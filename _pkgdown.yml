@@ -16,8 +16,17 @@ home:
     any AI. Processing is fully local -- nothing is ever uploaded
     to a third-party service.
   sidebar:
-    structure: [links, downloads, citation, license, community, authors, dev]
+    structure: [links, blankform, downloads, citation, license, community, authors, dev]
     components:
+      blankform:
+        title: Blank Word form
+        text: >
+          Write your questionnaire in Word, then turn it into a LimeSurvey
+          file with `read_form_docx()`. No R needed to fill it in &mdash;
+          [English](https://amaltawfik.github.io/lssdoc/lssdoc-form-en.docx) &middot; [Français](https://amaltawfik.github.io/lssdoc/lssdoc-form-fr.docx) &middot; [Deutsch](https://amaltawfik.github.io/lssdoc/lssdoc-form-de.docx) &middot; [Español](https://amaltawfik.github.io/lssdoc/lssdoc-form-es.docx) &middot; [Italiano](https://amaltawfik.github.io/lssdoc/lssdoc-form-it.docx).
+          A longer one showing
+          [every question type](https://amaltawfik.github.io/lssdoc/lssdoc-form-all-types-en.docx)
+          is also available.
       downloads:
         title: Example output
         text: >
