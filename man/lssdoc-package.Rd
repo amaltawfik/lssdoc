@@ -4,11 +4,11 @@
 \name{lssdoc-package}
 \alias{lssdoc}
 \alias{lssdoc-package}
-\title{lssdoc: Render 'LimeSurvey' '.lss' Questionnaires as Word and PDF Documents}
+\title{lssdoc: Render, Audit and Write 'LimeSurvey' '.lss' Questionnaires}
 \description{
 \if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
 
-Render 'LimeSurvey' '.lss' survey exports as questionnaire documents in Word ('.docx') or PDF, displaying one to four languages side by side with localized chrome in English, French, German, Spanish and Italian. Includes a rule-based automated audit that flags missing translations, forward filter references, duplicate codes, array-scale inconsistencies and orphan structural references. Designed for anyone working with a 'LimeSurvey' survey: researchers, methodologists, ethics committees, translators and reviewers. Processing is fully local: the source file is the only input and no questionnaire content is uploaded to a third-party service.
+Render 'LimeSurvey' '.lss' survey exports as questionnaire documents in Word ('.docx') or PDF, displaying one to four languages side by side with localized chrome in English, French, German, Spanish and Italian. Includes a rule-based automated audit that flags missing translations, forward filter references, duplicate codes, array-scale inconsistencies and orphan structural references. Questionnaires can also be written the other way round: describe one in R, or fill in a Word form, and write an importable '.lss' file. Designed for anyone working with a 'LimeSurvey' survey: researchers, methodologists, ethics committees, translators and reviewers. Processing is fully local: the source file is the only input and no questionnaire content is uploaded to a third-party service.
 }
 \section{Example surveys}{
 

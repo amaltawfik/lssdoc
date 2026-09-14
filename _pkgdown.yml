@@ -1,12 +1,14 @@
 url: https://amaltawfik.github.io/lssdoc/
 
 home:
-  title: "lssdoc: Word and PDF questionnaire documents from LimeSurvey '.lss' files"
+  title: "lssdoc: LimeSurvey questionnaires to Word and PDF, and back"
   description: >
     Build publication-quality Word ('.docx') or PDF questionnaire
     documents from a LimeSurvey '.lss' export, aimed at ethics
     committees, methodologists and translators reviewing
-    multilingual questionnaires. Two layouts ("cards" -- one block
+    multilingual questionnaires -- then go the other way: write a
+    questionnaire in a Word form and turn it into an importable
+    '.lss' file. Two layouts ("cards" -- one block
     per item, or "table" -- a dense single questionnaire table).
     Side-by-side rendering of up to four content languages. Chrome
     (column headers, row labels, type labels, audit section)

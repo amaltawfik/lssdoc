@@ -36,6 +36,12 @@ not rest on them. They are kept, together with `NONET`, which forbids
 libxml2 from resolving an external entity or DTD over the network — so
 a crafted input file cannot make the package reach the Internet either.
 
+### Title and Description
+
+Both now say that the package also writes `.lss` files, which it did not
+do when the current Title was written. The package name, the maintainer
+and the scope are otherwise unchanged.
+
 ### Also in this release
 
 An experimental Word authoring layer: a questionnaire can be written in a

@@ -1,5 +1,5 @@
 Package: lssdoc
-Title: Render 'LimeSurvey' '.lss' Questionnaires as Word and PDF Documents
+Title: Render, Audit and Write 'LimeSurvey' '.lss' Questionnaires
 Version: 0.3.0
 Authors@R:
     person("Amal", "Tawfik", , "amal.tawfik@hesav.ch", role = c("aut", "cre", "cph"), comment = c(ORCID = "0009-0006-2422-1555", ROR = "04j47fz63"))
@@ -9,6 +9,8 @@ Description: Render 'LimeSurvey' '.lss' survey exports as
     German, Spanish and Italian. Includes a rule-based automated audit
     that flags missing translations, forward filter references, duplicate
     codes, array-scale inconsistencies and orphan structural references.
+    Questionnaires can also be written the other way round: describe one
+    in R, or fill in a Word form, and write an importable '.lss' file.
     Designed for anyone working with a 'LimeSurvey' survey: researchers,
     methodologists, ethics committees, translators and reviewers.
     Processing is fully
