@@ -100,12 +100,16 @@ reference:
       `read_lss()` and `audit_lss()`. The same specification can
       also be rendered as a Word authoring form -- one key/value
       table per block, meant to be filled in and handed back --
-      either from an existing spec or as a blank template.
+      either from an existing spec or as a blank template, and read
+      back from the filled-in form into a specification, with a
+      dry-run check that lists every problem of a document at once.
     contents:
       - lss_spec
       - write_lss
       - write_form_docx
       - lss_template_docx
+      - read_form_docx
+      - check_form_docx
   - title: Package overview
     contents:
       - lssdoc-package

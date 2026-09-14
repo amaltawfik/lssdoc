@@ -1,5 +1,21 @@
 # lssdoc (development version)
 
+## New features
+
+* Write a questionnaire in Word and turn it into a LimeSurvey file. New
+  experimental authoring form, a third document template: `lss_template_docx()`
+  writes a blank form (one key/value table per survey, group, question and
+  quota, every field a question type needs, defaults pre-filled and syntax
+  hints in the key column); `write_form_docx()` renders any `lss_spec()` as
+  that form; `read_form_docx()` parses a filled form back into an `lss_spec`,
+  ready for `write_lss()`; and `check_form_docx()` reports every problem in a
+  form at once (block, question code and field named), so an author can fix
+  them in one pass. The form round-trips losslessly and is read with `xml2`
+  only (Word is not required to read it, only to fill it in).
+
+* `lss_spec()` gains an optional localised group `description` and an optional
+  quota `limit`, both written by `write_lss()`.
+
 # lssdoc 0.2.0
 
 ## New features

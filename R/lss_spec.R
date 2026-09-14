@@ -716,10 +716,18 @@ normalize_options <- function(options, languages, field) {
 # classed error with an unreadable cli one.
 esc <- function(x) gsub("}", "}}", gsub("{", "{{", as.character(x), fixed = TRUE), fixed = TRUE)
 
-spec_abort <- function(code, ...) {
+# The question code and, when the caller knows it, the spec field the refusal
+# is about travel as CONDITION FIELDS, not only inside the message. A caller
+# that has to say where the problem is -- `read_form_docx()` naming the block
+# and the form label of the field -- reads `spec_code` and `spec_field`
+# instead of matching the code against the message, where `Q1` would steal an
+# error about `Q10`. The message and the classes are unchanged.
+spec_abort <- function(code, ..., field = NA_character_) {
   lssdoc_abort(
     c(paste0("Invalid specification for question {.val ", esc(code), "}."), ...),
     class = "lssdoc_bad_spec",
+    spec_code = paste(as.character(code), collapse = " "),
+    spec_field = field,
     call = rlang::caller_env(2)
   )
 }
@@ -767,11 +775,12 @@ spec_validate <- function(spec) {
       if (!is_kind(q$kind)) {
         spec_abort(code, "x" = paste0(
           "Unknown kind {.val ", q$kind %||% "", "}: use one of ",
-          paste0('"', lss_kinds$kind, '"', collapse = ", "), "."))
+          paste0('"', lss_kinds$kind, '"', collapse = ", "), "."),
+          field = "kind")
       }
       q_text <- loc_text(q$text)
       if (!is.character(q_text) || length(q_text) != 1L || !nzchar(q_text)) {
-        spec_abort(code, "x" = "The question {.field text} is empty.")
+        spec_abort(code, "x" = "The question {.field text} is empty.", field = "text")
       }
 
       validate_question_shape(q)
@@ -821,25 +830,30 @@ validate_question_shape <- function(q) {
   minimum <- shape$min_options
   if (!is.na(minimum) && length(q[["options"]] %||% list()) < minimum) {
     spec_abort(q$code, "x" = paste0(
-      "{.val ", q$kind, "} needs at least ", minimum, " {.field options}."))
+      "{.val ", q$kind, "} needs at least ", minimum, " {.field options}."),
+      field = "options")
   }
   if (shape$rows == "required" && shape$columns == "required") {
     if (!length(q[["rows"]] %||% list()) || !length(q[["columns"]] %||% list())) {
-      spec_abort(q$code, "x" = "An array needs non-empty {.field rows} and {.field columns}.")
+      spec_abort(q$code, "x" = "An array needs non-empty {.field rows} and {.field columns}.",
+                 field = "rows")
     }
   }
   if (shape$rows == "required" && shape$columns == "forbidden") {
     if (!length(q[["rows"]] %||% list())) {
-      spec_abort(q$code, "x" = paste0("{.val ", q$kind, "} needs non-empty {.field rows}."))
+      spec_abort(q$code, "x" = paste0("{.val ", q$kind, "} needs non-empty {.field rows}."),
+                 field = "rows")
     }
     if (length(q[["columns"]] %||% list())) {
       spec_abort(q$code, "x" = paste0(
-        "{.val ", q$kind, "} carries an implicit scale: {.field columns} must stay empty."))
+        "{.val ", q$kind, "} carries an implicit scale: {.field columns} must stay empty."),
+        field = "columns")
     }
   }
   if (shape$options == "forbidden" &&
       (length(q[["options"]] %||% list()) || length(q[["rows"]] %||% list()))) {
-    spec_abort(q$code, "x" = paste0("{.val ", q$kind, "} questions carry no options."))
+    spec_abort(q$code, "x" = paste0("{.val ", q$kind, "} questions carry no options."),
+               field = "options")
   }
 }
 
@@ -849,32 +863,37 @@ validate_options <- function(q) {
     if (is.null(opts)) next
     codes <- option_codes(opts)
     if (anyDuplicated(codes)) {
-      spec_abort(q$code, "x" = paste0("Duplicate option codes in {.field ", field, "}."))
+      spec_abort(q$code, "x" = paste0("Duplicate option codes in {.field ", field, "}."),
+                 field = field)
     }
     bad <- codes[!grepl("^[A-Za-z0-9]{1,5}$", codes)]
     if (length(bad)) {
       spec_abort(q$code, "x" = paste0(
         "Invalid option code {.val ", esc(bad[1L]),
         "} in {.field ", field,
-        "}: 1-5 letters or digits (LimeSurvey stores answer codes in 5 characters)."))
+        "}: 1-5 letters or digits (LimeSurvey stores answer codes in 5 characters)."),
+        field = field)
     }
     empty <- vapply(opts, function(o) {
       txt <- loc_text(o$text)
       !is.character(txt) || length(txt) != 1L || !nzchar(trimws(txt))
     }, logical(1))
     if (any(empty)) {
-      spec_abort(q$code, "x" = paste0("Empty option text in {.field ", field, "}."))
+      spec_abort(q$code, "x" = paste0("Empty option text in {.field ", field, "}."),
+                 field = field)
     }
     if (field != "options") {
       if (any(vapply(opts, function(o) isTRUE(o$other), logical(1)))) {
-        spec_abort(q$code, "x" = "Array rows and columns cannot carry an {.field other} option.")
+        spec_abort(q$code, "x" = "Array rows and columns cannot carry an {.field other} option.",
+                   field = field)
       }
     }
   }
   # exclusive is a multiple-choice mechanism (exclude_all_others)
   if (!isTRUE(kind_field(q$kind, "exclusive_allowed")) &&
       any(vapply(q[["options"]] %||% list(), function(o) isTRUE(o$exclusive), logical(1)))) {
-    spec_abort(q$code, "x" = "{.field exclusive} options only exist on {.val multiple} questions.")
+    spec_abort(q$code, "x" = "{.field exclusive} options only exist on {.val multiple} questions.",
+               field = "exclusive")
   }
 }
 
@@ -883,10 +902,12 @@ validate_other <- function(q) {
   if (any(vapply(q[["options"]] %||% list(),
                  function(o) isTRUE(o$other) && isTRUE(o$exclusive), logical(1)))) {
     spec_abort(q$code,
-      "x" = "The {.field other} option cannot be {.field exclusive}: LimeSurvey's exclusion mechanism only addresses coded options.")
+      "x" = "The {.field other} option cannot be {.field exclusive}: LimeSurvey's exclusion mechanism only addresses coded options.",
+      field = "exclusive")
   }
   if (others > 1L) {
-    spec_abort(q$code, "x" = "At most one option can be {.field other}.")
+    spec_abort(q$code, "x" = "At most one option can be {.field other}.",
+               field = "options")
   }
   if (others == 1L && !isTRUE(kind_field(q$kind, "other_allowed"))) {
     # the list of kinds comes from the table, so it cannot drift from it
@@ -900,22 +921,26 @@ validate_other <- function(q) {
     spec_abort(q$code,
       "x" = paste0("The native {.field other} option only exists on ",
                    allowed, " questions."),
-      "i" = "For a ranking, add it as a regular rankable item without a free-text field.")
+      "i" = "For a ranking, add it as a regular rankable item without a free-text field.",
+      field = "options")
   }
   pos <- q$other_position
   if (!is.null(pos)) {
     if (others == 0L) {
-      spec_abort(q$code, "x" = "{.field other_position} set but no {.field other} option.")
+      spec_abort(q$code, "x" = "{.field other_position} set but no {.field other} option.",
+                 field = "other_position")
     }
     if (!pos %in% c("beginning", "end", "specific")) {
-      spec_abort(q$code, "x" = '{.field other_position} must be "beginning", "end" or "specific".')
+      spec_abort(q$code, "x" = '{.field other_position} must be "beginning", "end" or "specific".',
+                 field = "other_position")
     }
     if (pos == "specific") {
       after <- as.character(q$other_position_code %||% "")
       if (!after %in% option_codes(q[["options"]])) {
         spec_abort(q$code,
           "x" = paste0("{.field other_position_code} {.val ", esc(after),
-                       "} is not an option code of this question."))
+                       "} is not an option code of this question."),
+          field = "other_position")
       }
     }
   }
@@ -926,20 +951,24 @@ validate_caps <- function(q) {
   if (is.null(cap)) return(invisible())
   rule <- kind_field(q$kind, "max_answers_rule")
   if (identical(rule, "none")) {
-    spec_abort(q$code, "x" = "{.field max_answers} only applies to {.val multiple} and {.val ranking}.")
+    spec_abort(q$code, "x" = "{.field max_answers} only applies to {.val multiple} and {.val ranking}.",
+               field = "max_answers")
   }
   cap <- suppressWarnings(as.integer(cap))
   n <- length(option_codes(q[["options"]]))
   if (is.na(cap) || cap < 1L) {
-    spec_abort(q$code, "x" = "{.field max_answers} must be a positive integer.")
+    spec_abort(q$code, "x" = "{.field max_answers} must be a positive integer.",
+               field = "max_answers")
   }
   if (identical(rule, "below_n") && cap >= n) {
     spec_abort(q$code, "x" = paste0("{.field max_answers} (", cap,
-                                    ") must be below the number of options."))
+                                    ") must be below the number of options."),
+               field = "max_answers")
   }
   if (identical(rule, "at_most_n") && cap > n) {
     spec_abort(q$code, "x" = paste0("{.field max_answers} (", cap,
-                                    ") exceeds the number of rankable items."))
+                                    ") exceeds the number of rankable items."),
+               field = "max_answers")
   }
 }
 
@@ -955,7 +984,7 @@ validate_caps <- function(q) {
 #' @noRd
 validate_relevance <- function(code, expr, defined) {
   expr <- trimws(expr)
-  ref_error <- function(...) spec_abort(code, ...)
+  ref_error <- function(...) spec_abort(code, ..., field = "relevance")
 
   check_ref <- function(var, values, count = FALSE) {
     target <- defined[[var]]
@@ -1008,7 +1037,8 @@ validate_relevance <- function(code, expr, defined) {
   }
   spec_abort(code,
     "x" = paste0("Unrecognized {.field relevance} syntax: {.val ", esc(expr), "}."),
-    "i" = "Use code = 1, code in [1, 2, autre] or count(code) >= 2.")
+    "i" = "Use code = 1, code in [1, 2, autre] or count(code) >= 2.",
+    field = "relevance")
 }
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
