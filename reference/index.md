@@ -42,7 +42,10 @@ The same specification can also be rendered as a Word authoring form –
 one key/value table per block, meant to be filled in and handed back –
 either from an existing spec or as a blank template, and read back from
 the filled-in form into a specification, with a dry-run check that lists
-every problem of a document at once.
+every problem of a document at once. An existing survey read by
+[`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
+can be converted back into a specification, so a questionnaire already
+in LimeSurvey can be edited through the same form.
 
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   **\[experimental\]** : Build and validate a survey specification
@@ -51,6 +54,10 @@ every problem of a document at once.
   **\[experimental\]** :
 
   Write a survey specification to an importable `.lss` file
+
+- [`as_lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/as_lss_spec.md)
+  **\[experimental\]** : Turn a parsed LimeSurvey survey into an
+  authoring specification
 
 - [`write_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/write_form_docx.md)
   **\[experimental\]** : Render a survey specification as a Word

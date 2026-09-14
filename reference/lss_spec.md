@@ -53,10 +53,13 @@ lss_spec(
 - quotas:
 
   List of end-of-survey quotas. Each element is a list with `question`
-  (code of a single-choice question), `code` (the answer code that
-  triggers the quota), `message` (text shown to the respondent) and
-  optionally `name` and `limit` (a whole number at or above zero;
-  omitted, it stays the historical zero). A quota emitted by
+  (code of a question holding a single coded answer: `"single"`,
+  `"dropdown"`, `"singlecomment"`, `"yesno"`, `"gender"` or
+  `"fivepoint"`), `code` (the answer code that triggers the quota – a
+  declared option code, or one of the kind's implicit codes for the
+  fixed scales: `Y`/`N`, `M`/`F`, `1`-`5`), `message` (text shown to the
+  respondent) and optionally `name` and `limit` (a whole number at or
+  above zero; omitted, it stays the historical zero). A quota emitted by
   [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
   terminates the survey – the LimeSurvey mechanism for "if the person
   declines, end here".
@@ -105,7 +108,14 @@ Each question is a list with fields:
   free-text field; `single`, `dropdown` and `multiple` only) and
   `exclusive = TRUE` (`multiple` only; unchecks every other box).
   Options without a `code` are numbered `1..n` in order, skipping the
-  `other` option, which LimeSurvey codes natively.
+  `other` option, which LimeSurvey codes natively. An explicit code is
+  letters and digits, and its length follows the table LimeSurvey stores
+  the list in: **5 characters** for a list emitted as answers (`single`,
+  `dropdown`, `singlecomment`, `ranking` options, and `array` columns –
+  `answers.code` is a `varchar(5)`), **20 characters** for a list
+  emitted as subquestions (`multiple`, `multitext`, `multinumeric`
+  options, and `array` and implicit-scale array rows – `questions.title`
+  is a `varchar(20)`, the same column as a question code).
 
 - `rows` / `columns` – for `array`: the subquestions and the answer
   scale, same shape as `options`.

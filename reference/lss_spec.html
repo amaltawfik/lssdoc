@@ -23,6 +23,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html">Home</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/lssdoc.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/write-in-word.html">Write in Word</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -102,8 +103,12 @@ string starting with <code>&lt;</code> used verbatim as HTML. Optional.</p></dd>
 
 <dt id="arg-quotas">quotas<a class="anchor" aria-label="anchor" href="#arg-quotas"></a></dt>
 <dd><p>List of end-of-survey quotas. Each element is a list with
-<code>question</code> (code of a single-choice question), <code>code</code> (the answer
-code that triggers the quota), <code>message</code> (text shown to the
+<code>question</code> (code of a question holding a single coded answer:
+<code>"single"</code>, <code>"dropdown"</code>, <code>"singlecomment"</code>, <code>"yesno"</code>, <code>"gender"</code> or
+<code>"fivepoint"</code>), <code>code</code> (the answer
+code that triggers the quota – a declared option code, or one of the
+kind's implicit codes for the fixed scales: <code>Y</code>/<code>N</code>, <code>M</code>/<code>F</code>, <code>1</code>-<code>5</code>),
+<code>message</code> (text shown to the
 respondent) and optionally <code>name</code> and <code>limit</code> (a whole number at or
 above zero; omitted, it stays the historical zero). A quota emitted
 by <code><a href="write_lss.html">write_lss()</a></code> terminates the survey – the LimeSurvey mechanism
@@ -148,7 +153,14 @@ optionally <code>code</code>, <code>other = TRUE</code> (native LimeSurvey "othe
 free-text field; <code>single</code>, <code>dropdown</code> and <code>multiple</code> only) and
 <code>exclusive = TRUE</code> (<code>multiple</code> only; unchecks every other box).
 Options without a <code>code</code> are numbered <code>1..n</code> in order, skipping the
-<code>other</code> option, which LimeSurvey codes natively.</p></li>
+<code>other</code> option, which LimeSurvey codes natively. An explicit code is
+letters and digits, and its length follows the table LimeSurvey stores
+the list in: <strong>5 characters</strong> for a list emitted as answers (<code>single</code>,
+<code>dropdown</code>, <code>singlecomment</code>, <code>ranking</code> options, and <code>array</code> columns –
+<code>answers.code</code> is a <code>varchar(5)</code>), <strong>20 characters</strong> for a list emitted
+as subquestions (<code>multiple</code>, <code>multitext</code>, <code>multinumeric</code> options, and
+<code>array</code> and implicit-scale array rows – <code>questions.title</code> is a
+<code>varchar(20)</code>, the same column as a question code).</p></li>
 <li><p><code>rows</code> / <code>columns</code> – for <code>array</code>: the subquestions and the answer
 scale, same shape as <code>options</code>.</p></li>
 <li><p><code>relevance</code> – display condition in a minimal syntax:

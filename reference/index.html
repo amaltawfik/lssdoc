@@ -23,6 +23,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html">Home</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/lssdoc.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/write-in-word.html">Write in Word</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -93,7 +94,7 @@
       </dl></div><div class="section level2">
       <h2 id="author-experimental-">Author (experimental)<a class="anchor" aria-label="anchor" href="#author-experimental-"></a></h2>
 
-      <div class="section-desc"><p>Build a survey specification programmatically and write it as an importable LimeSurvey 6 <code>.lss</code> file. The specification is validated in depth at construction time, because LimeSurvey imports silently and only surfaces mistakes once respondents hit them. The written file round-trips through <code><a href="../reference/read_lss.html">read_lss()</a></code> and <code><a href="../reference/audit_lss.html">audit_lss()</a></code>. The same specification can also be rendered as a Word authoring form – one key/value table per block, meant to be filled in and handed back – either from an existing spec or as a blank template, and read back from the filled-in form into a specification, with a dry-run check that lists every problem of a document at once.</p></div>
+      <div class="section-desc"><p>Build a survey specification programmatically and write it as an importable LimeSurvey 6 <code>.lss</code> file. The specification is validated in depth at construction time, because LimeSurvey imports silently and only surfaces mistakes once respondents hit them. The written file round-trips through <code><a href="../reference/read_lss.html">read_lss()</a></code> and <code><a href="../reference/audit_lss.html">audit_lss()</a></code>. The same specification can also be rendered as a Word authoring form – one key/value table per block, meant to be filled in and handed back – either from an existing spec or as a blank template, and read back from the filled-in form into a specification, with a dry-run check that lists every problem of a document at once. An existing survey read by <code><a href="../reference/read_lss.html">read_lss()</a></code> can be converted back into a specification, so a questionnaire already in LimeSurvey can be edited through the same form.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -113,6 +114,13 @@
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Write a survey specification to an importable <code>.lss</code> file</dd>
+
+        <dt>
+
+          <code><a href="as_lss_spec.html">as_lss_spec()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Turn a parsed LimeSurvey survey into an authoring specification</dd>
 
         <dt>
 

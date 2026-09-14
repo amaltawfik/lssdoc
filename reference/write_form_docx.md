@@ -5,7 +5,7 @@
 ## Usage
 
 ``` r
-write_form_docx(spec, path, lang = NULL, hints = FALSE)
+write_form_docx(spec, path, lang = NULL, hints = FALSE, strict = TRUE)
 ```
 
 ## Arguments
@@ -36,6 +36,16 @@ write_form_docx(spec, path, lang = NULL, hints = FALSE)
   (`"one per line, \"1 = Label\""`, ...). `FALSE` by default;
   [`lss_template_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_template_docx.md)
   turns it on for the blank template.
+
+- strict:
+
+  Logical, used only when `spec` is an `lss` object read by
+  [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md):
+  it is converted with
+  [`as_lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/as_lss_spec.md),
+  and `strict` is passed to it. `TRUE` (default) refuses a survey
+  carrying anything the specification cannot express; `FALSE` renders
+  the rest of it and warns.
 
 ## Value
 
@@ -115,6 +125,6 @@ if (requireNamespace("officer", quietly = TRUE) &&
   write_form_docx(spec, out, lang = "fr")
   file.exists(out)
 }
-#> ✔ Wrote /tmp/Rtmp5dF0hZ/file1951375a8fa9.docx (1 question, 1 group, 0 quotas).
+#> ✔ Wrote /tmp/Rtmpk3zuc8/file1a0d46b5940.docx (1 question, 1 group, 0 quotas).
 #> [1] TRUE
 ```
