@@ -73,6 +73,6 @@ if (requireNamespace("officer", quietly = TRUE) &&
   lss_template_docx(out, lang = "fr", kinds = c("single", "multiple"))
   file.exists(out)
 }
-#> ✔ Wrote /tmp/RtmpMPx23d/file1a675ac03727.docx (2 questions, 1 group, 1 quota).
+#> ✔ Wrote /tmp/RtmpPs04Iw/file1a8e40c84d36.docx (2 questions, 1 group, 1 quota).
 #> [1] TRUE
 ```

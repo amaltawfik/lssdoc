@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>lssdoc: Word and PDF questionnaire documents from LimeSurvey '.lss' files • lssdoc</title>
+<title>lssdoc: LimeSurvey questionnaires to Word and PDF, and back • lssdoc</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -24,10 +24,10 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
-<meta property="og:title" content="lssdoc: Word and PDF questionnaire documents from LimeSurvey '.lss' files">
-<meta name="description" content="Build publication-quality Word ('.docx') or PDF questionnaire documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single questionnaire table). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
+<meta property="og:title" content="lssdoc: LimeSurvey questionnaires to Word and PDF, and back">
+<meta name="description" content="Build publication-quality Word ('.docx') or PDF questionnaire documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires -- then go the other way: write a questionnaire in a Word form and turn it into an importable '.lss' file. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single questionnaire table). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
 ">
-<meta property="og:description" content="Build publication-quality Word ('.docx') or PDF questionnaire documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single questionnaire table). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
+<meta property="og:description" content="Build publication-quality Word ('.docx') or PDF questionnaire documents from a LimeSurvey '.lss' export, aimed at ethics committees, methodologists and translators reviewing multilingual questionnaires -- then go the other way: write a questionnaire in a Word form and turn it into an importable '.lss' file. Two layouts (&quot;cards&quot; -- one block per item, or &quot;table&quot; -- a dense single questionnaire table). Side-by-side rendering of up to four content languages. Chrome (column headers, row labels, type labels, audit section) localized in English, French, German, Spanish and Italian. Automated audit flags integrity anomalies (missing translations, dangling references, structural issues) without any AI. Processing is fully local -- nothing is ever uploaded to a third-party service.
 ">
 <meta property="og:image" content="https://amaltawfik.github.io/lssdoc/logo.svg">
 </head>
@@ -76,12 +76,13 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header">
-<img src="logo.svg" class="logo" alt=""><h1 id="lssdoc-word-and-pdf-questionnaire-documents-from-limesurvey-lss-files-">lssdoc: Word and PDF questionnaire documents from LimeSurvey <code>.lss</code> files <a class="anchor" aria-label="anchor" href="#lssdoc-word-and-pdf-questionnaire-documents-from-limesurvey-lss-files-"></a>
+<img src="logo.svg" class="logo" alt=""><h1 id="lssdoc-limesurvey-questionnaires-to-word-and-pdf-and-back-">lssdoc: LimeSurvey questionnaires to Word and PDF, and back <a class="anchor" aria-label="anchor" href="#lssdoc-limesurvey-questionnaires-to-word-and-pdf-and-back-"></a>
 </h1>
 </div>
 <!-- badges: start -->
 
 <p><strong>lssdoc</strong> turns a LimeSurvey <code>.lss</code> export into a polished Word (<code>.docx</code>) or PDF questionnaire document for anyone working with a LimeSurvey survey: researchers, survey methodologists, ethics committees, translators and reviewers. It renders the questionnaire content side by side in up to four languages, runs an automated integrity audit, and produces a layout that reads as a published instrument – not a developer dump.</p>
+<p>It also works the other way round. Write a questionnaire in a Word form, or describe it in R, and lssdoc writes the <code>.lss</code> file you import into LimeSurvey – so the people who design a questionnaire never have to build it by hand in a web interface.</p>
 <p>Two output templates:</p>
 <ul>
 <li>
@@ -131,7 +132,7 @@
 <div class="section level2">
 <h2 id="quick-tour">Quick tour<a class="anchor" aria-label="anchor" href="#quick-tour"></a>
 </h2>
-<p>The public API is four functions:</p>
+<p>Reading, auditing and rendering:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -157,6 +158,47 @@
 <tr>
 <td><code>render_audit(input, output, ...)</code></td>
 <td>Render the audit findings alone to a Word or PDF document.</td>
+</tr>
+</tbody>
+</table>
+<p>Writing a questionnaire (experimental):</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Function</th>
+<th>Role</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>lss_template_docx(path, lang)</code></td>
+<td>Write a blank Word form to fill in.</td>
+</tr>
+<tr>
+<td><code>check_form_docx(path)</code></td>
+<td>Report every problem in a filled form, in one pass.</td>
+</tr>
+<tr>
+<td><code>read_form_docx(path)</code></td>
+<td>Read a filled form back into a specification.</td>
+</tr>
+<tr>
+<td><code>lss_spec(title, groups, ...)</code></td>
+<td>Describe a questionnaire directly in R instead.</td>
+</tr>
+<tr>
+<td><code>as_lss_spec(lss)</code></td>
+<td>Turn a survey read with <code><a href="reference/read_lss.html">read_lss()</a></code> into a specification.</td>
+</tr>
+<tr>
+<td><code>write_form_docx(x, path, lang)</code></td>
+<td>Render a specification, or an existing survey, as the form.</td>
+</tr>
+<tr>
+<td><code>write_lss(spec, file)</code></td>
+<td>Write a specification as an importable <code>.lss</code> file.</td>
 </tr>
 </tbody>
 </table>
@@ -274,6 +316,25 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="write-a-questionnaire-in-word">Write a questionnaire in Word<a class="anchor" aria-label="anchor" href="#write-a-questionnaire-in-word"></a>
+</h2>
+<p>Many questionnaires are written by people who live in Word, not in R. Hand them a blank form, get it back filled in, and turn it into a LimeSurvey file.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 1. a blank form, in the language of your choice</span></span>
+<span><span class="fu"><a href="reference/lss_template_docx.html">lss_template_docx</a></span><span class="op">(</span><span class="st">"questionnaire.docx"</span>, lang <span class="op">=</span> <span class="st">"fr"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 2. the author fills it in, in Word</span></span>
+<span></span>
+<span><span class="co"># 3. check it, then read it</span></span>
+<span><span class="fu"><a href="reference/check_form_docx.html">check_form_docx</a></span><span class="op">(</span><span class="st">"questionnaire.docx"</span><span class="op">)</span>   <span class="co"># every problem at once</span></span>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_form_docx.html">read_form_docx</a></span><span class="op">(</span><span class="st">"questionnaire.docx"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 4. write the file to import into LimeSurvey</span></span>
+<span><span class="fu"><a href="reference/write_lss.html">write_lss</a></span><span class="op">(</span><span class="va">spec</span>, <span class="st">"questionnaire.lss"</span><span class="op">)</span></span></code></pre></div>
+<p>The form is one small table per survey, group, question and quota, carrying the fields each question type needs with its defaults already filled in. Blank forms can also be <a href="https://amaltawfik.github.io/lssdoc/">downloaded from the website</a>, so an author who does not use R never has to install anything.</p>
+<p>An existing survey can enter the same loop: <code><a href="reference/write_form_docx.html">write_form_docx()</a></code> renders it as the form, so a questionnaire can be exported from LimeSurvey, edited in Word and re-imported. See <code><a href="articles/write-in-word.html">vignette("write-in-word")</a></code> for the conventions, the question types and the filter syntax.</p>
+</div>
+<div class="section level2">
 <h2 id="templates-and-palette">Templates and palette<a class="anchor" aria-label="anchor" href="#templates-and-palette"></a>
 </h2>
 <p>The rendered <code>.docx</code> uses an editorial petrol-blue palette tuned for publication-grade output (<code>#133B52</code> primary, <code>#3A7C8C</code> accent, <code>#E9F2F6</code> and <code>#F4F8FA</code> for tinted bands, <code>#D3DCE2</code> for the soft grid). Calibri body / Consolas monospace by default; the <code>font</code> and <code>font_code</code> arguments accept any string to override.</p>
@@ -282,10 +343,10 @@
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
 <p>Run <code>citation("lssdoc")</code> for the up-to-date citation, or cite as:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>Tawfik <span class="fu">A</span> (<span class="dv">2026</span>). _lssdoc<span class="sc">:</span> Render <span class="st">'LimeSurvey'</span> <span class="st">'.lss'</span> Questionnaires as</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>Word and PDF Documents_. doi<span class="sc">:</span><span class="fl">10.32614</span><span class="sc">/</span>CRAN.package.lssdoc</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="sc">&lt;</span>https<span class="sc">:</span><span class="er">//</span>doi.org<span class="sc">/</span><span class="fl">10.32614</span><span class="sc">/</span>CRAN.package.lssdoc<span class="sc">&gt;</span>. R package version</span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="dv">0</span>.<span class="fl">2.0</span>, <span class="sc">&lt;</span>https<span class="sc">:</span><span class="er">//</span>CRAN.R<span class="sc">-</span>project.org<span class="sc">/</span>package<span class="ot">=</span>lssdoc<span class="sc">&gt;</span>.</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>Tawfik <span class="fu">A</span> (<span class="dv">2026</span>). _lssdoc<span class="sc">:</span> Render, Audit and Write <span class="st">'LimeSurvey'</span> <span class="st">'.lss'</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>Questionnaires_. doi<span class="sc">:</span><span class="fl">10.32614</span><span class="sc">/</span>CRAN.package.lssdoc</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="sc">&lt;</span>https<span class="sc">:</span><span class="er">//</span>doi.org<span class="sc">/</span><span class="fl">10.32614</span><span class="sc">/</span>CRAN.package.lssdoc<span class="sc">&gt;</span>. R package version</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="dv">0</span>.<span class="fl">3.0</span>, <span class="sc">&lt;</span>https<span class="sc">:</span><span class="er">//</span>CRAN.R<span class="sc">-</span>project.org<span class="sc">/</span>package<span class="ot">=</span>lssdoc<span class="sc">&gt;</span>.</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

@@ -153,11 +153,11 @@ spec <- lss_spec(
 )
 out <- tempfile(fileext = ".lss")
 write_lss(spec, out)
-#> ✔ Wrote /tmp/RtmpMPx23d/file1a676052d889.lss (1 question, 1 group, 0 quotas).
+#> ✔ Wrote /tmp/RtmpPs04Iw/file1a8e69a8b779.lss (1 question, 1 group, 0 quotas).
 audit_lss(out)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpMPx23d/file1a676052d889.lss
+#> File: /tmp/RtmpPs04Iw/file1a8e69a8b779.lss
 #> Languages: "fr"
 #> ✔ No anomalies detected.
 ```
