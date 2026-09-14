@@ -27,7 +27,7 @@ so an author's file can be turned into a \code{.lss} on a bare installation.
 \pkg{officer} and \pkg{flextable} are needed to WRITE a form, never to read
 one.
 
-The contract the document must honour -- all of it written by
+The contract the document must honor -- all of it written by
 \code{\link[=write_form_docx]{write_form_docx()}}, and spelled out in the blank template's hints:
 \itemize{
 \item one top-level two-column table per block (Survey, Group, Question,
@@ -49,7 +49,7 @@ localized type label is accepted only when it names exactly one kind.
 \code{true}/\code{false}, \code{1}/\code{0}); blank means no. The \code{Filter} cell takes the
 mini-language of \code{\link[=lss_spec]{lss_spec()}} (\code{Q1 = 1}, \verb{Q2 in [1, autre]},
 \code{count(Q3) >= 2}); its keywords are matched whatever Word capitalized,
-and question and answer codes are never recased.
+and the case of a question or answer code is never changed.
 \item when the survey declares several languages, every localizable key is
 suffixed with a language code -- \code{Wording [fr]}, \code{Wording [en]} -- and
 every declared language must supply every text.

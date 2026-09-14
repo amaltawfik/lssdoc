@@ -1,21 +1,55 @@
 ## Submission
 
-This is a feature release (0.2.0), about three months after 0.1.1.
+This release corrects the ERROR reported on
+r-devel-linux-x86_64-fedora-gcc (CRAN e-mail of 2026-09-14, correction
+requested by 2026-10-05), and adds a feature.
 
-* It adds an experimental authoring layer: `lss_spec()` builds a validated
-  survey specification and `write_lss()` writes it as a LimeSurvey 6
-  (DBVersion 700) `.lss` file. Both are flagged experimental with lifecycle
-  badges, as their interface may evolve with LimeSurvey's file format.
-* New dependency: \pkg{lifecycle} (Imports), for those badges.
-* `read_lss()` now warns when a file comes from a newer LimeSurvey than
-  the version the package targets.
+### The reported problem, and why no Internet resource is involved
+
+The package makes **no network calls of any kind**: it reads a local
+LimeSurvey `.lss` (XML) file and writes a Word or PDF document. Nothing
+in it fetches a URL, and keeping questionnaire content local is a design
+constraint, stated in the DESCRIPTION.
+
+The failure came from a unit test of our own error handling. It feeds
+deliberately malformed XML to `read_lss()` to check that the classed
+`lssdoc_invalid_xml` error is raised. On that one toolchain, libxml2
+raised a *fatal* parse error, which surfaced as an uncatchable C++
+exception ("terminate called after throwing an instance of
+'Rcpp::exception'") and terminated the R process instead of being
+converted to an R condition, so `tryCatch()` never saw it. Every other
+platform turned the same input into the expected R error.
+
+### The fix
+
+`read_lss()` no longer reaches the parser with input the parser can
+refuse. It now validates in R, before calling `xml2::read_xml()`, that
+the content is valid UTF-8 (transcoding a UTF-16 byte-order mark rather
+than refusing it) and that it carries a complete `document` envelope.
+Malformed, truncated or non-UTF-8 input therefore raises the classed
+`lssdoc_invalid_xml` error identically on every platform, without the
+parser being involved. The structure is validated again after parsing.
+
+We did test `RECOVER`, `NOERROR` and `NOWARNING`: with xml2 1.6.0 they
+do not stop `read_xml()` from signalling, so the fix deliberately does
+not rest on them. They are kept, together with `NONET`, which forbids
+libxml2 from resolving an external entity or DTD over the network — so
+a crafted input file cannot make the package reach the Internet either.
+
+### Also in this release
+
+An experimental Word authoring layer: a questionnaire can be written in a
+Word form and turned into an importable LimeSurvey file
+(`lss_template_docx()`, `write_form_docx()`, `read_form_docx()`,
+`check_form_docx()`, `as_lss_spec()`), and `write_lss()` now writes all
+declared languages. No new dependency: reading a form uses only
+\pkg{xml2} and `utils::unzip()`; writing one uses the already suggested
+\pkg{officer} and \pkg{flextable}, guarded as before.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
-
-Locally (`devtools::check()`) and on win-builder for R-release, R-oldrelease
-and R-devel, all three with `Status: OK` and no NOTE.
+<!-- Fill in from devtools::check() and win-builder before submitting. -->
+(pending)
 
 * If flagged, "LimeSurvey" (the survey software the package reads and
   writes) and "methodologists" (a correctly spelled English term) in the
@@ -28,25 +62,21 @@ and R-devel, all three with `Status: OK` and no NOTE.
   * macOS-latest (R release)
   * windows-latest (R release)
   * ubuntu-latest (R devel, release, oldrel-1)
-* win-builder (Windows Server 2022 x64):
-  * R-release 4.6.1 (2026-06-24)
-  * R-oldrelease 4.5.3 (2026-03-11)
-  * R-devel (2026-09-12 r90533)
+<!-- Add the win-builder results (release, devel, oldrelease) once received. -->
 
 ## Notes for the reviewer
 
-* The rendering path (`render_questionnaire()`, `render_audit()`) relies
-  on the suggested packages \pkg{officer} and \pkg{flextable}; every use
-  is guarded with `requireNamespace()` and a classed, actionable error,
-  and the parse, audit and authoring paths work without them. Those
-  examples are wrapped in `\dontrun{}` because they write a Word file and
-  the PDF variant additionally requires a local LibreOffice install.
-* The new `write_lss()` example runs on check and writes only to
-  `tempfile()`.
-* The `.lss` output was validated against a real LimeSurvey instance
-  (7.0.0-beta1): a generated 21-question survey covering every supported
-  question kind imported without warnings and was re-exported with every
-  question, attribute and display condition intact (DBVersion 700).
+* The rendering path (`render_questionnaire()`, `render_audit()`) and the
+  form writer rely on the suggested packages \pkg{officer} and
+  \pkg{flextable}; every use is guarded with `requireNamespace()` and a
+  classed, actionable error. Parsing, auditing, writing `.lss` files and
+  reading a Word form all work without them. Those examples are wrapped
+  in `\dontrun{}` because they write a Word file and the PDF variant
+  additionally requires a local LibreOffice install.
+* The `.lss` output is validated against a real LimeSurvey instance
+  (7.0.0-beta1): a generated survey covering every supported question
+  type imports without warnings and re-exports with every question,
+  attribute and display condition intact (DBVersion 700).
 * All processing is local: the package makes no network calls and never
   uploads questionnaire content to a third-party service.
 

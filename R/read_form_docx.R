@@ -16,7 +16,8 @@
 #   a soft return, and only the first line of a key cell is read.
 # * a line is a paragraph OR a soft return (`w:br`): flextable can only emit
 #   soft returns, a Word author types either, and both must mean "next value".
-# * codes are never recased (`A`, `Y`, `Q01Single` must survive). Only keys,
+# * the case of a code is never changed (`A`, `Y`, `Q01Single` must survive).
+#   Only keys,
 #   the closed vocabularies (kind, yes/no, quota action, other position) and
 #   the keywords of the filter mini-language are matched case- and
 #   accent-insensitively, because Word capitalizes the first letter of a table
@@ -1940,7 +1941,7 @@ form_assemble <- function(survey, groups, quotas, ctx) {
 #' @return An [lss_spec()] object.
 #'
 #' @details
-#' The contract the document must honour -- all of it written by
+#' The contract the document must honor -- all of it written by
 #' [write_form_docx()], and spelled out in the blank template's hints:
 #'
 #' * one top-level two-column table per block (Survey, Group, Question,
@@ -1962,7 +1963,7 @@ form_assemble <- function(survey, groups, quotas, ctx) {
 #'   `true`/`false`, `1`/`0`); blank means no. The `Filter` cell takes the
 #'   mini-language of [lss_spec()] (`Q1 = 1`, `Q2 in [1, autre]`,
 #'   `count(Q3) >= 2`); its keywords are matched whatever Word capitalized,
-#'   and question and answer codes are never recased.
+#'   and the case of a question or answer code is never changed.
 #' * when the survey declares several languages, every localizable key is
 #'   suffixed with a language code -- `Wording [fr]`, `Wording [en]` -- and
 #'   every declared language must supply every text.
