@@ -5,8 +5,9 @@
 # table template rendering of the demo survey.
 
 test_that("read_lss reports malformed XML that starts with a tag", {
-  # Passes the byte-level pre-check (first non-ws byte is '<') but xml2
-  # cannot parse it, so the tryCatch fallback abort fires.
+  # Passes the byte-level pre-check (first non-ws byte is '<') but is not
+  # a closed <document> envelope, so read_lss() refuses it in R -- libxml2
+  # is never handed the file, whatever its error behaviour on this build.
   tmp <- tempfile(fileext = ".lss")
   writeLines("<LimeSurveyDocType>Survey<unterminated", tmp)
   expect_error(read_lss(tmp), class = "lssdoc_invalid_xml")
