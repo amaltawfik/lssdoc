@@ -79,12 +79,17 @@
 #'   which "other" appears. In practice "other" usually belongs before
 #'   the "none of the above"-type exclusive options, which the default
 #'   position puts it after.
-#' * `attributes` -- optional named list of extra global question
-#'   attributes passed through verbatim (e.g. `display_columns`).
+#' * `attributes` -- optional named list of extra question attributes
+#'   passed through verbatim (e.g. `display_columns`). A name LimeSurvey
+#'   stores per language (`prefix`, `suffix`, `choice_title`,
+#'   `printable_help`, ...) is emitted once per declared language by
+#'   [write_lss()], and may be given either as one string for every
+#'   language or keyed by language code.
 #'
 #' @section Languages:
 #' `languages` declares the survey languages, the primary one first;
-#' `languages[1]` is the language [write_lss()] emits. Every localizable
+#' `languages[1]` is the base language [write_lss()] emits, and every other
+#' declared language is written alongside it. Every localizable
 #' text -- survey title, welcome and end texts, group titles, question
 #' texts and help, option, row and column labels, the "other" label, quota
 #' names and messages -- accepts either a plain string (read as the
@@ -107,10 +112,10 @@
 #' languages) and is strict: as soon as several languages are declared,
 #' every text must supply every one of them. A missing translation is
 #' precisely what [audit_lss()] flags when reading a `.lss`, so the spec
-#' refuses to author one. In this version [write_lss()] emits the primary
-#' language only, and errors with class `lssdoc_unsupported_multilang` on
-#' a spec that declares more than one; multi-language emission is planned
-#' for 0.3.0.
+#' refuses to author one. [write_lss()] writes every declared language:
+#' `languages[1]` becomes the survey's base language and the others its
+#' additional languages, each localized section carrying one row per
+#' language.
 #'
 #' @examples
 #' spec <- lss_spec(
@@ -458,7 +463,8 @@ kinds_where <- function(column, value = TRUE) {
 #' Resolve the declared languages from `languages` / `language`
 #'
 #' `language` is the original single-language argument, kept as an alias:
-#' `languages[1]` is the primary language, the one `write_lss()` emits.
+#' `languages[1]` is the primary language: the survey's base language in
+#' the file `write_lss()` emits.
 #' Giving both is allowed as long as they agree on the primary language.
 #' @keywords internal
 #' @noRd
@@ -576,7 +582,7 @@ spec_localize <- function(x, languages, field) {
   if (!primary %in% names(value)) {
     lssdoc_abort(
       c(paste0("The ", field, " does not give the primary language {.val {primary}}."),
-        "i" = "{.code languages[1]} is the language {.fn write_lss} emits."),
+        "i" = "{.code languages[1]} is the survey base language {.fn write_lss} emits."),
       class = "lssdoc_bad_spec"
     )
   }

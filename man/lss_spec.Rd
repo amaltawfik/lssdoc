@@ -102,14 +102,19 @@ together with \code{other_position_code}, the code of the option AFTER
 which "other" appears. In practice "other" usually belongs before
 the "none of the above"-type exclusive options, which the default
 position puts it after.
-\item \code{attributes} -- optional named list of extra global question
-attributes passed through verbatim (e.g. \code{display_columns}).
+\item \code{attributes} -- optional named list of extra question attributes
+passed through verbatim (e.g. \code{display_columns}). A name LimeSurvey
+stores per language (\code{prefix}, \code{suffix}, \code{choice_title},
+\code{printable_help}, ...) is emitted once per declared language by
+\code{\link[=write_lss]{write_lss()}}, and may be given either as one string for every
+language or keyed by language code.
 }
 }
 \section{Languages}{
 
 \code{languages} declares the survey languages, the primary one first;
-\code{languages[1]} is the language \code{\link[=write_lss]{write_lss()}} emits. Every localizable
+\code{languages[1]} is the base language \code{\link[=write_lss]{write_lss()}} emits, and every other
+declared language is written alongside it. Every localizable
 text -- survey title, welcome and end texts, group titles, question
 texts and help, option, row and column labels, the "other" label, quota
 names and messages -- accepts either a plain string (read as the
@@ -131,10 +136,10 @@ The spec keeps one canonical form (a named list over the declared
 languages) and is strict: as soon as several languages are declared,
 every text must supply every one of them. A missing translation is
 precisely what \code{\link[=audit_lss]{audit_lss()}} flags when reading a \code{.lss}, so the spec
-refuses to author one. In this version \code{\link[=write_lss]{write_lss()}} emits the primary
-language only, and errors with class \code{lssdoc_unsupported_multilang} on
-a spec that declares more than one; multi-language emission is planned
-for 0.3.0.
+refuses to author one. \code{\link[=write_lss]{write_lss()}} writes every declared language:
+\code{languages[1]} becomes the survey's base language and the others its
+additional languages, each localized section carrying one row per
+language.
 }
 
 \examples{

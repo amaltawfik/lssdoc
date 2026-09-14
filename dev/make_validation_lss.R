@@ -196,3 +196,77 @@ if (requireNamespace("officer", quietly = TRUE) &&
 } else {
   cat("SKIP form document: officer / flextable not installed\n")
 }
+
+# ---- 0.3.0 : emission multilingue -------------------------------------------
+# Le pendant bilingue du fichier ci-dessus : les memes 21 types, declares en
+# francais ET en anglais, pour le test d'import manuel de l'emission
+# multilingue. Construit a partir de la spec-exemple du paquet, donc avec les
+# formulations qu'affiche le gabarit Word vierge.
+bi_out <- file.path(out_dir, "lssdoc_0.3.0_bilingual.lss")
+bi_langs <- c("fr", "en")
+bi_spec <- lss_example_spec(languages = bi_langs)
+
+write_lss(bi_spec, bi_out)
+
+bi_warned <- character()
+bi <- withCallingHandlers(
+  read_lss(bi_out),
+  warning = function(w) {
+    bi_warned <<- c(bi_warned, class(w)[1L])
+    invokeRestart("muffleWarning")
+  }
+)
+if (length(bi_warned)) {
+  stop("read_lss() warned on the bilingual file: ",
+       paste(bi_warned, collapse = ", "))
+}
+# <languages> is written in LimeSurvey's own order -- additional languages
+# first, base language last -- so check the set, and the base language where
+# LimeSurvey keeps it: surveys.language.
+if (!setequal(bi$languages, bi_langs)) {
+  stop("bilingual file declares ", paste(bi$languages, collapse = ", "),
+       " instead of ", paste(bi_langs, collapse = ", "))
+}
+if (!identical(bi$base_language, bi_langs[[1L]])) {
+  stop("bilingual file has base language ", bi$base_language,
+       " instead of ", bi_langs[[1L]])
+}
+if (!identical(bi$surveys$additional_languages[[1L]], "en")) {
+  stop("bilingual file does not carry 'en' in additional_languages")
+}
+for (sect in c("survey_language_settings", "group_l10ns", "question_l10ns",
+               "answer_l10ns", "quota_languagesettings")) {
+  col <- if (identical(sect, "survey_language_settings")) {
+    "surveyls_language"
+  } else if (identical(sect, "quota_languagesettings")) {
+    "quotals_language"
+  } else {
+    "language"
+  }
+  seen <- sort(unique(bi[[sect]][[col]]))
+  if (!identical(seen, sort(bi_langs))) {
+    stop(sect, " covers ", paste(seen, collapse = ", "), " only")
+  }
+}
+bi_audit <- audit_lss(bi)
+bi_missing <- sum(bi_audit$findings$check == "missing_translation")
+if (bi_missing) {
+  stop(bi_missing, " missing-translation finding(s) on the bilingual file")
+}
+
+cat(sprintf(
+  "OK  %s\n    %d bytes | %d languages | %d l10n rows | 0 missing translation\n",
+  normalizePath(bi_out, winslash = "/"), file.size(bi_out), length(bi$languages),
+  nrow(bi$question_l10ns) + nrow(bi$answer_l10ns) + nrow(bi$group_l10ns)
+))
+
+if (requireNamespace("officer", quietly = TRUE) &&
+    requireNamespace("flextable", quietly = TRUE)) {
+  bi_form_out <- file.path(out_dir, "lssdoc_0.3.0_bilingual_form.docx")
+  write_form_docx(bi_spec, bi_form_out, lang = "fr")
+  cat(sprintf("OK  %s\n    %d bytes | form contract version %d\n",
+              normalizePath(bi_form_out, winslash = "/"),
+              file.size(bi_form_out), LSS_FORM_VERSION))
+} else {
+  cat("SKIP bilingual form document: officer / flextable not installed\n")
+}

@@ -565,13 +565,6 @@ test_that("per-language texts are stored as a named list over the languages", {
   expect_identical(mono$title, list(fr = "T"))
 })
 
-test_that("write_lss() refuses a multi-language spec, for now", {
-  err <- expect_error(write_lss(bilingual_spec(), tempfile(fileext = ".lss")),
-                      class = "lssdoc_unsupported_multilang")
-  expect_match(conditionMessage(err), "0.3.0", fixed = TRUE)
-  expect_match(conditionMessage(err), "en", fixed = TRUE)
-})
-
 test_that("a declared language with no text is refused", {
   err <- expect_error(
     lss_spec(title = c(fr = "T", en = "T"), languages = c("fr", "en"),

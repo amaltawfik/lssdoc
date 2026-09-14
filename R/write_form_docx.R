@@ -26,16 +26,44 @@
 
 # ---- example specification ---------------------------------------------------
 
+#' Pick one wording, or build a localized one over several languages
+#'
+#' With a single language the value is the plain French or English string,
+#' exactly what the monolingual generator has always produced. With several,
+#' it is a named list over the declared languages -- the shape
+#' `spec_localize()` canonicalizes -- so every declared language carries every
+#' text. French and English are real translations; any other declared language
+#' reuses the English wording with a `[code]` tag, which is honest about being
+#' untranslated while still filling the language LimeSurvey expects.
+#' @keywords internal
+#' @noRd
+example_loc <- function(fr, en, languages) {
+  if (length(languages) == 1L) {
+    return(if (identical(languages[[1L]], "fr")) fr else en)
+  }
+  out <- lapply(languages, function(lg) {
+    if (identical(lg, "fr")) fr
+    else if (identical(lg, "en")) en
+    else paste0(en, " [", lg, "]")
+  })
+  names(out) <- languages
+  out
+}
+
 #' Wording of the generated example questionnaire, one entry per kind
 #'
 #' Kept as data rather than as a chain of `switch()` calls so the blank
 #' template, the tests and the vignette read the same table. Each entry gives
 #' the French and English wording; a chrome language without its own wording
-#' falls back to English, exactly as the rest of the package does.
+#' falls back to English, exactly as the rest of the package does. Given
+#' several languages, every text becomes a named list over them.
+#' @param languages The declared survey languages, primary first. A single
+#'   code keeps the historical behaviour: `"fr"` French, anything else
+#'   English.
 #' @keywords internal
 #' @noRd
-lss_example_wording <- function(lang = "fr") {
-  tr <- function(fr, en) if (identical(lang, "fr")) fr else en
+lss_example_wording <- function(languages = "fr") {
+  tr <- function(fr, en) example_loc(fr, en, languages)
   o <- function(...) lapply(list(...), function(x) list(text = x))
   list(
     single = list(
@@ -186,10 +214,17 @@ lss_example_wording <- function(lang = "fr") {
 #'   default. Unknown kinds are an error; the order of `lss_kinds` is kept.
 #' @param lang Language of the wording AND the declared survey language:
 #'   `"fr"` uses the French wording, anything else the English one.
+#' @param languages The declared survey languages, primary first; the single
+#'   `lang` by default. With several, every localizable text is given in each
+#'   -- French and English really translated, any other language the English
+#'   wording with a `[code]` tag -- so the example exercises the multilingual
+#'   path of [write_lss()] and of the Word form. `languages[1]` wins over
+#'   `lang` when both are given.
 #' @return An `lss_spec`.
 #' @keywords internal
 #' @noRd
-lss_example_spec <- function(kinds = lss_kinds$kind, lang = "fr") {
+lss_example_spec <- function(kinds = lss_kinds$kind, lang = "fr",
+                             languages = lang) {
   if (!is.character(kinds) || !length(kinds) || anyNA(kinds)) {
     lssdoc_abort("{.arg kinds} must be a non-empty character vector of kinds.",
                  class = "lssdoc_bad_spec")
@@ -203,8 +238,14 @@ lss_example_spec <- function(kinds = lss_kinds$kind, lang = "fr") {
     )
   }
   kinds <- lss_kinds$kind[lss_kinds$kind %in% kinds]
-  wording <- lss_example_wording(lang)
-  tr <- function(fr, en) if (identical(lang, "fr")) fr else en
+  if (!is.character(languages) || !length(languages) || anyNA(languages)) {
+    lssdoc_abort(
+      "{.arg languages} must be a non-empty character vector of language codes.",
+      class = "lssdoc_bad_spec")
+  }
+  lang <- languages[[1L]]
+  wording <- lss_example_wording(languages)
+  tr <- function(fr, en) example_loc(fr, en, languages)
 
   camel <- function(k) paste0(toupper(substr(k, 1L, 1L)), substr(k, 2L, nchar(k)))
   questions <- lapply(seq_along(kinds), function(i) {
@@ -276,14 +317,18 @@ lss_example_spec <- function(kinds = lss_kinds$kind, lang = "fr") {
     ))
   }
 
+  # the welcome text is TWO paragraphs, so it is localized as a whole: one
+  # character vector per language, never `c()` of two localized values --
+  # that would collide the language names
   lss_spec(
     title = tr("Questionnaire d'exemple lssdoc", "lssdoc example questionnaire"),
-    languages = lang,
-    welcome = c(
-      tr("Bienvenue dans ce questionnaire d'exemple.",
-         "Welcome to this example questionnaire."),
-      tr("Il montre une question par type autorisable.",
-         "It shows one question per authorable kind.")),
+    languages = languages,
+    welcome = example_loc(
+      c("Bienvenue dans ce questionnaire d'exemple.",
+        "Il montre une question par type autorisable."),
+      c("Welcome to this example questionnaire.",
+        "It shows one question per authorable kind."),
+      languages),
     end_text = tr("Merci d'avoir repondu.", "Thank you for answering."),
     groups = groups,
     quotas = quotas
