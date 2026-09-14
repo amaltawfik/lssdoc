@@ -49,7 +49,7 @@ template:
 
 navbar:
   structure:
-    left: [intro, get-started, reference, news]
+    left: [intro, get-started, write-in-word, reference, news]
     right: [search, lightswitch, github]
   components:
     intro:
@@ -64,6 +64,9 @@ navbar:
     get-started:
       text: Get started
       href: articles/lssdoc.html
+    write-in-word:
+      text: Write in Word
+      href: articles/write-in-word.html
     github:
       icon: fa-github
       aria-label: GitHub repository
@@ -103,9 +106,13 @@ reference:
       either from an existing spec or as a blank template, and read
       back from the filled-in form into a specification, with a
       dry-run check that lists every problem of a document at once.
+      An existing survey read by `read_lss()` can be converted back
+      into a specification, so a questionnaire already in LimeSurvey
+      can be edited through the same form.
     contents:
       - lss_spec
       - write_lss
+      - as_lss_spec
       - write_form_docx
       - lss_template_docx
       - read_form_docx

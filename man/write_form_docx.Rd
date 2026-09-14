@@ -4,7 +4,7 @@
 \alias{write_form_docx}
 \title{Render a survey specification as a Word authoring form}
 \usage{
-write_form_docx(spec, path, lang = NULL, hints = FALSE)
+write_form_docx(spec, path, lang = NULL, hints = FALSE, strict = TRUE)
 }
 \arguments{
 \item{spec}{An \code{\link[=lss_spec]{lss_spec()}} object, or a plain list with the same structure
@@ -20,6 +20,11 @@ is independent of the survey's content languages.}
 \item{hints}{Logical. Add the muted syntax hint under each key
 (\verb{"one per line, \\"1 = Label\\""}, ...). \code{FALSE} by default;
 \code{\link[=lss_template_docx]{lss_template_docx()}} turns it on for the blank template.}
+
+\item{strict}{Logical, used only when \code{spec} is an \code{lss} object read by
+\code{\link[=read_lss]{read_lss()}}: it is converted with \code{\link[=as_lss_spec]{as_lss_spec()}}, and \code{strict} is passed
+to it. \code{TRUE} (default) refuses a survey carrying anything the
+specification cannot express; \code{FALSE} renders the rest of it and warns.}
 }
 \value{
 Invisibly, the path to the written file.

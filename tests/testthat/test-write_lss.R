@@ -239,6 +239,87 @@ test_that("lss_spec validates quotas and other placement", {
                class = "lssdoc_bad_spec")
 })
 
+test_that("a quota hangs on any question with a single coded answer", {
+  scaled <- function(kind, code) {
+    lss_spec(title = "T", groups = list(list(title = "G", questions = list(
+      list(code = "q", kind = kind, text = "Q?")))),
+      quotas = list(list(question = "q", code = code, message = "m")))
+  }
+  # a fixed scale declares no option: the quota names one of the kind's own
+  # codes, and a gender quota is the commonest real quota there is
+  expect_s3_class(scaled("gender", "M"), "lss_spec")
+  expect_s3_class(scaled("yesno", "N"), "lss_spec")
+  expect_s3_class(scaled("fivepoint", "5"), "lss_spec")
+  expect_error(scaled("gender", "X"), class = "lssdoc_bad_spec")
+  expect_error(scaled("gender", "1"), class = "lssdoc_bad_spec")
+  # ... and the emitted file names the question and the code as typed
+  spec <- scaled("gender", "F")
+  file <- tempfile(fileext = ".lss")
+  suppressMessages(write_lss(spec, file))
+  lss <- read_lss(file)
+  expect_identical(lss$quota_members$code, "F")
+  expect_identical(
+    lss$questions$title[lss$questions$qid == lss$quota_members$qid], "q")
+
+  # a declared option list still works, and a kind holding several answers
+  # (or none) still cannot carry a quota
+  listed <- function(kind) {
+    lss_spec(title = "T", groups = list(list(title = "G", questions = list(
+      list(code = "q", kind = kind, text = "Q?",
+           options = list(list(text = "A"), list(text = "B")))))),
+      quotas = list(list(question = "q", code = "2", message = "m")))
+  }
+  expect_s3_class(listed("dropdown"), "lss_spec")
+  expect_s3_class(listed("singlecomment"), "lss_spec")
+  expect_error(listed("multiple"), class = "lssdoc_bad_spec")
+  expect_error(
+    lss_spec(title = "T", groups = list(list(title = "G", questions = list(
+      list(code = "q", kind = "text", text = "Q?")))),
+      quotas = list(list(question = "q", code = "1", message = "m"))),
+    class = "lssdoc_bad_spec")
+})
+
+test_that("an item code is as wide as the table LimeSurvey stores it in", {
+  arrayed <- function(row_code, col_code) {
+    lss_spec(title = "T", groups = list(list(title = "G", questions = list(
+      list(code = "q", kind = "array", text = "Q?",
+           rows = list(list(code = row_code, text = "L")),
+           columns = list(list(code = col_code, text = "C")))))))
+  }
+  # array ROWS are subquestions (`questions.title`, varchar(20)): a real
+  # export uses the width -- `STRESS` in inst/extdata/demo_survey.lss
+  expect_s3_class(arrayed("STRESS", "1"), "lss_spec")
+  expect_s3_class(arrayed("12345678901234567890", "1"), "lss_spec")
+  expect_error(arrayed("123456789012345678901", "1"), class = "lssdoc_bad_spec")
+  # array COLUMNS are answers (`answers.code`, varchar(5))
+  expect_s3_class(arrayed("R1", "12345"), "lss_spec")
+  expect_error(arrayed("R1", "STRESS"), class = "lssdoc_bad_spec")
+  expect_error(arrayed("R1", "STRESS"), regexp = "stores this list as answers")
+
+  # the same split on option lists: a multiple stores them as subquestions,
+  # a single as answers
+  optioned <- function(kind, code) {
+    lss_spec(title = "T", groups = list(list(title = "G", questions = list(
+      list(code = "q", kind = kind, text = "Q?",
+           options = list(list(code = code, text = "A"),
+                          list(code = "b", text = "B")))))))
+  }
+  expect_s3_class(optioned("multiple", "STRESS"), "lss_spec")
+  expect_s3_class(optioned("multitext", "STRESS"), "lss_spec")
+  expect_error(optioned("single", "STRESS"), class = "lssdoc_bad_spec")
+  expect_error(optioned("ranking", "STRESS"), class = "lssdoc_bad_spec")
+  # a purely numeric code is what real exports use for array rows, so the
+  # rule is letters and digits, never "a letter first"
+  expect_s3_class(optioned("multiple", "12"), "lss_spec")
+  expect_error(optioned("multiple", "a_b"), class = "lssdoc_bad_spec")
+
+  # and the width follows the STORAGE, not the field name
+  expect_identical(option_code_width("array", "rows"), 20L)
+  expect_identical(option_code_width("array", "columns"), 5L)
+  expect_identical(option_code_width("multiple", "options"), 20L)
+  expect_identical(option_code_width("single", "options"), 5L)
+})
+
 test_that("auto-numbering skips the other option and respects explicit codes", {
   spec <- lss_spec(title = "T", groups = list(list(title = "G", questions = list(
     list(code = "q", kind = "single", text = "Q",
@@ -689,7 +770,14 @@ test_that("the accessors reproduce the former per-kind vectors", {
   expect_identical(kinds_where("other_allowed"),
                    c("single", "dropdown", "multiple"))
   expect_identical(kinds_where("exclusive_allowed"), "multiple")
-  expect_identical(kinds_where("quota_target"), "single")
+  # a quota names one answer code of a one-answer question: every scalar kind
+  # that has codes, the implicit scales included (a gender quota is the
+  # commonest real quota there is)
+  expect_identical(
+    kinds_where("quota_target"),
+    c("single", "dropdown", "singlecomment", "yesno", "gender", "fivepoint"))
+  expect_identical(kinds_where("quota_target"),
+                   kinds_where("relevance_role", "scalar"))
   expect_identical(kinds_where("implicit_min_answers"), "ranking")
   expect_identical(kinds_where("collects_response", FALSE), "display")
   expect_identical(kinds_where("max_answers_rule", "below_n"), "multiple")

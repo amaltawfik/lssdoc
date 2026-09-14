@@ -37,8 +37,12 @@ string starting with \code{<} used verbatim as HTML. Optional.}
 string starting with \code{<} used verbatim as HTML. Optional.}
 
 \item{quotas}{List of end-of-survey quotas. Each element is a list with
-\code{question} (code of a single-choice question), \code{code} (the answer
-code that triggers the quota), \code{message} (text shown to the
+\code{question} (code of a question holding a single coded answer:
+\code{"single"}, \code{"dropdown"}, \code{"singlecomment"}, \code{"yesno"}, \code{"gender"} or
+\code{"fivepoint"}), \code{code} (the answer
+code that triggers the quota -- a declared option code, or one of the
+kind's implicit codes for the fixed scales: \code{Y}/\code{N}, \code{M}/\code{F}, \code{1}-\code{5}),
+\code{message} (text shown to the
 respondent) and optionally \code{name} and \code{limit} (a whole number at or
 above zero; omitted, it stays the historical zero). A quota emitted
 by \code{\link[=write_lss]{write_lss()}} terminates the survey -- the LimeSurvey mechanism
@@ -86,7 +90,14 @@ optionally \code{code}, \code{other = TRUE} (native LimeSurvey "other" with a
 free-text field; \code{single}, \code{dropdown} and \code{multiple} only) and
 \code{exclusive = TRUE} (\code{multiple} only; unchecks every other box).
 Options without a \code{code} are numbered \verb{1..n} in order, skipping the
-\code{other} option, which LimeSurvey codes natively.
+\code{other} option, which LimeSurvey codes natively. An explicit code is
+letters and digits, and its length follows the table LimeSurvey stores
+the list in: \strong{5 characters} for a list emitted as answers (\code{single},
+\code{dropdown}, \code{singlecomment}, \code{ranking} options, and \code{array} columns --
+\code{answers.code} is a \code{varchar(5)}), \strong{20 characters} for a list emitted
+as subquestions (\code{multiple}, \code{multitext}, \code{multinumeric} options, and
+\code{array} and implicit-scale array rows -- \code{questions.title} is a
+\code{varchar(20)}, the same column as a question code).
 \item \code{rows} / \code{columns} -- for \code{array}: the subquestions and the answer
 scale, same shape as \code{options}.
 \item \code{relevance} -- display condition in a minimal syntax:

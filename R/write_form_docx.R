@@ -812,6 +812,10 @@ form_add_block <- function(doc, theme, rows, title_key, title_value = "") {
 #' @param hints Logical. Add the muted syntax hint under each key
 #'   (`"one per line, \"1 = Label\""`, ...). `FALSE` by default;
 #'   [lss_template_docx()] turns it on for the blank template.
+#' @param strict Logical, used only when `spec` is an `lss` object read by
+#'   [read_lss()]: it is converted with [as_lss_spec()], and `strict` is passed
+#'   to it. `TRUE` (default) refuses a survey carrying anything the
+#'   specification cannot express; `FALSE` renders the rest of it and warns.
 #'
 #' @return Invisibly, the path to the written file.
 #'
@@ -858,7 +862,8 @@ form_add_block <- function(doc, theme, rows, title_key, title_value = "") {
 #' @seealso [lss_template_docx()] for a blank template, [lss_spec()],
 #'   [write_lss()], [render_questionnaire()].
 #' @export
-write_form_docx <- function(spec, path, lang = NULL, hints = FALSE) {
+write_form_docx <- function(spec, path, lang = NULL, hints = FALSE,
+                            strict = TRUE) {
   for (pkg in c("officer", "flextable")) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
       lssdoc_abort(                                     # nocov start
@@ -871,21 +876,30 @@ write_form_docx <- function(spec, path, lang = NULL, hints = FALSE) {
     }
   }
   if (!inherits(spec, "lss_spec")) {
-    # An `lss` object is a list too, so it would otherwise be re-validated as
-    # a spec and fail with a confusing field-level message. A parsed survey
-    # carries LimeSurvey types the spec model does not cover; turning one back
-    # into a form is the read side of 0.3.0, not this function.
+    # A parsed survey is the "modify an existing questionnaire" entry point:
+    # it is converted to a specification first, so the author edits the form
+    # of a real `.lss` instead of retyping it. The conversion is narrower than
+    # the file, hence `strict`.
     if (inherits(spec, "lss")) {
-      lssdoc_abort(
-        c("Rendering an {.cls lss} object as a Word form is not supported yet.",
-          "i" = "{.fn write_form_docx} renders an {.fn lss_spec}: build one with {.fn lss_spec}, or use {.fn render_questionnaire} to review an {.cls lss}."),
-        class = "lssdoc_unsupported_input"
-      )
+      spec <- as_lss_spec(spec, strict = strict)
+    } else {
+      # An `lss_audit` or an `lss_model` is a list too, so without this guard
+      # it would be re-validated as a spec and fail with a confusing
+      # field-level message about a field it was never meant to have.
+      if (inherits(spec, c("lss_audit", "lss_model"))) {
+        lssdoc_abort(
+          c("{.fn write_form_docx} cannot render a {.cls {class(spec)[1]}} as a Word form.",
+            "i" = "It renders an {.fn lss_spec}: build one with {.fn lss_spec}, or read a survey with {.fn read_lss} and convert it with {.fn as_lss_spec}."),
+          class = "lssdoc_unsupported_input"
+        )
+      }
+      if (!is.list(spec)) {
+        lssdoc_abort("{.arg spec} must be an {.fn lss_spec} object or a list.",
+                     class = "lssdoc_bad_spec")
+      }
     }
-    if (!is.list(spec)) {
-      lssdoc_abort("{.arg spec} must be an {.fn lss_spec} object or a list.",
-                   class = "lssdoc_bad_spec")
-    }
+  }
+  if (!inherits(spec, "lss_spec")) {
     spec <- lss_spec(
       title = spec$title, groups = spec$groups,
       languages = spec$languages %||% spec$language %||%

@@ -718,9 +718,15 @@ form_parse_item <- function(line, k, ctx, field_label) {
         if (!nzchar(right)) bad(paste0("empty label after {.code =}."))
         return(list(code = NA_character_, text = right, other = TRUE))
       }
-      if (!grepl("^[A-Za-z0-9]{1,5}$", left)) {
+      # The WIDEST code any list may carry (a subquestion code, stored in
+      # `questions.title`, a varchar(20)). The reader only has to tell a code
+      # apart from a label; which of the two widths this particular list is
+      # held to -- 5 for a list LimeSurvey stores as answers, 20 for one it
+      # stores as subquestions -- depends on the question's kind, and
+      # `lss_spec()` applies it at assembly with the exact message.
+      if (!grepl("^[A-Za-z0-9]{1,20}$", left)) {
         bad(paste0("invalid code {.val ", esc(left), "}."),
-            c("i" = "Codes are 1-5 letters or digits (LimeSurvey stores answer codes in five characters)."))
+            c("i" = "Codes are letters and digits, at most 20 characters (at most 5 for an answer list)."))
       }
       if (!nzchar(right)) bad("empty label after {.code =}.")
       return(list(code = left, text = right, other = FALSE))
@@ -1473,7 +1479,7 @@ form_parse_condition <- function(text, ctx, label) {
                c(paste0(ctx$where, ", field {.field ", esc(label),
                         "}: expected {.code code = value}, found {.val ",
                         esc(text), "}."),
-                 "i" = "A quota watches one answer of one single-choice question."),
+                 "i" = "A quota watches one answer of one question holding a single coded answer."),
                field = label)
   }
   if (form_is_other_word(m[[3L]])) {

@@ -26,8 +26,12 @@
 #' @param end_text Character vector of end-page paragraphs, or a single
 #'   string starting with `<` used verbatim as HTML. Optional.
 #' @param quotas List of end-of-survey quotas. Each element is a list with
-#'   `question` (code of a single-choice question), `code` (the answer
-#'   code that triggers the quota), `message` (text shown to the
+#'   `question` (code of a question holding a single coded answer:
+#'   `"single"`, `"dropdown"`, `"singlecomment"`, `"yesno"`, `"gender"` or
+#'   `"fivepoint"`), `code` (the answer
+#'   code that triggers the quota -- a declared option code, or one of the
+#'   kind's implicit codes for the fixed scales: `Y`/`N`, `M`/`F`, `1`-`5`),
+#'   `message` (text shown to the
 #'   respondent) and optionally `name` and `limit` (a whole number at or
 #'   above zero; omitted, it stays the historical zero). A quota emitted
 #'   by [write_lss()] terminates the survey -- the LimeSurvey mechanism
@@ -63,7 +67,14 @@
 #'   free-text field; `single`, `dropdown` and `multiple` only) and
 #'   `exclusive = TRUE` (`multiple` only; unchecks every other box).
 #'   Options without a `code` are numbered `1..n` in order, skipping the
-#'   `other` option, which LimeSurvey codes natively.
+#'   `other` option, which LimeSurvey codes natively. An explicit code is
+#'   letters and digits, and its length follows the table LimeSurvey stores
+#'   the list in: **5 characters** for a list emitted as answers (`single`,
+#'   `dropdown`, `singlecomment`, `ranking` options, and `array` columns --
+#'   `answers.code` is a `varchar(5)`), **20 characters** for a list emitted
+#'   as subquestions (`multiple`, `multitext`, `multinumeric` options, and
+#'   `array` and implicit-scale array rows -- `questions.title` is a
+#'   `varchar(20)`, the same column as a question code).
 #' * `rows` / `columns` -- for `array`: the subquestions and the answer
 #'   scale, same shape as `options`.
 #' * `relevance` -- display condition in a minimal syntax:
@@ -220,7 +231,12 @@ print.lss_spec <- function(x, ...) {
 #'   option count) or `"at_most_n"`.
 #' @param implicit_min_answers The emitter adds `min_answers = 1` when the
 #'   question is mandatory or capped.
-#' @param quota_target A quota may hang off this kind.
+#' @param quota_target A quota may hang off this kind: the question holds one
+#'   answer per respondent (`relevance_role == "scalar"`) and that answer has
+#'   a code a quota can name -- a declared option code, or one of
+#'   `implicit_codes` for the fixed scales (`yesno` Y/N, `gender` M/F,
+#'   `fivepoint` 1-5). A quota on the gender question is the commonest real
+#'   quota there is.
 #' @param collects_response The kind yields a response variable and counts as
 #'   a question in summaries.
 #' @keywords internal
@@ -261,8 +277,8 @@ kind_def <- function(kind, type, theme, label, family = "scalar",
 # append, never reorder.
 lss_kind_defs <- list(
   kind_def("single",        "L", "listradio",         "Single choice (radio)",      "choice",  options = "required", rows = "ignored", min_options = 2L, answers_from = "options",      relevance_role = "scalar", other_allowed = TRUE, quota_target = TRUE),
-  kind_def("dropdown",      "!", "list_dropdown",     "Single choice (dropdown)",   "choice",  options = "required", rows = "ignored", min_options = 2L, answers_from = "options",      relevance_role = "scalar", other_allowed = TRUE),
-  kind_def("singlecomment", "O", "list_with_comment", "Single choice with comment", "choice",  options = "required", rows = "ignored", min_options = 2L, answers_from = "options",      relevance_role = "scalar"),
+  kind_def("dropdown",      "!", "list_dropdown",     "Single choice (dropdown)",   "choice",  options = "required", rows = "ignored", min_options = 2L, answers_from = "options",      relevance_role = "scalar", other_allowed = TRUE, quota_target = TRUE),
+  kind_def("singlecomment", "O", "list_with_comment", "Single choice with comment", "choice",  options = "required", rows = "ignored", min_options = 2L, answers_from = "options",      relevance_role = "scalar", quota_target = TRUE),
   kind_def("multiple",      "M", "multiplechoice",    "Multiple choice",            "choice",  options = "required", rows = "ignored", min_options = 2L, subquestions_from = "options", relevance_role = "count", other_allowed = TRUE, exclusive_allowed = TRUE, max_answers_rule = "below_n"),
   kind_def("array",         "F", "arrays/array",      "Array (rows and columns)",   "array",   options = "ignored",  rows = "required", columns = "required",  subquestions_from = "rows", answers_from = "columns"),
   kind_def("array5",        "A", "arrays/5point",     "Array, 5-point scale",       "array",   options = "ignored",  rows = "required", columns = "forbidden", subquestions_from = "rows", implicit_codes = as.character(1:5)),
@@ -277,9 +293,9 @@ lss_kind_defs <- list(
   kind_def("hugetext",      "U", "hugefreetext",      "Huge free text"),
   kind_def("numeric",       "N", "numerical",         "Numeric input"),
   kind_def("date",          "D", "date",              "Date"),
-  kind_def("yesno",         "Y", "yesno",             "Yes/no",            relevance_role = "scalar", implicit_codes = c("Y", "N")),
-  kind_def("gender",        "G", "gender",            "Gender",            relevance_role = "scalar", implicit_codes = c("M", "F")),
-  kind_def("fivepoint",     "5", "5pointchoice",      "Five-point choice", relevance_role = "scalar", implicit_codes = as.character(1:5)),
+  kind_def("yesno",         "Y", "yesno",             "Yes/no",            relevance_role = "scalar", implicit_codes = c("Y", "N"), quota_target = TRUE),
+  kind_def("gender",        "G", "gender",            "Gender",            relevance_role = "scalar", implicit_codes = c("M", "F"), quota_target = TRUE),
+  kind_def("fivepoint",     "5", "5pointchoice",      "Five-point choice", relevance_role = "scalar", implicit_codes = as.character(1:5), quota_target = TRUE),
   kind_def("display",       "X", "boilerplate",       "Text display",      "display", collects_response = FALSE)
 )
 
@@ -309,7 +325,13 @@ lss_kinds <- local({
     nrow(tbl) == 21L, !anyDuplicated(tbl$kind), !anyDuplicated(tbl$type),
     !anyDuplicated(tbl$theme),
     identical(!is.na(tbl$min_options), tbl$options == "required"),
-    all(tbl$quota_target <= (tbl$relevance_role == "scalar")),
+    # a quota names ONE answer code of a ONE-answer question: every scalar
+    # kind that has codes -- declared options, or a fixed implicit scale --
+    # can carry one, and no other kind can.
+    identical(
+      tbl$quota_target,
+      tbl$relevance_role == "scalar" &
+        (tbl$options == "required" | lengths(tbl$implicit_codes) > 0L)),
     # no exclusive <= other invariant: `exclude_all_others` and the native
     # other option are unrelated LimeSurvey mechanisms, and a kind may well
     # take exclusive options without taking an other option.
@@ -810,11 +832,17 @@ spec_validate <- function(spec) {
     }
     if (!isTRUE(kind_field(target$kind, "quota_target"))) {
       lssdoc_abort(
-        paste0("Quota on {.val ", esc(quota$question), "}: quotas require a single-choice question."),
+        paste0("Quota on {.val ", esc(quota$question),
+               "}: a quota needs a question with a single coded answer (",
+               paste(kinds_where("quota_target"), collapse = ", "),
+               "), and {.val ", esc(quota$question), "} is {.val ",
+               target$kind, "}."),
         class = "lssdoc_bad_spec"
       )
     }
-    codes <- option_codes(target$options)
+    # a fixed scale (yesno, gender, fivepoint) declares no option: its codes
+    # are the kind's own, exactly as a relevance condition reads them
+    codes <- kind_implicit_codes(target$kind) %||% option_codes(target$options)
     if (!(quota$code %||% "") %in% codes) {
       lssdoc_abort(
         paste0("Quota on {.val ", esc(quota$question), "}: answer code {.val ",
@@ -863,6 +891,26 @@ validate_question_shape <- function(q) {
   }
 }
 
+#' How long a code of one spec field may be, and why
+#'
+#' LimeSurvey does not store every item list in the same table, and the two
+#' tables do not have the same column width: an ANSWER lives in
+#' `answers.code`, a `varchar(5)`, while a SUBQUESTION lives in
+#' `questions.title`, a `varchar(20)` -- the same column as a question code.
+#' The limit therefore follows the STORAGE the kind routes the field to
+#' (`subquestions_from` / `answers_from` in `lss_kinds`), never the field's
+#' name: `array` rows are subquestions and take 20 characters, its columns
+#' are answers and take 5. Real exports use the whole width (a row code
+#' `STRESS` in `inst/extdata/demo_survey.lss`) and also use purely numeric
+#' codes, so the character class is letters and digits, with no leading-letter
+#' rule: the package must never refuse what LimeSurvey itself wrote.
+#' A field the kind emits to neither table is capped at the narrower width.
+#' @keywords internal
+#' @noRd
+option_code_width <- function(kind, field) {
+  if (identical(field, kind_field(kind, "subquestions_from"))) 20L else 5L
+}
+
 validate_options <- function(q) {
   for (field in c("options", "rows", "columns")) {
     opts <- q[[field]]
@@ -872,12 +920,18 @@ validate_options <- function(q) {
       spec_abort(q$code, "x" = paste0("Duplicate option codes in {.field ", field, "}."),
                  field = field)
     }
-    bad <- codes[!grepl("^[A-Za-z0-9]{1,5}$", codes)]
+    width <- option_code_width(q$kind, field)
+    bad <- codes[!grepl(sprintf("^[A-Za-z0-9]{1,%d}$", width), codes)]
     if (length(bad)) {
+      store <- if (width == 20L) {
+        "LimeSurvey stores this list as subquestions, in 20 characters"
+      } else {
+        "LimeSurvey stores this list as answers, in 5 characters"
+      }
       spec_abort(q$code, "x" = paste0(
         "Invalid option code {.val ", esc(bad[1L]),
         "} in {.field ", field,
-        "}: 1-5 letters or digits (LimeSurvey stores answer codes in 5 characters)."),
+        "}: 1-", width, " letters or digits (", store, ")."),
         field = field)
     }
     empty <- vapply(opts, function(o) {

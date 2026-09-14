@@ -587,12 +587,35 @@ test_that("a malformed option line is refused, line by line", {
   skip_if_no_docx()
   chrome <- lss_chrome_strings("fr")
 
+  # Wider than any code LimeSurvey stores anywhere: the reader itself refuses
+  # it, since past that width the left side of `=` cannot be a code at all.
   long_code <- tempfile(fileext = ".docx")
   on.exit(unlink(long_code), add = TRUE)
   form_fixture(long_code, form_set_row(form_blocks(chrome), 3L, chrome$item_options,
-                                       c("abcdef = Oui", "2 = Non")))
+                                       c("abcdefghijklmnopqrstu = Oui", "2 = Non")))
   expect_error(read_form_docx(long_code), class = "lssdoc_bad_form_value")
   expect_error(read_form_docx(long_code), regexp = "invalid code")
+
+  # Between the two widths: a single choice stores its options as ANSWERS, in
+  # five characters, so the specification refuses it at assembly -- with the
+  # storage named, not the field.
+  answer_code <- tempfile(fileext = ".docx")
+  on.exit(unlink(answer_code), add = TRUE)
+  form_fixture(answer_code, form_set_row(form_blocks(chrome), 3L, chrome$item_options,
+                                         c("abcdef = Oui", "2 = Non")))
+  expect_error(read_form_docx(answer_code), class = "lssdoc_bad_form_spec")
+  expect_error(read_form_docx(answer_code), regexp = "stores this list as answers")
+
+  # The same code on a multiple choice, whose options are stored as
+  # SUBQUESTIONS (20 characters), is a valid code and reads back verbatim.
+  sq_code <- tempfile(fileext = ".docx")
+  on.exit(unlink(sq_code), add = TRUE)
+  blocks <- form_set_row(form_blocks(chrome), 3L, chrome$meta_type, "multiple")
+  blocks <- form_set_row(blocks, 3L, chrome$item_options,
+                         c("STRESS = Stress", "2 = Non"))
+  form_fixture(sq_code, blocks)
+  spec <- read_form_docx(sq_code)
+  expect_identical(spec$groups[[1L]]$questions[[1L]]$options[[1L]]$code, "STRESS")
 
   empty_label <- tempfile(fileext = ".docx")
   on.exit(unlink(empty_label), add = TRUE)

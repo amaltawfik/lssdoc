@@ -497,16 +497,26 @@ test_that("no key row of a Question block repeats a block-title word", {
   }
 })
 
-test_that("an lss object is refused with a classed error naming lss_spec()", {
+test_that("an lss object goes through as_lss_spec(), an empty one is refused", {
   skip_if_no_docx()
-  # the guard is about the CLASS: an `lss` is a list too, so without it the
-  # object would be re-validated as a spec and fail with a field-level message
-  fake <- structure(list(languages = "fr", groups = list()), class = "lss")
+  # an `lss` is a list too: without the class guard it would be re-validated
+  # as a spec and fail with a field-level message. Since step 3b it is
+  # CONVERTED instead, so an unusable one fails as an unusable survey.
+  fake <- structure(list(languages = "fr", groups = NULL), class = "lss")
   expect_error(write_form_docx(fake, tempfile(fileext = ".docx")),
-               class = "lssdoc_unsupported_input")
+               class = "lssdoc_bad_lss")
   expect_error(write_form_docx(fake, tempfile(fileext = ".docx")),
                class = "lssdoc_error")
-  expect_error(write_form_docx(fake, tempfile(fileext = ".docx")),
+})
+
+test_that("another classed object is still refused as an unsupported input", {
+  skip_if_no_docx()
+  audit <- structure(list(findings = list()), class = "lss_audit")
+  expect_error(write_form_docx(audit, tempfile(fileext = ".docx")),
+               class = "lssdoc_unsupported_input")
+  expect_error(write_form_docx(audit, tempfile(fileext = ".docx")),
+               class = "lssdoc_error")
+  expect_error(write_form_docx(audit, tempfile(fileext = ".docx")),
                regexp = "lss_spec")
 })
 

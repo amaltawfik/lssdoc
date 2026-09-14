@@ -13,6 +13,14 @@
   them in one pass. The form round-trips losslessly and is read with `xml2`
   only (Word is not required to read it, only to fill it in).
 
+* `as_lss_spec()` converts a survey read with `read_lss()` into an `lss_spec`,
+  so an existing LimeSurvey questionnaire can be rendered as the Word form
+  (`write_form_docx()`), edited and re-imported. Question types and filters the
+  specification cannot express are refused with a complete list
+  (`strict = TRUE`) or dropped with a warning naming each one (`strict = FALSE`);
+  HTML texts are flattened and missing translations filled from the primary
+  language, both reported. Nothing is lost silently.
+
 * `lss_spec()` gains an optional localised group `description` and an optional
   quota `limit`, both written by `write_lss()`.
 
