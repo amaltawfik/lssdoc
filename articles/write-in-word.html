@@ -125,7 +125,7 @@ of the questionnaire’s own languages.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".docx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/lss_template_docx.html">lss_template_docx</a></span><span class="op">(</span><span class="va">template</span>, lang <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpiwWOm7/file1bf132860f4a.docx</span> (21 questions, 2 groups, 1 quota).</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp67uvIt/file1c3dad2a53.docx</span> (21 questions, 2 groups, 1 quota).</span></span></code></pre></div>
 <p>The person who writes the questionnaire often does not use R at all.
 The same blank forms can be downloaded from the <a href="https://amaltawfik.github.io/lssdoc/">package website</a>: a short
 one to fill in, in each of the five interface languages, and a longer
@@ -186,6 +186,15 @@ entry is either <code>code = Label</code> or a bare <code>Label</code>,
 in which case codes are numbered automatically (1, 2, 3, …). Codes are
 variable values in the data file, so choose them deliberately when they
 matter.</p>
+<p>A line is split at its <strong>first</strong> <code>=</code>, and
+only when what precedes it is a single word: <code>1 = Fees = 0</code>
+is the code <code>1</code> with the label <code>Fees = 0</code>, and a
+label may contain as many further <code>=</code> as it likes. A sentence
+like <code>Salary = market rate</code> has spaces on the left, so it is
+not a code at all: the whole line is the label, and it is numbered
+automatically. If the left side has no spaces but is not a valid code —
+letters and digits only, at most 20 characters — the line is reported
+rather than quietly taken as a label.</p>
 <pre><code><span><span class="fl">1</span> <span class="op">=</span> <span class="va">Never</span></span>
 <span><span class="fl">2</span> <span class="op">=</span> <span class="va">Sometimes</span></span>
 <span><span class="fl">3</span> <span class="op">=</span> <span class="va">Often</span></span>
@@ -219,315 +228,175 @@ suffix.</p>
 <div class="section level2">
 <h2 id="question-types">3. Question types<a class="anchor" aria-label="anchor" href="#question-types"></a>
 </h2>
-<p>The reference below is generated from the package’s own table of
-types, so it cannot disagree with what <code><a href="../reference/read_form_docx.html">read_form_docx()</a></code>
-accepts. <code>label</code> is the wording shown in review documents;
-<code>type</code>/<code>theme</code> are what LimeSurvey stores.</p>
+<p>Write the <strong>Type</strong> value of the first column in the Type
+row of a question block. The other columns say which rows that type
+accepts: whether it takes Options, Rows and Columns, how many options it
+needs at least, whether it can carry an “Other” option or an exclusive
+one, and the codes it already has built in (a yes/no question does not
+need options: its codes are <code>Y</code> and <code>N</code>).</p>
+<p>This table is generated from the package’s own table of types, so it
+cannot disagree with what <code><a href="../reference/read_form_docx.html">read_form_docx()</a></code> accepts.</p>
+<p>A blank cell means the type does not use that row: leave it out, and
+the blank form will not show it in the first place.</p>
 <table class="table">
 <colgroup>
+<col width="12%">
+<col width="25%">
+<col width="6%">
+<col width="4%">
+<col width="6%">
+<col width="4%">
 <col width="5%">
-<col width="10%">
-<col width="2%">
-<col width="1%">
-<col width="10%">
-<col width="3%">
-<col width="3%">
-<col width="3%">
-<col width="4%">
-<col width="4%">
-<col width="6%">
-<col width="3%">
-<col width="10%">
-<col width="2%">
-<col width="3%">
-<col width="4%">
-<col width="7%">
-<col width="4%">
-<col width="6%">
+<col width="8%">
+<col width="25%">
 </colgroup>
 <thead><tr class="header">
-<th align="left">kind</th>
-<th align="left">label</th>
-<th align="left">family</th>
-<th align="left">type</th>
-<th align="left">theme</th>
-<th align="left">options</th>
-<th align="left">rows</th>
-<th align="left">columns</th>
-<th align="left">min_options</th>
-<th align="left">answers_from</th>
-<th align="left">subquestions_from</th>
-<th align="left">relevance</th>
-<th align="left">implicit_codes</th>
-<th align="left">other</th>
-<th align="left">exclusive</th>
-<th align="left">max_answers</th>
-<th align="left">implicit_min_answers</th>
-<th align="left">quota_target</th>
-<th align="left">collects_response</th>
+<th align="left">Type</th>
+<th align="left">Meaning</th>
+<th align="left">Options</th>
+<th align="left">Rows</th>
+<th align="left">Columns</th>
+<th align="left">Min.</th>
+<th align="left">Other</th>
+<th align="left">Exclusive</th>
+<th align="left">Built-in codes</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">single</td>
 <td align="left">Single choice (radio)</td>
-<td align="left">choice</td>
-<td align="left">L</td>
-<td align="left">listradio</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">2</td>
-<td align="left">options</td>
-<td align="left"></td>
-<td align="left">scalar</td>
-<td align="left"></td>
 <td align="left">yes</td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">dropdown</td>
 <td align="left">Single choice (dropdown)</td>
-<td align="left">choice</td>
-<td align="left">!</td>
-<td align="left">list_dropdown</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">2</td>
-<td align="left">options</td>
-<td align="left"></td>
-<td align="left">scalar</td>
-<td align="left"></td>
 <td align="left">yes</td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">singlecomment</td>
 <td align="left">Single choice with comment</td>
-<td align="left">choice</td>
-<td align="left">O</td>
-<td align="left">list_with_comment</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">2</td>
-<td align="left">options</td>
-<td align="left"></td>
-<td align="left">scalar</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">multiple</td>
 <td align="left">Multiple choice</td>
-<td align="left">choice</td>
-<td align="left">M</td>
-<td align="left">multiplechoice</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">2</td>
-<td align="left"></td>
-<td align="left">options</td>
-<td align="left">count</td>
-<td align="left"></td>
 <td align="left">yes</td>
 <td align="left">yes</td>
-<td align="left">below_n</td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">array</td>
 <td align="left">Array (rows and columns)</td>
-<td align="left">array</td>
-<td align="left">F</td>
-<td align="left">arrays/array</td>
-<td align="left">ignored</td>
-<td align="left">required</td>
-<td align="left">required</td>
-<td align="left"></td>
-<td align="left">columns</td>
-<td align="left">rows</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
 <td align="left"></td>
 <td align="left">yes</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
 </tr>
 <tr class="even">
 <td align="left">array5</td>
 <td align="left">Array, 5-point scale</td>
-<td align="left">array</td>
-<td align="left">A</td>
-<td align="left">arrays/5point</td>
-<td align="left">ignored</td>
-<td align="left">required</td>
-<td align="left">forbidden</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">rows</td>
-<td align="left"></td>
-<td align="left">1, 2, 3, 4, 5</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
 <td align="left"></td>
 <td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">1, 2, 3, 4, 5</td>
 </tr>
 <tr class="odd">
 <td align="left">array10</td>
 <td align="left">Array, 10-point scale</td>
-<td align="left">array</td>
-<td align="left">B</td>
-<td align="left">arrays/10point</td>
-<td align="left">ignored</td>
-<td align="left">required</td>
-<td align="left">forbidden</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">rows</td>
-<td align="left"></td>
-<td align="left">1, 2, 3, 4, 5, 6, 7, 8, 9, 10</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
 <td align="left"></td>
 <td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">1, 2, 3, 4, 5, 6, 7, 8, 9, 10</td>
 </tr>
 <tr class="even">
 <td align="left">arrayyesno</td>
 <td align="left">Array, yes/no/uncertain</td>
-<td align="left">array</td>
-<td align="left">C</td>
-<td align="left">arrays/yesnouncertain</td>
-<td align="left">ignored</td>
-<td align="left">required</td>
-<td align="left">forbidden</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">rows</td>
-<td align="left"></td>
-<td align="left">Y, N, U</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
 <td align="left"></td>
 <td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Y, N, U</td>
 </tr>
 <tr class="odd">
 <td align="left">arraytrend</td>
 <td align="left">Array, increase/same/decrease</td>
-<td align="left">array</td>
-<td align="left">E</td>
-<td align="left">arrays/increasesamedecrease</td>
-<td align="left">ignored</td>
-<td align="left">required</td>
-<td align="left">forbidden</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">rows</td>
-<td align="left"></td>
-<td align="left">I, S, D</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
 <td align="left"></td>
 <td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">I, S, D</td>
 </tr>
 <tr class="even">
 <td align="left">ranking</td>
 <td align="left">Ranking</td>
-<td align="left">choice</td>
-<td align="left">R</td>
-<td align="left">ranking</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">2</td>
-<td align="left">options</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">at_most_n</td>
-<td align="left">yes</td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">multitext</td>
 <td align="left">Multiple short texts</td>
-<td align="left">battery</td>
-<td align="left">Q</td>
-<td align="left">multipleshorttext</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">1</td>
 <td align="left"></td>
-<td align="left">options</td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">multinumeric</td>
 <td align="left">Multiple numeric inputs</td>
-<td align="left">battery</td>
-<td align="left">K</td>
-<td align="left">multiplenumeric</td>
-<td align="left">required</td>
-<td align="left">ignored</td>
-<td align="left">ignored</td>
+<td align="left">yes</td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">1</td>
 <td align="left"></td>
-<td align="left">options</td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">text</td>
 <td align="left">Long free text</td>
-<td align="left">scalar</td>
-<td align="left">T</td>
-<td align="left">longfreetext</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
@@ -535,20 +404,10 @@ accepts. <code>label</code> is the wording shown in review documents;
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">shorttext</td>
 <td align="left">Short free text</td>
-<td align="left">scalar</td>
-<td align="left">S</td>
-<td align="left">shortfreetext</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
@@ -556,20 +415,10 @@ accepts. <code>label</code> is the wording shown in review documents;
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">hugetext</td>
 <td align="left">Huge free text</td>
-<td align="left">scalar</td>
-<td align="left">U</td>
-<td align="left">hugefreetext</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
@@ -577,20 +426,10 @@ accepts. <code>label</code> is the wording shown in review documents;
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">numeric</td>
 <td align="left">Numeric input</td>
-<td align="left">scalar</td>
-<td align="left">N</td>
-<td align="left">numerical</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
@@ -598,20 +437,10 @@ accepts. <code>label</code> is the wording shown in review documents;
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">date</td>
 <td align="left">Date</td>
-<td align="left">scalar</td>
-<td align="left">D</td>
-<td align="left">date</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
@@ -619,87 +448,43 @@ accepts. <code>label</code> is the wording shown in review documents;
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">yesno</td>
 <td align="left">Yes/no</td>
-<td align="left">scalar</td>
-<td align="left">Y</td>
-<td align="left">yesno</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">scalar</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">Y, N</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">gender</td>
 <td align="left">Gender</td>
-<td align="left">scalar</td>
-<td align="left">G</td>
-<td align="left">gender</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">scalar</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">M, F</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="left">fivepoint</td>
 <td align="left">Five-point choice</td>
-<td align="left">scalar</td>
-<td align="left">5</td>
-<td align="left">5pointchoice</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">scalar</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
 <td align="left">1, 2, 3, 4, 5</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left">display</td>
 <td align="left">Text display</td>
-<td align="left">display</td>
-<td align="left">X</td>
-<td align="left">boilerplate</td>
-<td align="left">forbidden</td>
-<td align="left">forbidden</td>
-<td align="left">ignored</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
 <td align="left"></td>
@@ -710,6 +495,14 @@ accepts. <code>label</code> is the wording shown in review documents;
 </tr>
 </tbody>
 </table>
+<p>Internally, LimeSurvey identifies a question type by a <strong>single
+character</strong> stored in the survey file, and several of those
+characters are punctuation: <code>!</code> is the dropdown list,
+<code>1</code> a dual scale, <code>:</code> an array of numbers,
+<code>;</code> an array of texts. You never type those in the form — the
+package translates them — but they appear in the table returned by
+<code>lssdoc:::lss_kinds_reference()</code>, alongside the LimeSurvey
+theme name, for anyone comparing a form with a raw export.</p>
 <p>Defaults shared by all types:</p>
 <table class="table">
 <thead><tr class="header">
@@ -863,7 +656,7 @@ them in one pass instead of discovering them one by one.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/check_form_docx.html">check_form_docx</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc form check</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpiwWOm7/file1bf132860f4a.docx</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmp67uvIt/file1c3dad2a53.docx</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No problems found: the form reads.</span></span></code></pre></div>
 <p>Problems come in a few families, each with its own condition class so
 they can be caught programmatically:</p>
@@ -928,7 +721,7 @@ specification:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lss_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".lss"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/write_lss.html">write_lss</a></span><span class="op">(</span><span class="va">spec</span>, <span class="va">lss_file</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpiwWOm7/file1bf14e877cc2.lss</span> (20 questions, 2 groups, 1 quota).</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp67uvIt/file1c3d13d774d0.lss</span> (20 questions, 2 groups, 1 quota).</span></span></code></pre></div>
 <p>Import the file in LimeSurvey (<em>Surveys → Create → Import</em>).
 All declared languages are written, including the labels of “Other”
 options and every other localized attribute, which LimeSurvey silently
@@ -943,7 +736,7 @@ see.</p>
 <span><span class="fu"><a href="../reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="va">back</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc audit</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpiwWOm7/file1bf14e877cc2.lss</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmp67uvIt/file1c3d13d774d0.lss</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">Languages</span>: <span style="color: #0000BB;">"en"</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No anomalies detected.</span></span></code></pre></div>
 <p>Second, keep the filled form: it is the source of the questionnaire,
@@ -984,7 +777,7 @@ Export it, read it, convert it, render the form:</p>
 <span><span class="co">#&gt;   showsurveypolicynotice and 41 more have no place in a specification;</span></span>
 <span><span class="co">#&gt;   write_lss() re-emits its own defaults</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Review the result, or fix the survey in the Word authoring form.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpiwWOm7/file1bf16bbba1ee.docx</span> (43 questions, 6 groups, 1 quota).</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp67uvIt/file1c3d1c1cd377.docx</span> (43 questions, 6 groups, 1 quota).</span></span></code></pre></div>
 <p>The conversion is honest about its limits. Question types the form
 does not support and filters written in LimeSurvey’s full expression
 language cannot be expressed in the form: by default

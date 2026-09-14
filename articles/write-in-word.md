@@ -50,7 +50,7 @@ independently of the questionnaire’s own languages.
 
 template <- tempfile(fileext = ".docx")
 lss_template_docx(template, lang = "en")
-#> ✔ Wrote /tmp/RtmpiwWOm7/file1bf132860f4a.docx (21 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp67uvIt/file1c3dad2a53.docx (21 questions, 2 groups, 1 quota).
 ```
 
 The person who writes the questionnaire often does not use R at all. The
@@ -92,6 +92,15 @@ line — press Enter (or Shift+Enter) between them. Each entry is either
 automatically (1, 2, 3, …). Codes are variable values in the data file,
 so choose them deliberately when they matter.
 
+A line is split at its **first** `=`, and only when what precedes it is
+a single word: `1 = Fees = 0` is the code `1` with the label `Fees = 0`,
+and a label may contain as many further `=` as it likes. A sentence like
+`Salary = market rate` has spaces on the left, so it is not a code at
+all: the whole line is the label, and it is numbered automatically. If
+the left side has no spaces but is not a valid code — letters and digits
+only, at most 20 characters — the line is reported rather than quietly
+taken as a label.
+
     1 = Never
     2 = Sometimes
     3 = Often
@@ -124,35 +133,52 @@ single language, labels carry no suffix.
 
 ## 3. Question types
 
-The reference below is generated from the package’s own table of types,
-so it cannot disagree with what
-[`read_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/read_form_docx.md)
-accepts. `label` is the wording shown in review documents;
-`type`/`theme` are what LimeSurvey stores.
+Write the **Type** value of the first column in the Type row of a
+question block. The other columns say which rows that type accepts:
+whether it takes Options, Rows and Columns, how many options it needs at
+least, whether it can carry an “Other” option or an exclusive one, and
+the codes it already has built in (a yes/no question does not need
+options: its codes are `Y` and `N`).
 
-| kind | label | family | type | theme | options | rows | columns | min_options | answers_from | subquestions_from | relevance | implicit_codes | other | exclusive | max_answers | implicit_min_answers | quota_target | collects_response |
-|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
-| single | Single choice (radio) | choice | L | listradio | required | ignored | ignored | 2 | options |  | scalar |  | yes |  |  |  | yes | yes |
-| dropdown | Single choice (dropdown) | choice | ! | list_dropdown | required | ignored | ignored | 2 | options |  | scalar |  | yes |  |  |  | yes | yes |
-| singlecomment | Single choice with comment | choice | O | list_with_comment | required | ignored | ignored | 2 | options |  | scalar |  |  |  |  |  | yes | yes |
-| multiple | Multiple choice | choice | M | multiplechoice | required | ignored | ignored | 2 |  | options | count |  | yes | yes | below_n |  |  | yes |
-| array | Array (rows and columns) | array | F | arrays/array | ignored | required | required |  | columns | rows |  |  |  |  |  |  |  | yes |
-| array5 | Array, 5-point scale | array | A | arrays/5point | ignored | required | forbidden |  |  | rows |  | 1, 2, 3, 4, 5 |  |  |  |  |  | yes |
-| array10 | Array, 10-point scale | array | B | arrays/10point | ignored | required | forbidden |  |  | rows |  | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 |  |  |  |  |  | yes |
-| arrayyesno | Array, yes/no/uncertain | array | C | arrays/yesnouncertain | ignored | required | forbidden |  |  | rows |  | Y, N, U |  |  |  |  |  | yes |
-| arraytrend | Array, increase/same/decrease | array | E | arrays/increasesamedecrease | ignored | required | forbidden |  |  | rows |  | I, S, D |  |  |  |  |  | yes |
-| ranking | Ranking | choice | R | ranking | required | ignored | ignored | 2 | options |  |  |  |  |  | at_most_n | yes |  | yes |
-| multitext | Multiple short texts | battery | Q | multipleshorttext | required | ignored | ignored | 1 |  | options |  |  |  |  |  |  |  | yes |
-| multinumeric | Multiple numeric inputs | battery | K | multiplenumeric | required | ignored | ignored | 1 |  | options |  |  |  |  |  |  |  | yes |
-| text | Long free text | scalar | T | longfreetext | forbidden | forbidden | ignored |  |  |  |  |  |  |  |  |  |  | yes |
-| shorttext | Short free text | scalar | S | shortfreetext | forbidden | forbidden | ignored |  |  |  |  |  |  |  |  |  |  | yes |
-| hugetext | Huge free text | scalar | U | hugefreetext | forbidden | forbidden | ignored |  |  |  |  |  |  |  |  |  |  | yes |
-| numeric | Numeric input | scalar | N | numerical | forbidden | forbidden | ignored |  |  |  |  |  |  |  |  |  |  | yes |
-| date | Date | scalar | D | date | forbidden | forbidden | ignored |  |  |  |  |  |  |  |  |  |  | yes |
-| yesno | Yes/no | scalar | Y | yesno | forbidden | forbidden | ignored |  |  |  | scalar | Y, N |  |  |  |  | yes | yes |
-| gender | Gender | scalar | G | gender | forbidden | forbidden | ignored |  |  |  | scalar | M, F |  |  |  |  | yes | yes |
-| fivepoint | Five-point choice | scalar | 5 | 5pointchoice | forbidden | forbidden | ignored |  |  |  | scalar | 1, 2, 3, 4, 5 |  |  |  |  | yes | yes |
-| display | Text display | display | X | boilerplate | forbidden | forbidden | ignored |  |  |  |  |  |  |  |  |  |  |  |
+This table is generated from the package’s own table of types, so it
+cannot disagree with what
+[`read_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/read_form_docx.md)
+accepts.
+
+A blank cell means the type does not use that row: leave it out, and the
+blank form will not show it in the first place.
+
+| Type | Meaning | Options | Rows | Columns | Min. | Other | Exclusive | Built-in codes |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| single | Single choice (radio) | yes |  |  | 2 | yes |  |  |
+| dropdown | Single choice (dropdown) | yes |  |  | 2 | yes |  |  |
+| singlecomment | Single choice with comment | yes |  |  | 2 |  |  |  |
+| multiple | Multiple choice | yes |  |  | 2 | yes | yes |  |
+| array | Array (rows and columns) |  | yes | yes |  |  |  |  |
+| array5 | Array, 5-point scale |  | yes |  |  |  |  | 1, 2, 3, 4, 5 |
+| array10 | Array, 10-point scale |  | yes |  |  |  |  | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 |
+| arrayyesno | Array, yes/no/uncertain |  | yes |  |  |  |  | Y, N, U |
+| arraytrend | Array, increase/same/decrease |  | yes |  |  |  |  | I, S, D |
+| ranking | Ranking | yes |  |  | 2 |  |  |  |
+| multitext | Multiple short texts | yes |  |  | 1 |  |  |  |
+| multinumeric | Multiple numeric inputs | yes |  |  | 1 |  |  |  |
+| text | Long free text |  |  |  |  |  |  |  |
+| shorttext | Short free text |  |  |  |  |  |  |  |
+| hugetext | Huge free text |  |  |  |  |  |  |  |
+| numeric | Numeric input |  |  |  |  |  |  |  |
+| date | Date |  |  |  |  |  |  |  |
+| yesno | Yes/no |  |  |  |  |  |  | Y, N |
+| gender | Gender |  |  |  |  |  |  | M, F |
+| fivepoint | Five-point choice |  |  |  |  |  |  | 1, 2, 3, 4, 5 |
+| display | Text display |  |  |  |  |  |  |  |
+
+Internally, LimeSurvey identifies a question type by a **single
+character** stored in the survey file, and several of those characters
+are punctuation: `!` is the dropdown list, `1` a dual scale, `:` an
+array of numbers, `;` an array of texts. You never type those in the
+form — the package translates them — but they appear in the table
+returned by `lssdoc:::lss_kinds_reference()`, alongside the LimeSurvey
+theme name, for anyone comparing a form with a raw export.
 
 Defaults shared by all types:
 
@@ -213,7 +239,7 @@ one.
 check_form_docx(template)
 #> 
 #> ── lssdoc form check ───────────────────────────────────────────────────────────
-#> File: /tmp/RtmpiwWOm7/file1bf132860f4a.docx
+#> File: /tmp/Rtmp67uvIt/file1c3dad2a53.docx
 #> ✔ No problems found: the form reads.
 ```
 
@@ -248,7 +274,7 @@ spec
 
 lss_file <- tempfile(fileext = ".lss")
 write_lss(spec, lss_file)
-#> ✔ Wrote /tmp/RtmpiwWOm7/file1bf14e877cc2.lss (20 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp67uvIt/file1c3d13d774d0.lss (20 questions, 2 groups, 1 quota).
 ```
 
 Import the file in LimeSurvey (*Surveys → Create → Import*). All
@@ -270,7 +296,7 @@ back <- read_lss(lss_file)
 audit_lss(back)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpiwWOm7/file1bf14e877cc2.lss
+#> File: /tmp/Rtmp67uvIt/file1c3d13d774d0.lss
 #> Languages: "en"
 #> ✔ No anomalies detected.
 ```
@@ -314,7 +340,7 @@ write_form_docx(lss, form, lang = "en", strict = FALSE)
 #>   showsurveypolicynotice and 41 more have no place in a specification;
 #>   write_lss() re-emits its own defaults
 #> ℹ Review the result, or fix the survey in the Word authoring form.
-#> ✔ Wrote /tmp/RtmpiwWOm7/file1bf16bbba1ee.docx (43 questions, 6 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp67uvIt/file1c3d1c1cd377.docx (43 questions, 6 groups, 1 quota).
 ```
 
 The conversion is honest about its limits. Question types the form does
