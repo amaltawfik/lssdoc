@@ -1179,10 +1179,11 @@ conv_warn_lossy <- function(res) {
 #'   lists the base one last.
 #'
 #' @examples
-#' demo <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
-#' # The demo survey uses LimeSurvey types lssdoc does not author yet, so it
-#' # converts only in the permissive mode.
-#' spec <- suppressWarnings(as_lss_spec(read_lss(demo), strict = FALSE))
+#' # The bundled flawed survey uses LimeSurvey question types lssdoc does
+#' # not author yet, and a filter it cannot express, so it converts only in
+#' # the permissive mode -- which names everything it had to drop.
+#' flawed <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
+#' spec <- suppressWarnings(as_lss_spec(read_lss(flawed), strict = FALSE))
 #' spec
 #' @seealso [read_lss()], [lss_spec()], [write_form_docx()], [write_lss()].
 #' @export

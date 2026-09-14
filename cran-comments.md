@@ -61,6 +61,7 @@ declared languages. No new dependency: reading a form uses only
   r-devel-linux-x86_64-fedora-gcc, well inside the 2026-10-05 deadline.
   The authoring feature was already finished and tested when your e-mail
   arrived, so it travels with the correction rather than delaying it.
+
 * If flagged, "LimeSurvey" (the survey software the package reads and
   writes) and "methodologists" (a correctly spelled English term) in the
   DESCRIPTION are intentional.
