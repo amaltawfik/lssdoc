@@ -43,7 +43,10 @@
 #'   separated by `;`.
 #' * Relevance equations are translated from the minimal syntax of
 #'   [lss_spec()] into ExpressionScript (`code.NAOK == "1"`).
-#' * Quotas are emitted with limit zero and the terminate action.
+#' * Quotas are emitted with the terminate action and the quota's `limit`
+#'   (zero unless the spec gives one).
+#' * A group's optional `description` is emitted into
+#'   `group_l10ns.description` (empty when the spec gives none).
 #' * A mandatory or capped ranking also receives `min_answers = 1`,
 #'   overridable through the question's `attributes`.
 #'
@@ -194,7 +197,7 @@ lss_emitter <- function(spec, sid, settings) {
       randomization_group = "", grelevance = "1")
     st$group_l10ns[[length(st$group_l10ns) + 1L]] <- list(
       id = st$lid, gid = st$gid, group_name = loc_text(g$title, lang),
-      description = "",
+      description = loc_text(g$description, lang),
       language = lang, sid = sid, group_order = gi,
       randomization_group = "", grelevance = "1")
     st$lid <- st$lid + 1L
@@ -329,7 +332,8 @@ lss_emitter <- function(spec, sid, settings) {
       qu <- spec$quotas[[k]]
       quota_name <- loc_text(qu$name, lang, default = NULL) %||% qu$question
       quota[[k]] <- list(id = k, sid = sid, name = quota_name,
-                         qlimit = 0L, action = 1L, active = 1L,
+                         qlimit = as.integer(qu$limit %||% 0L),
+                         action = 1L, active = 1L,
                          autoload_url = 0L)
       members[[k]] <- list(id = k, sid = sid, qid = qid_of[[qu$question]],
                            quota_id = k, code = qu$code)

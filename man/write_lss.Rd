@@ -55,7 +55,10 @@ option is displayed; \code{exclude_all_others} accepts several codes
 separated by \verb{;}.
 \item Relevance equations are translated from the minimal syntax of
 \code{\link[=lss_spec]{lss_spec()}} into ExpressionScript (\code{code.NAOK == "1"}).
-\item Quotas are emitted with limit zero and the terminate action.
+\item Quotas are emitted with the terminate action and the quota's \code{limit}
+(zero unless the spec gives one).
+\item A group's optional \code{description} is emitted into
+\code{group_l10ns.description} (empty when the spec gives none).
 \item A mandatory or capped ranking also receives \code{min_answers = 1},
 overridable through the question's \code{attributes}.
 }

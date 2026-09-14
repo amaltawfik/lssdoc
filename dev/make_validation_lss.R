@@ -181,3 +181,18 @@ cat(sprintf(
   normalizePath(out, winslash = "/"), file.size(out), length(kinds),
   length(spec$groups), length(unique(kinds)), length(spec$quotas), lss$db_version
 ))
+
+# Eyeball fixture for the 0.3.0 Word authoring form: the same validation spec
+# rendered as a form document. Written only when the rendering Suggests are
+# installed, so the .lss part of this script never depends on them. The file
+# is git-ignored by the repository-wide `*.docx` pattern.
+if (requireNamespace("officer", quietly = TRUE) &&
+    requireNamespace("flextable", quietly = TRUE)) {
+  form_out <- file.path(out_dir, "lssdoc_0.3.0_form.docx")
+  write_form_docx(spec, form_out, lang = "fr")
+  cat(sprintf("OK  %s\n    %d bytes | form contract version %d\n",
+              normalizePath(form_out, winslash = "/"), file.size(form_out),
+              LSS_FORM_VERSION))
+} else {
+  cat("SKIP form document: officer / flextable not installed\n")
+}

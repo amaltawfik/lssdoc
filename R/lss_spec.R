@@ -12,8 +12,9 @@
 #'
 #' @param title Character. Survey title shown to respondents.
 #' @param groups List of groups. Each group is a list with `title`
-#'   (character) and `questions` (list of question specifications, see
-#'   Details).
+#'   (character), optionally `description` (character, a localizable
+#'   introduction shown above the group), and `questions` (list of
+#'   question specifications, see Details).
 #' @param languages Character vector of language codes, the primary
 #'   language first (e.g. `c("fr", "en")`). Defaults to `"fr"`. See the
 #'   *Languages* section.
@@ -27,8 +28,9 @@
 #' @param quotas List of end-of-survey quotas. Each element is a list with
 #'   `question` (code of a single-choice question), `code` (the answer
 #'   code that triggers the quota), `message` (text shown to the
-#'   respondent) and optionally `name`. A quota emitted by [write_lss()]
-#'   has limit zero and terminates the survey -- the LimeSurvey mechanism
+#'   respondent) and optionally `name` and `limit` (a whole number at or
+#'   above zero; omitted, it stays the historical zero). A quota emitted
+#'   by [write_lss()] terminates the survey -- the LimeSurvey mechanism
 #'   for "if the person declines, end here".
 #'
 #' @return An object of class `lss_spec`: the validated specification with
@@ -624,6 +626,8 @@ spec_normalize <- function(spec) {
   spec$groups <- lapply(seq_along(spec$groups), function(gi) {
     g <- spec$groups[[gi]]
     g$title <- spec_localize(g$title, langs, paste0("title of group ", gi))
+    g$description <- spec_localize(g$description, langs,
+                                   paste0("description of group ", gi))
     g$questions <- lapply(g$questions, function(q) {
       label <- paste0("question ", dQuote(esc(q$code %||% ""), FALSE))
       q$mandatory <- isTRUE(q$mandatory %||% lss_spec_defaults$mandatory)
@@ -644,10 +648,34 @@ spec_normalize <- function(spec) {
     qu <- spec$quotas[[k]]
     qu$name <- spec_localize(qu$name, langs, paste0("name of quota ", k))
     qu$message <- spec_localize(qu$message, langs, paste0("message of quota ", k))
+    qu$limit <- normalize_quota_limit(qu$limit, k)
     qu
   })
 
   spec
+}
+
+#' Normalize the optional `limit` of a quota
+#'
+#' `NULL` -- not `0` -- when the author leaves it out, so `write_lss()` keeps
+#' emitting the historical `qlimit = 0` and the form template can tell a
+#' declared zero from an absent field. Anything else must be a single whole
+#' number at or above zero: LimeSurvey stores `qlimit` as an unsigned
+#' integer and silently clamps what it cannot read.
+#' @keywords internal
+#' @noRd
+normalize_quota_limit <- function(limit, k) {
+  if (is.null(limit)) return(NULL)
+  n <- suppressWarnings(as.integer(limit))
+  if (length(limit) != 1L || is.na(n) || n < 0L ||
+      (is.numeric(limit) && limit != trunc(limit))) {
+    lssdoc_abort(
+      paste0("The limit of quota ", k,
+             " must be a single whole number at or above zero."),
+      class = "lssdoc_bad_spec"
+    )
+  }
+  n
 }
 
 normalize_options <- function(options, languages, field) {

@@ -850,3 +850,95 @@ test_that("the unknown-kind error lists every authorable kind", {
       questions = list(list(code = "q1", kind = "wat", text = "Texte ?")))))
   )
 })
+
+# ---- 0.3.0 model additions: group description and quota limit ---------------
+
+test_that("a group takes an optional localized description", {
+  spec <- lss_spec(
+    title = "T", languages = "fr",
+    groups = list(list(
+      title = "G", description = "Une introduction au groupe.",
+      questions = list(list(code = "q1", kind = "yesno", text = "Oui ?")))))
+  # canonical form: a named list over the declared languages, like every
+  # other localizable text
+  expect_identical(spec$groups[[1L]]$description,
+                   list(fr = "Une introduction au groupe."))
+
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  suppressMessages(write_lss(spec, out))
+  x <- xml2::read_xml(out)
+  desc <- xml2::xml_text(xml2::xml_find_all(
+    x, "//group_l10ns/rows/row/description"))
+  expect_identical(desc, "Une introduction au groupe.")
+})
+
+test_that("a group without a description emits an empty one, as before", {
+  spec <- lss_spec(
+    title = "T", languages = "fr",
+    groups = list(list(
+      title = "G",
+      questions = list(list(code = "q1", kind = "yesno", text = "Oui ?")))))
+  expect_null(spec$groups[[1L]]$description)
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  suppressMessages(write_lss(spec, out))
+  x <- xml2::read_xml(out)
+  expect_identical(
+    xml2::xml_text(xml2::xml_find_all(x, "//group_l10ns/rows/row/description")),
+    "")
+})
+
+test_that("a multi-language group description obeys the translation rule", {
+  expect_error(
+    lss_spec(
+      title = c(fr = "T", en = "T"), languages = c("fr", "en"),
+      groups = list(list(
+        title = c(fr = "G", en = "G"), description = c(fr = "Intro."),
+        questions = list(list(code = "q1", kind = "yesno",
+                              text = c(fr = "Oui ?", en = "Yes?")))))),
+    class = "lssdoc_bad_spec"
+  )
+})
+
+quota_spec <- function(limit) {
+  lss_spec(
+    title = "T", languages = "fr",
+    groups = list(list(title = "G", questions = list(
+      list(code = "q1", kind = "single", text = "Oui ou non ?",
+           options = list(list(text = "Oui"), list(text = "Non")))))),
+    quotas = list(c(list(question = "q1", code = "2", message = "Fin."),
+                    if (is.null(limit)) NULL else list(limit = limit))))
+}
+
+test_that("a quota takes an optional whole-number limit, emitted as qlimit", {
+  spec <- quota_spec(250L)
+  expect_identical(spec$quotas[[1L]]$limit, 250L)
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  suppressMessages(write_lss(spec, out))
+  x <- xml2::read_xml(out)
+  expect_identical(
+    xml2::xml_text(xml2::xml_find_all(x, "//quota/rows/row/qlimit")), "250")
+
+  # a numeric that happens to be whole is accepted and stored as an integer
+  expect_identical(quota_spec(12)$quotas[[1L]]$limit, 12L)
+})
+
+test_that("a quota without a limit keeps the historical qlimit of zero", {
+  spec <- quota_spec(NULL)
+  expect_null(spec$quotas[[1L]]$limit)
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  suppressMessages(write_lss(spec, out))
+  x <- xml2::read_xml(out)
+  expect_identical(
+    xml2::xml_text(xml2::xml_find_all(x, "//quota/rows/row/qlimit")), "0")
+})
+
+test_that("an unusable quota limit is refused", {
+  expect_error(quota_spec(-1L), class = "lssdoc_bad_spec")
+  expect_error(quota_spec("beaucoup"), class = "lssdoc_bad_spec")
+  expect_error(quota_spec(2.5), class = "lssdoc_bad_spec")
+  expect_error(quota_spec(c(1L, 2L)), class = "lssdoc_bad_spec")
+})

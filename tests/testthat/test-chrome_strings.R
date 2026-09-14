@@ -29,7 +29,20 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "audit_col_severity", "audit_col_check", "audit_col_location",
     "audit_col_language", "audit_col_message",
     "audit_severity_error", "audit_severity_warning", "audit_severity_note",
-    "orcid_label"
+    "orcid_label",
+    # Form template (0.3.0)
+    "form_block_survey", "form_block_group", "form_block_question",
+    "form_block_quota",
+    "form_title", "form_name", "form_code", "form_wording",
+    "form_rows", "form_columns",
+    "form_min_answers", "form_max_answers", "form_action", "form_message",
+    "form_other_position", "form_other_position_end",
+    "form_other_position_beginning", "form_other_position_after_fmt",
+    "form_other",
+    "form_yes_no_hint", "form_hint_type", "form_hint_languages",
+    "form_hint_filter", "form_hint_options", "form_hint_rows",
+    "form_hint_columns", "form_hint_exclusive", "form_hint_answers",
+    "form_hint_other_position", "form_hint_limit", "form_hint_condition"
   )
   for (lang in c("en", "fr", "de", "es", "it")) {
     pack <- lss_chrome_strings(lang)
@@ -139,4 +152,36 @@ test_that("chrome_lang = 'en' forces English chrome even with FR/DE content", {
   expect_true(grepl("Subquestions", txt_en))
   expect_false(grepl("Sous-questions", txt_en))
   expect_false(grepl("Table des matières", txt_en))
+})
+
+test_that("the form block titles are distinct within each chrome language", {
+  # `read_form_docx()` tells a block kind from its title row, so two block
+  # words that collide in one language would make a document unparsable.
+  for (lang in c("en", "fr", "de", "es", "it")) {
+    pack <- lss_chrome_strings(lang)
+    words <- unlist(pack[c("form_block_survey", "form_block_group",
+                           "form_block_question", "form_block_quota")])
+    expect_identical(anyDuplicated(tolower(words)), 0L, info = lang)
+    # and no field label may collide with one of them: `form_wording` exists
+    # precisely because "Question" is both the block word and the review
+    # label of the wording row in English and in French.
+    fields <- unlist(pack[c(
+      "form_title", "form_name", "form_wording", "form_rows", "form_columns",
+      "form_min_answers", "form_max_answers", "form_action", "form_message",
+      "form_other_position", "meta_type", "meta_mandatory", "meta_filter",
+      "item_help", "item_options", "item_exclusive", "cover_languages",
+      "welcome_text_title", "end_text_title", "description_title",
+      "quota_limit", "quota_condition")])
+    expect_identical(intersect(tolower(fields), tolower(words)), character(0),
+                     info = lang)
+  }
+})
+
+test_that("form_other_position_after_fmt carries exactly one %s", {
+  for (lang in c("en", "fr", "de", "es", "it")) {
+    fmt <- lss_chrome_strings(lang)$form_other_position_after_fmt
+    expect_identical(lengths(regmatches(fmt, gregexpr("%s", fmt, fixed = TRUE))),
+                     1L, info = lang)
+    expect_identical(sprintf(fmt, "3"), sub("%s", "3", fmt, fixed = TRUE))
+  }
 })

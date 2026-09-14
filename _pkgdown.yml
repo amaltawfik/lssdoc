@@ -97,10 +97,15 @@ reference:
       is validated in depth at construction time, because
       LimeSurvey imports silently and only surfaces mistakes once
       respondents hit them. The written file round-trips through
-      `read_lss()` and `audit_lss()`.
+      `read_lss()` and `audit_lss()`. The same specification can
+      also be rendered as a Word authoring form -- one key/value
+      table per block, meant to be filled in and handed back --
+      either from an existing spec or as a blank template.
     contents:
       - lss_spec
       - write_lss
+      - write_form_docx
+      - lss_template_docx
   - title: Package overview
     contents:
       - lssdoc-package

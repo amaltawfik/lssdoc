@@ -18,8 +18,9 @@ lss_spec(
 \item{title}{Character. Survey title shown to respondents.}
 
 \item{groups}{List of groups. Each group is a list with \code{title}
-(character) and \code{questions} (list of question specifications, see
-Details).}
+(character), optionally \code{description} (character, a localizable
+introduction shown above the group), and \code{questions} (list of
+question specifications, see Details).}
 
 \item{languages}{Character vector of language codes, the primary
 language first (e.g. \code{c("fr", "en")}). Defaults to \code{"fr"}. See the
@@ -38,8 +39,9 @@ string starting with \code{<} used verbatim as HTML. Optional.}
 \item{quotas}{List of end-of-survey quotas. Each element is a list with
 \code{question} (code of a single-choice question), \code{code} (the answer
 code that triggers the quota), \code{message} (text shown to the
-respondent) and optionally \code{name}. A quota emitted by \code{\link[=write_lss]{write_lss()}}
-has limit zero and terminates the survey -- the LimeSurvey mechanism
+respondent) and optionally \code{name} and \code{limit} (a whole number at or
+above zero; omitted, it stays the historical zero). A quota emitted
+by \code{\link[=write_lss]{write_lss()}} terminates the survey -- the LimeSurvey mechanism
 for "if the person declines, end here".}
 }
 \value{
