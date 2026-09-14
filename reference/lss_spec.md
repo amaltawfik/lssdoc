@@ -126,19 +126,25 @@ Each question is a list with fields:
   above"-type exclusive options, which the default position puts it
   after.
 
-- `attributes` – optional named list of extra global question attributes
-  passed through verbatim (e.g. `display_columns`).
+- `attributes` – optional named list of extra question attributes passed
+  through verbatim (e.g. `display_columns`). A name LimeSurvey stores
+  per language (`prefix`, `suffix`, `choice_title`, `printable_help`,
+  ...) is emitted once per declared language by
+  [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md),
+  and may be given either as one string for every language or keyed by
+  language code.
 
 ## Languages
 
 `languages` declares the survey languages, the primary one first;
-`languages[1]` is the language
+`languages[1]` is the base language
 [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
-emits. Every localizable text – survey title, welcome and end texts,
-group titles, question texts and help, option, row and column labels,
-the "other" label, quota names and messages – accepts either a plain
-string (read as the primary language) or a named character vector or
-list keyed by language code:
+emits, and every other declared language is written alongside it. Every
+localizable text – survey title, welcome and end texts, group titles,
+question texts and help, option, row and column labels, the "other"
+label, quota names and messages – accepts either a plain string (read as
+the primary language) or a named character vector or list keyed by
+language code:
 
     lss_spec(
       title = c(fr = "Enquete", en = "Survey"),
@@ -155,12 +161,11 @@ languages) and is strict: as soon as several languages are declared,
 every text must supply every one of them. A missing translation is
 precisely what
 [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
-flags when reading a `.lss`, so the spec refuses to author one. In this
-version
+flags when reading a `.lss`, so the spec refuses to author one.
 [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
-emits the primary language only, and errors with class
-`lssdoc_unsupported_multilang` on a spec that declares more than one;
-multi-language emission is planned for 0.3.0.
+writes every declared language: `languages[1]` becomes the survey's base
+language and the others its additional languages, each localized section
+carrying one row per language.
 
 ## See also
 

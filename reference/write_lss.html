@@ -75,11 +75,16 @@ matters.</p></dd>
 
 
 <dt id="arg-settings">settings<a class="anchor" aria-label="anchor" href="#arg-settings"></a></dt>
-<dd><p>Named list of <code>surveys</code>-table fields overriding the
-built-in defaults (e.g. <code>list(anonymized = "Y", showprogress = "Y")</code>).
-The defaults ship with the package and come from a real LimeSurvey 6
-export, scrubbed – see <code>lss_default_surveys_fields</code> in the sources
-for the rationale.</p></dd>
+<dd><p>Named list of survey fields overriding the built-in
+defaults (e.g. <code>list(anonymized = "Y", showprogress = "Y")</code>). A name
+belonging to the <code>surveys</code> table takes a single string; a name
+belonging to the per-language <code>surveys_languagesettings</code> table
+(<code>surveyls_dateformat</code>, <code>surveyls_numberformat</code>,
+<code>surveyls_description</code>, the e-mail templates, ...) takes either a
+single string applied to every language or a list or vector keyed by
+language code – see the <em>Languages</em> section. The defaults ship with
+the package and come from a real LimeSurvey 6 export, scrubbed – see
+<code>lss_default_surveys_fields</code> in the sources for the rationale.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -122,13 +127,40 @@ overridable through the question's <code>attributes</code>.</p></li>
     <h2 id="languages">Languages<a class="anchor" aria-label="anchor" href="#languages"></a></h2>
 
 
-<p>The spec model is multilingual (<code><a href="lss_spec.html">lss_spec()</a></code> accepts <code>languages</code> and
-per-language texts); the emitter is not yet. This version writes the
-primary language – <code>languages[1]</code> – only, exactly as it did when a
-spec could hold a single language. A spec declaring more than one
-language raises a classed error (<code>lssdoc_unsupported_multilang</code>) rather
-than silently dropping the translations; multi-language emission is
-planned for 0.3.0.</p>
+<p>Every language the spec declares is written. The <code>surveys</code> row carries
+the base language – <code>languages[1]</code> – as <code>language</code> and the others,
+space-separated, as <code>additional_languages</code>. Every localized section
+(<code>surveys_languagesettings</code>, <code>group_l10ns</code>, <code>question_l10ns</code> for
+questions and subquestions alike, <code>answer_l10ns</code>,
+<code>quota_languagesettings</code>) receives one row per language, grouped by
+entity as a real LimeSurvey export groups them. <code><a href="lss_spec.html">lss_spec()</a></code> already
+requires every declared language for every text, so no translation can
+go missing at emission.</p>
+<p>The <code>&lt;languages&gt;</code> element lists the additional languages first and the
+base language last, the order LimeSurvey itself writes. It is only a
+membership set: read the base language from <code>read_lss()$base_language</code>,
+never from <code>read_lss()$languages[1]</code>.</p>
+<p>Localized question attributes – <code>other_replace_text</code>, <code>prefix</code>,
+<code>suffix</code>, <code>choice_title</code>, <code>rank_title</code>, <code>printable_help</code>, ... – are
+emitted once per language, each row carrying its language code; without
+it LimeSurvey silently ignores the attribute and shows its own default
+wording. An attribute passed through <code>question$attributes</code> under one of
+those names is treated the same way: a plain string is repeated in every
+language, a value keyed by language code is resolved language by
+language (<code>attributes = list(prefix = "CHF")</code> or
+<code>list(choice_title = c(fr = "Choix", en = "Choice"))</code>). Every other
+attribute stays language-less, as LimeSurvey stores it.</p>
+<p>Per-language survey settings work the same way: <code>settings</code> accepts a
+single value repeated in every <code>surveys_languagesettings</code> row, or a list
+keyed by language code for the fields LimeSurvey genuinely varies –
+<code>list(surveyls_dateformat = c(fr = "5", en = "2"))</code> gives the French
+respondent a <code>dd.mm.yyyy</code> date picker and the English one <code>mm/dd/yyyy</code>.
+A declared language missing from such a value is an error, not a silent
+fallback.</p>
+<p>A quota is localized through <code>quotals_name</code> and <code>quotals_message</code>, one
+row per language. The administration-side label <code>quota.name</code> has a
+single column in LimeSurvey and therefore keeps the primary-language
+wording.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -147,11 +179,11 @@ planned for 0.3.0.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".lss"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">write_lss</span><span class="op">(</span><span class="va">spec</span>, <span class="va">out</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpxbRXCv/file1a0f27341ef4.lss</span> (1 question, 1 group, 0 quotas).</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp5dF0hZ/file195192ca464.lss</span> (1 question, 1 group, 0 quotas).</span>
 <span class="r-in"><span><span class="fu"><a href="audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc audit</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────────────────</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpxbRXCv/file1a0f27341ef4.lss</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmp5dF0hZ/file195192ca464.lss</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">Languages</span>: <span style="color: #0000BB;">"fr"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> No anomalies detected.</span>
 </code></pre></div>

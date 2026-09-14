@@ -69,9 +69,9 @@ if (requireNamespace("officer", quietly = TRUE) &&
   lss_template_docx(form, lang = "fr", kinds = c("single", "text"))
   check_form_docx(form)
 }
-#> ✔ Wrote /tmp/RtmpxbRXCv/file1a0f5473d5c3.docx (2 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp5dF0hZ/file1951397a696e.docx (2 questions, 2 groups, 1 quota).
 #> 
 #> ── lssdoc form check ───────────────────────────────────────────────────────────
-#> File: /tmp/RtmpxbRXCv/file1a0f5473d5c3.docx
+#> File: /tmp/Rtmp5dF0hZ/file1951397a696e.docx
 #> ✔ No problems found: the form reads.
 ```

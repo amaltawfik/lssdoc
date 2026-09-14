@@ -164,15 +164,20 @@ together with <code>other_position_code</code>, the code of the option AFTER
 which "other" appears. In practice "other" usually belongs before
 the "none of the above"-type exclusive options, which the default
 position puts it after.</p></li>
-<li><p><code>attributes</code> – optional named list of extra global question
-attributes passed through verbatim (e.g. <code>display_columns</code>).</p></li>
+<li><p><code>attributes</code> – optional named list of extra question attributes
+passed through verbatim (e.g. <code>display_columns</code>). A name LimeSurvey
+stores per language (<code>prefix</code>, <code>suffix</code>, <code>choice_title</code>,
+<code>printable_help</code>, ...) is emitted once per declared language by
+<code><a href="write_lss.html">write_lss()</a></code>, and may be given either as one string for every
+language or keyed by language code.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="languages">Languages<a class="anchor" aria-label="anchor" href="#languages"></a></h2>
 
 
 <p><code>languages</code> declares the survey languages, the primary one first;
-<code>languages[1]</code> is the language <code><a href="write_lss.html">write_lss()</a></code> emits. Every localizable
+<code>languages[1]</code> is the base language <code><a href="write_lss.html">write_lss()</a></code> emits, and every other
+declared language is written alongside it. Every localizable
 text – survey title, welcome and end texts, group titles, question
 texts and help, option, row and column labels, the "other" label, quota
 names and messages – accepts either a plain string (read as the
@@ -191,10 +196,10 @@ code:</p>
 languages) and is strict: as soon as several languages are declared,
 every text must supply every one of them. A missing translation is
 precisely what <code><a href="audit_lss.html">audit_lss()</a></code> flags when reading a <code>.lss</code>, so the spec
-refuses to author one. In this version <code><a href="write_lss.html">write_lss()</a></code> emits the primary
-language only, and errors with class <code>lssdoc_unsupported_multilang</code> on
-a spec that declares more than one; multi-language emission is planned
-for 0.3.0.</p>
+refuses to author one. <code><a href="write_lss.html">write_lss()</a></code> writes every declared language:
+<code>languages[1]</code> becomes the survey's base language and the others its
+additional languages, each localized section carrying one row per
+language.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
