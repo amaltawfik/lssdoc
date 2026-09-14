@@ -80,4 +80,5 @@ in LimeSurvey can be edited through the same form.
 
 - [`lssdoc`](https://amaltawfik.github.io/lssdoc/reference/lssdoc-package.md)
   [`lssdoc-package`](https://amaltawfik.github.io/lssdoc/reference/lssdoc-package.md)
-  : lssdoc: Render, Audit and Write 'LimeSurvey' '.lss' Questionnaires
+  : lssdoc: 'LimeSurvey' '.lss' Questionnaires to and from Word
+  Documents

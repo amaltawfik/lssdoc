@@ -125,7 +125,7 @@ of the questionnaire’s own languages.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".docx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/lss_template_docx.html">lss_template_docx</a></span><span class="op">(</span><span class="va">template</span>, lang <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp0zKLM4/file1c6257d3daea.docx</span> (21 questions, 2 groups, 1 quota).</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpUwHkMM/file1b1e7e53935b.docx</span> (21 questions, 2 groups, 1 quota).</span></span></code></pre></div>
 <p>The person who writes the questionnaire often does not use R at all.
 The same blank forms can be downloaded from the <a href="https://amaltawfik.github.io/lssdoc/">package website</a>: a short
 one to fill in, in each of the five interface languages, and a longer
@@ -656,7 +656,7 @@ them in one pass instead of discovering them one by one.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/check_form_docx.html">check_form_docx</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc form check</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmp0zKLM4/file1c6257d3daea.docx</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpUwHkMM/file1b1e7e53935b.docx</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No problems found: the form reads.</span></span></code></pre></div>
 <p>Problems come in a few families, each with its own condition class so
 they can be caught programmatically:</p>
@@ -721,7 +721,7 @@ specification:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lss_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".lss"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/write_lss.html">write_lss</a></span><span class="op">(</span><span class="va">spec</span>, <span class="va">lss_file</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp0zKLM4/file1c62306f30bc.lss</span> (20 questions, 2 groups, 1 quota).</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpUwHkMM/file1b1e5ec24723.lss</span> (20 questions, 2 groups, 1 quota).</span></span></code></pre></div>
 <p>Import the file in LimeSurvey (<em>Surveys → Create → Import</em>).
 All declared languages are written, including the labels of “Other”
 options and every other localized attribute, which LimeSurvey silently
@@ -736,7 +736,7 @@ see.</p>
 <span><span class="fu"><a href="../reference/audit_lss.html">audit_lss</a></span><span class="op">(</span><span class="va">back</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">lssdoc audit</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/Rtmp0zKLM4/file1c62306f30bc.lss</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">File</span>: <span style="color: #0000BB;">/tmp/RtmpUwHkMM/file1b1e5ec24723.lss</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">Languages</span>: <span style="color: #0000BB;">"en"</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No anomalies detected.</span></span></code></pre></div>
 <p>Second, keep the filled form: it is the source of the questionnaire,
@@ -777,7 +777,7 @@ Export it, read it, convert it, render the form:</p>
 <span><span class="co">#&gt;   showsurveypolicynotice and 41 more have no place in a specification;</span></span>
 <span><span class="co">#&gt;   write_lss() re-emits its own defaults</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Review the result, or fix the survey in the Word authoring form.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/Rtmp0zKLM4/file1c627b573dc9.docx</span> (43 questions, 6 groups, 1 quota).</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Wrote <span style="color: #0000BB;">/tmp/RtmpUwHkMM/file1b1e4c3d66a4.docx</span> (43 questions, 6 groups, 1 quota).</span></span></code></pre></div>
 <p>The conversion is honest about its limits. Question types the form
 does not support and filters written in LimeSurvey’s full expression
 language cannot be expressed in the form: by default

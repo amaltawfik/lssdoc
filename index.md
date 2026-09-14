@@ -327,8 +327,8 @@ arguments accept any string to override.
 Run `citation("lssdoc")` for the up-to-date citation, or cite as:
 
 ``` R
-Tawfik A (2026). _lssdoc: Render, Audit and Write 'LimeSurvey' '.lss'
-Questionnaires_. doi:10.32614/CRAN.package.lssdoc
+Tawfik A (2026). _lssdoc: 'LimeSurvey' '.lss' Questionnaires to and
+from Word Documents_. doi:10.32614/CRAN.package.lssdoc
 <https://doi.org/10.32614/CRAN.package.lssdoc>. R package version
 0.3.0, <https://CRAN.R-project.org/package=lssdoc>.
 ```

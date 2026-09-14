@@ -10,13 +10,13 @@
 Source:
 [`inst/CITATION`](https://github.com/amaltawfik/lssdoc/blob/main/inst/CITATION)
 
-Tawfik A (2026). *lssdoc: Render, Audit and Write 'LimeSurvey' '.lss'
-Questionnaires*.
+Tawfik A (2026). *lssdoc: 'LimeSurvey' '.lss' Questionnaires to and from
+Word Documents*.
 [doi:10.32614/CRAN.package.lssdoc](https://doi.org/10.32614/CRAN.package.lssdoc).
 R package version 0.3.0, <https://CRAN.R-project.org/package=lssdoc>.
 
     @Manual{,
-      title = {{lssdoc}: Render, Audit and Write 'LimeSurvey' '.lss' Questionnaires},
+      title = {{lssdoc}: 'LimeSurvey' '.lss' Questionnaires to and from Word Documents},
       author = {Amal Tawfik},
       year = {2026},
       note = {R package version 0.3.0},

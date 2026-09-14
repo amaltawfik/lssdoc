@@ -1,4 +1,4 @@
-# lssdoc: Render, Audit and Write 'LimeSurvey' '.lss' Questionnaires
+# lssdoc: 'LimeSurvey' '.lss' Questionnaires to and from Word Documents
 
 Render 'LimeSurvey' '.lss' survey exports as questionnaire documents in
 Word ('.docx') or PDF, displaying one to four languages side by side
