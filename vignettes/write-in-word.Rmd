@@ -96,6 +96,15 @@ line — press Enter (or Shift+Enter) between them. Each entry is either
 automatically (1, 2, 3, …). Codes are variable values in the data file,
 so choose them deliberately when they matter.
 
+A line is split at its **first** `=`, and only when what precedes it is a
+single word: `1 = Fees = 0` is the code `1` with the label `Fees = 0`,
+and a label may contain as many further `=` as it likes. A sentence like
+`Salary = market rate` has spaces on the left, so it is not a code at
+all: the whole line is the label, and it is numbered automatically. If
+the left side has no spaces but is not a valid code — letters and digits
+only, at most 20 characters — the line is reported rather than quietly
+taken as a label.
+
 ```
 1 = Never
 2 = Sometimes
@@ -130,14 +139,38 @@ language, labels carry no suffix.
 
 ## 3. Question types
 
-The reference below is generated from the package's own table of types,
-so it cannot disagree with what `read_form_docx()` accepts. `label` is
-the wording shown in review documents; `type`/`theme` are what LimeSurvey
-stores.
+Write the **Type** value of the first column in the Type row of a
+question block. The other columns say which rows that type accepts:
+whether it takes Options, Rows and Columns, how many options it needs at
+least, whether it can carry an "Other" option or an exclusive one, and
+the codes it already has built in (a yes/no question does not need
+options: its codes are `Y` and `N`).
+
+This table is generated from the package's own table of types, so it
+cannot disagree with what `read_form_docx()` accepts.
+
+A blank cell means the type does not use that row: leave it out, and the
+blank form will not show it in the first place.
 
 ```{r kinds, echo = FALSE}
-knitr::kable(lssdoc:::lss_kinds_reference())
+ref <- lssdoc:::lss_kinds_reference()
+for (v in c("options", "rows", "columns")) {
+  ref[[v]] <- ifelse(ref[[v]] == "required", "yes", "")
+}
+cols <- c(kind = "Type", label = "Meaning", options = "Options",
+          rows = "Rows", columns = "Columns", min_options = "Min.",
+          other = "Other", exclusive = "Exclusive",
+          implicit_codes = "Built-in codes")
+knitr::kable(stats::setNames(ref[names(cols)], cols), row.names = FALSE)
 ```
+
+Internally, LimeSurvey identifies a question type by a **single
+character** stored in the survey file, and several of those characters
+are punctuation: `!` is the dropdown list, `1` a dual scale, `:` an array
+of numbers, `;` an array of texts. You never type those in the form — the
+package translates them — but they appear in the table returned by
+`lssdoc:::lss_kinds_reference()`, alongside the LimeSurvey theme name,
+for anyone comparing a form with a raw export.
 
 Defaults shared by all types:
 

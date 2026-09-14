@@ -209,10 +209,17 @@ if (requireNamespace("officer", quietly = TRUE) &&
   }
   # The long form: one example question for every supported type, so the
   # author can see every field a type carries and delete what they do not
-  # need. `kinds` is left at its default, which is the whole table.
-  all_types <- file.path(docs_dir, "lssdoc-form-all-types-en.docx")
-  lssdoc::lss_template_docx(all_types, lang = "en")
-  form_targets <- c(form_targets, "all types" = all_types)
+  # need. `kinds` is left at its default, which is the whole table. Offered
+  # in every interface language too: an author who fills the short form in
+  # their own language should not have to read the long one in English.
+  all_targets <- stats::setNames(
+    file.path(docs_dir, sprintf("lssdoc-form-all-types-%s.docx", form_langs)),
+    paste("all types", form_langs)
+  )
+  for (k in seq_along(form_langs)) {
+    lssdoc::lss_template_docx(all_targets[[k]], lang = form_langs[[k]])
+  }
+  form_targets <- c(form_targets, all_targets)
   form_templates <- form_targets[file.exists(form_targets)]
 }
 
