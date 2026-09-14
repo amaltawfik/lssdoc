@@ -47,6 +47,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="lssdoc-development-version">lssdoc (development version)<a class="anchor" aria-label="anchor" href="#lssdoc-development-version"></a></h2>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li><p>Write a questionnaire in Word and turn it into a LimeSurvey file. New experimental authoring form, a third document template: <code><a href="../reference/lss_template_docx.html">lss_template_docx()</a></code> writes a blank form (one key/value table per survey, group, question and quota, every field a question type needs, defaults pre-filled and syntax hints in the key column); <code><a href="../reference/write_form_docx.html">write_form_docx()</a></code> renders any <code><a href="../reference/lss_spec.html">lss_spec()</a></code> as that form; <code><a href="../reference/read_form_docx.html">read_form_docx()</a></code> parses a filled form back into an <code>lss_spec</code>, ready for <code><a href="../reference/write_lss.html">write_lss()</a></code>; and <code><a href="../reference/check_form_docx.html">check_form_docx()</a></code> reports every problem in a form at once (block, question code and field named), so an author can fix them in one pass. The form round-trips losslessly and is read with <code>xml2</code> only (Word is not required to read it, only to fill it in).</p></li>
+<li><p><code><a href="../reference/lss_spec.html">lss_spec()</a></code> gains an optional localised group <code>description</code> and an optional quota <code>limit</code>, both written by <code><a href="../reference/write_lss.html">write_lss()</a></code>.</p></li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="lssdoc-020">lssdoc 0.2.0<a class="anchor" aria-label="anchor" href="#lssdoc-020"></a></h2><p class="text-muted">CRAN release: 2026-09-13</p>

@@ -93,7 +93,7 @@
       </dl></div><div class="section level2">
       <h2 id="author-experimental-">Author (experimental)<a class="anchor" aria-label="anchor" href="#author-experimental-"></a></h2>
 
-      <div class="section-desc"><p>Build a survey specification programmatically and write it as an importable LimeSurvey 6 <code>.lss</code> file. The specification is validated in depth at construction time, because LimeSurvey imports silently and only surfaces mistakes once respondents hit them. The written file round-trips through <code><a href="../reference/read_lss.html">read_lss()</a></code> and <code><a href="../reference/audit_lss.html">audit_lss()</a></code>. The same specification can also be rendered as a Word authoring form – one key/value table per block, meant to be filled in and handed back – either from an existing spec or as a blank template.</p></div>
+      <div class="section-desc"><p>Build a survey specification programmatically and write it as an importable LimeSurvey 6 <code>.lss</code> file. The specification is validated in depth at construction time, because LimeSurvey imports silently and only surfaces mistakes once respondents hit them. The written file round-trips through <code><a href="../reference/read_lss.html">read_lss()</a></code> and <code><a href="../reference/audit_lss.html">audit_lss()</a></code>. The same specification can also be rendered as a Word authoring form – one key/value table per block, meant to be filled in and handed back – either from an existing spec or as a blank template, and read back from the filled-in form into a specification, with a dry-run check that lists every problem of a document at once.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -127,6 +127,20 @@
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Write a blank Word template for authoring a questionnaire</dd>
+
+        <dt>
+
+          <code><a href="read_form_docx.html">read_form_docx()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Read a Word authoring form back into a survey specification</dd>
+
+        <dt>
+
+          <code><a href="check_form_docx.html">check_form_docx()</a></code> <code><a href="check_form_docx.html">print(<i>&lt;lss_form_check&gt;</i>)</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Report every problem of a Word authoring form at once</dd>
       </dl></div><div class="section level2">
       <h2 id="package-overview">Package overview<a class="anchor" aria-label="anchor" href="#package-overview"></a></h2>
 

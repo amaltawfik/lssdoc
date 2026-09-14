@@ -2,6 +2,33 @@
 
 ## lssdoc (development version)
 
+### New features
+
+- Write a questionnaire in Word and turn it into a LimeSurvey file. New
+  experimental authoring form, a third document template:
+  [`lss_template_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_template_docx.md)
+  writes a blank form (one key/value table per survey, group, question
+  and quota, every field a question type needs, defaults pre-filled and
+  syntax hints in the key column);
+  [`write_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/write_form_docx.md)
+  renders any
+  [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
+  as that form;
+  [`read_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/read_form_docx.md)
+  parses a filled form back into an `lss_spec`, ready for
+  [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md);
+  and
+  [`check_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/check_form_docx.md)
+  reports every problem in a form at once (block, question code and
+  field named), so an author can fix them in one pass. The form
+  round-trips losslessly and is read with `xml2` only (Word is not
+  required to read it, only to fill it in).
+
+- [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
+  gains an optional localised group `description` and an optional quota
+  `limit`, both written by
+  [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md).
+
 ## lssdoc 0.2.0
 
 CRAN release: 2026-09-13

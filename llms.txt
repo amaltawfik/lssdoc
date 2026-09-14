@@ -329,7 +329,9 @@ and
 [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md).
 The same specification can also be rendered as a Word authoring form –
 one key/value table per block, meant to be filled in and handed back –
-either from an existing spec or as a blank template.
+either from an existing spec or as a blank template, and read back from
+the filled-in form into a specification, with a dry-run check that lists
+every problem of a document at once.
 
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   **\[experimental\]** : Build and validate a survey specification
@@ -346,6 +348,15 @@ either from an existing spec or as a blank template.
 - [`lss_template_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_template_docx.md)
   **\[experimental\]** : Write a blank Word template for authoring a
   questionnaire
+
+- [`read_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/read_form_docx.md)
+  **\[experimental\]** : Read a Word authoring form back into a survey
+  specification
+
+- [`check_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/check_form_docx.md)
+  [`print(`*`<lss_form_check>`*`)`](https://amaltawfik.github.io/lssdoc/reference/check_form_docx.md)
+  **\[experimental\]** : Report every problem of a Word authoring form
+  at once
 
 ## Package overview
 
