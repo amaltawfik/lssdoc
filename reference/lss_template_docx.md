@@ -5,7 +5,7 @@
 ## Usage
 
 ``` r
-lss_template_docx(path, lang = "fr", kinds = lss_kinds$kind)
+lss_template_docx(path, lang = "fr", kinds = lss_kinds$kind, languages = lang)
 ```
 
 ## Arguments
@@ -23,6 +23,18 @@ lss_template_docx(path, lang = "fr", kinds = lss_kinds$kind)
 
   Character vector of kinds to illustrate, `lss_kinds$kind` (all 21) by
   default; the order of the kind table is kept.
+
+- languages:
+
+  Content languages of the questionnaire to be written, the first one
+  being the primary language. Defaults to `lang`, giving a
+  single-language form. With several, every text row is repeated once
+  per language, keyed `Wording [fr]`, `Wording [en]` and so on, and the
+  reader then requires each of them: a questionnaire with a missing
+  translation is what
+  [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md)
+  exists to catch. Independent of `lang`, which only sets the language
+  of the form's own labels.
 
 ## Value
 
@@ -72,7 +84,14 @@ if (requireNamespace("officer", quietly = TRUE) &&
   out <- tempfile(fileext = ".docx")
   lss_template_docx(out, lang = "fr", kinds = c("single", "multiple"))
   file.exists(out)
+
+  # A bilingual questionnaire, with French labels on the form itself.
+  both <- tempfile(fileext = ".docx")
+  lss_template_docx(both, lang = "fr", languages = c("fr", "en"),
+                    kinds = "single")
+  file.exists(both)
 }
-#> ✔ Wrote /tmp/RtmpndKhvU/file195c527f4a6b.docx (2 questions, 1 group, 1 quota).
+#> ✔ Wrote /tmp/Rtmp2W2lwM/file19c33b38f41f.docx (2 questions, 1 group, 1 quota).
+#> ✔ Wrote /tmp/Rtmp2W2lwM/file19c31d0b6a6f.docx (1 question, 1 group, 1 quota).
 #> [1] TRUE
 ```

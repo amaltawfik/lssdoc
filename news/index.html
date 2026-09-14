@@ -52,7 +52,7 @@
 <h3 id="new-features-0-3-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-0"></a></h3>
 <ul><li><p>Write a questionnaire in Word and turn it into a LimeSurvey file, with a new experimental set of functions: <code><a href="../reference/lss_template_docx.html">lss_template_docx()</a></code> writes a blank form to fill in, <code><a href="../reference/read_form_docx.html">read_form_docx()</a></code> reads a filled one back, and <code><a href="../reference/check_form_docx.html">check_form_docx()</a></code> reports everything wrong with it in one pass. Blank forms can also be downloaded from the package website, for authors who do not use R.</p></li>
 <li><p><code><a href="../reference/write_form_docx.html">write_form_docx()</a></code> renders a specification as that same form, and <code><a href="../reference/as_lss_spec.html">as_lss_spec()</a></code> turns an existing survey into a specification, so a questionnaire can leave LimeSurvey, be edited in Word and come back.</p></li>
-<li><p><code><a href="../reference/write_lss.html">write_lss()</a></code> now writes every declared language, not only the first.</p></li>
+<li><p><code><a href="../reference/write_lss.html">write_lss()</a></code> now writes every declared language, not only the first, and <code><a href="../reference/lss_template_docx.html">lss_template_docx()</a></code> can produce a blank form for a multilingual questionnaire, independently of the language of the form’s own labels.</p></li>
 <li><p><code><a href="../reference/lss_spec.html">lss_spec()</a></code> gains an optional group <code>description</code> and quota <code>limit</code>.</p></li>
 </ul></div>
 <div class="section level3">

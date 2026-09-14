@@ -50,7 +50,7 @@ independently of the questionnaire’s own languages.
 
 template <- tempfile(fileext = ".docx")
 lss_template_docx(template, lang = "en")
-#> ✔ Wrote /tmp/RtmpOestZh/file1b312a9ade2d.docx (21 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp4am5m5/file1b995f630f72.docx (21 questions, 2 groups, 1 quota).
 ```
 
 The person who writes the questionnaire often does not use R at all. The
@@ -130,6 +130,19 @@ then labelled once per language — `Wording [fr]`, `Wording [en]` — and
 every language is required for every text, because a questionnaire with
 a missing translation is exactly what the audit exists to catch. With a
 single language, labels carry no suffix.
+
+Ask for that form directly rather than adding the rows by hand, and the
+languages you want are already in place:
+
+``` r
+
+lss_template_docx("questionnaire.docx", lang = "fr",
+                  languages = c("fr", "en"))
+```
+
+`languages` is the questionnaire’s own content; `lang` is only the
+language of the form’s labels and hints. A French-speaking author can
+therefore prepare an English-and-German questionnaire on a French form.
 
 ## 3. Question types
 
@@ -239,7 +252,7 @@ one.
 check_form_docx(template)
 #> 
 #> ── lssdoc form check ───────────────────────────────────────────────────────────
-#> File: /tmp/RtmpOestZh/file1b312a9ade2d.docx
+#> File: /tmp/Rtmp4am5m5/file1b995f630f72.docx
 #> ✔ No problems found: the form reads.
 ```
 
@@ -274,7 +287,7 @@ spec
 
 lss_file <- tempfile(fileext = ".lss")
 write_lss(spec, lss_file)
-#> ✔ Wrote /tmp/RtmpOestZh/file1b31cfa2bb2.lss (20 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp4am5m5/file1b9928d75da7.lss (20 questions, 2 groups, 1 quota).
 ```
 
 Import the file in LimeSurvey (*Surveys → Create → Import*). All
@@ -296,7 +309,7 @@ back <- read_lss(lss_file)
 audit_lss(back)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpOestZh/file1b31cfa2bb2.lss
+#> File: /tmp/Rtmp4am5m5/file1b9928d75da7.lss
 #> Languages: "en"
 #> ✔ No anomalies detected.
 ```
@@ -340,7 +353,7 @@ write_form_docx(lss, form, lang = "en", strict = FALSE)
 #>   showsurveypolicynotice and 41 more have no place in a specification;
 #>   write_lss() re-emits its own defaults
 #> ℹ Review the result, or fix the survey in the Word authoring form.
-#> ✔ Wrote /tmp/RtmpOestZh/file1b3162c826e1.docx (43 questions, 6 groups, 1 quota).
+#> ✔ Wrote /tmp/Rtmp4am5m5/file1b992688abf3.docx (43 questions, 6 groups, 1 quota).
 ```
 
 The conversion is honest about its limits. Question types the form does

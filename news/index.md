@@ -21,7 +21,10 @@
   leave LimeSurvey, be edited in Word and come back.
 
 - [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
-  now writes every declared language, not only the first.
+  now writes every declared language, not only the first, and
+  [`lss_template_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_template_docx.md)
+  can produce a blank form for a multilingual questionnaire,
+  independently of the language of the form’s own labels.
 
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   gains an optional group `description` and quota `limit`.
