@@ -4,7 +4,7 @@
 \name{lssdoc-package}
 \alias{lssdoc}
 \alias{lssdoc-package}
-\title{lssdoc: Render, Audit and Write 'LimeSurvey' '.lss' Questionnaires}
+\title{lssdoc: 'LimeSurvey' '.lss' Questionnaires to and from Word Documents}
 \description{
 \if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
 
