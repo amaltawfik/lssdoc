@@ -154,11 +154,12 @@ code, item, reason), and all of them are listed at once:
 ## Examples
 
 ``` r
-demo <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
-# The demo survey uses LimeSurvey types lssdoc does not author yet, so it
-# converts only in the permissive mode.
-spec <- suppressWarnings(as_lss_spec(read_lss(demo), strict = FALSE))
+# The bundled flawed survey uses LimeSurvey question types lssdoc does
+# not author yet, and a filter it cannot express, so it converts only in
+# the permissive mode -- which names everything it had to drop.
+flawed <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
+spec <- suppressWarnings(as_lss_spec(read_lss(flawed), strict = FALSE))
 spec
-#> <lss_spec> "Questionnaire de démonstration lssdoc" (fr, en, de, and es)
-#> 6 groups, 41 questions, 1 quota
+#> <lss_spec> "Audit demo survey (intentionally flawed)" (en and fr)
+#> 1 group, 1 question, 0 quotas
 ```
