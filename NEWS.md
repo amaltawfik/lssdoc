@@ -13,7 +13,9 @@
   `as_lss_spec()` turns an existing survey into a specification, so a
   questionnaire can leave LimeSurvey, be edited in Word and come back.
 
-* `write_lss()` now writes every declared language, not only the first.
+* `write_lss()` now writes every declared language, not only the first, and
+  `lss_template_docx()` can produce a blank form for a multilingual
+  questionnaire, independently of the language of the form's own labels.
 
 * `lss_spec()` gains an optional group `description` and quota `limit`.
 

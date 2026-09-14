@@ -137,6 +137,19 @@ required for every text, because a questionnaire with a missing
 translation is exactly what the audit exists to catch. With a single
 language, labels carry no suffix.
 
+Ask for that form directly rather than adding the rows by hand, and the
+languages you want are already in place:
+
+```r
+lss_template_docx("questionnaire.docx", lang = "fr",
+                  languages = c("fr", "en"))
+```
+
+`languages` is the questionnaire's own content; `lang` is only the
+language of the form's labels and hints. A French-speaking author can
+therefore prepare an English-and-German questionnaire on a French
+form.
+
 ## 3. Question types
 
 Write the **Type** value of the first column in the Type row of a

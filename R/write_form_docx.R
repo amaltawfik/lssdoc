@@ -995,6 +995,13 @@ write_form_docx <- function(spec, path, lang = NULL, hints = FALSE,
 #'   `"en"`, `"fr"` (default), `"de"`, `"es"`, `"it"`.
 #' @param kinds Character vector of kinds to illustrate, `lss_kinds$kind`
 #'   (all 21) by default; the order of the kind table is kept.
+#' @param languages Content languages of the questionnaire to be written,
+#'   the first one being the primary language. Defaults to `lang`, giving a
+#'   single-language form. With several, every text row is repeated once per
+#'   language, keyed `Wording [fr]`, `Wording [en]` and so on, and the reader
+#'   then requires each of them: a questionnaire with a missing translation
+#'   is what [audit_lss()] exists to catch. Independent of `lang`, which only
+#'   sets the language of the form's own labels.
 #'
 #' @return Invisibly, the path to the written file.
 #'
@@ -1017,12 +1024,19 @@ write_form_docx <- function(spec, path, lang = NULL, hints = FALSE,
 #'   out <- tempfile(fileext = ".docx")
 #'   lss_template_docx(out, lang = "fr", kinds = c("single", "multiple"))
 #'   file.exists(out)
+#'
+#'   # A bilingual questionnaire, with French labels on the form itself.
+#'   both <- tempfile(fileext = ".docx")
+#'   lss_template_docx(both, lang = "fr", languages = c("fr", "en"),
+#'                     kinds = "single")
+#'   file.exists(both)
 #' }
 #' @seealso [write_form_docx()] to render an existing specification,
 #'   [lss_spec()], [write_lss()].
 #' @export
-lss_template_docx <- function(path, lang = "fr", kinds = lss_kinds$kind) {
+lss_template_docx <- function(path, lang = "fr", kinds = lss_kinds$kind,
+                              languages = lang) {
   lang <- lss_resolve_chrome_lang(lang, character(0))
-  write_form_docx(lss_example_spec(kinds, lang), path, lang = lang,
+  write_form_docx(lss_example_spec(kinds, lang, languages), path, lang = lang,
                   hints = TRUE)
 }

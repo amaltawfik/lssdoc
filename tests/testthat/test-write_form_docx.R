@@ -567,3 +567,25 @@ test_that("every table is preceded by two paragraphs and the body ends with sect
   expect_false(any(diff(tbl) < 3L))
   expect_identical(names_kids[[length(names_kids)]], "sectPr")
 })
+
+test_that("lss_template_docx() writes a multilingual blank form", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+
+  out <- tempfile(fileext = ".docx")
+  lss_template_docx(out, lang = "fr", languages = c("fr", "en"),
+                    kinds = c("single", "text"))
+  expect_true(file.exists(out))
+
+  back <- read_form_docx(out)
+  expect_identical(back$languages, c("fr", "en"))
+  # Every text carries both languages: the reader refuses a missing one.
+  q <- back$groups[[1]]$questions[[1]]
+  expect_setequal(names(q$text), c("fr", "en"))
+
+  # The chrome language stays independent of the content languages.
+  en_form <- tempfile(fileext = ".docx")
+  lss_template_docx(en_form, lang = "en", languages = c("fr", "en"),
+                    kinds = "single")
+  expect_identical(read_form_docx(en_form)$languages, c("fr", "en"))
+})
