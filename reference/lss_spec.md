@@ -24,8 +24,10 @@ lss_spec(
 
 - groups:
 
-  List of groups. Each group is a list with `title` (character) and
-  `questions` (list of question specifications, see Details).
+  List of groups. Each group is a list with `title` (character),
+  optionally `description` (character, a localizable introduction shown
+  above the group), and `questions` (list of question specifications,
+  see Details).
 
 - languages:
 
@@ -53,10 +55,11 @@ lss_spec(
   List of end-of-survey quotas. Each element is a list with `question`
   (code of a single-choice question), `code` (the answer code that
   triggers the quota), `message` (text shown to the respondent) and
-  optionally `name`. A quota emitted by
+  optionally `name` and `limit` (a whole number at or above zero;
+  omitted, it stays the historical zero). A quota emitted by
   [`write_lss()`](https://amaltawfik.github.io/lssdoc/reference/write_lss.md)
-  has limit zero and terminates the survey – the LimeSurvey mechanism
-  for "if the person declines, end here".
+  terminates the survey – the LimeSurvey mechanism for "if the person
+  declines, end here".
 
 ## Value
 

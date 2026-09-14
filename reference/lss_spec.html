@@ -73,8 +73,9 @@
 
 <dt id="arg-groups">groups<a class="anchor" aria-label="anchor" href="#arg-groups"></a></dt>
 <dd><p>List of groups. Each group is a list with <code>title</code>
-(character) and <code>questions</code> (list of question specifications, see
-Details).</p></dd>
+(character), optionally <code>description</code> (character, a localizable
+introduction shown above the group), and <code>questions</code> (list of
+question specifications, see Details).</p></dd>
 
 
 <dt id="arg-languages">languages<a class="anchor" aria-label="anchor" href="#arg-languages"></a></dt>
@@ -103,8 +104,9 @@ string starting with <code>&lt;</code> used verbatim as HTML. Optional.</p></dd>
 <dd><p>List of end-of-survey quotas. Each element is a list with
 <code>question</code> (code of a single-choice question), <code>code</code> (the answer
 code that triggers the quota), <code>message</code> (text shown to the
-respondent) and optionally <code>name</code>. A quota emitted by <code><a href="write_lss.html">write_lss()</a></code>
-has limit zero and terminates the survey – the LimeSurvey mechanism
+respondent) and optionally <code>name</code> and <code>limit</code> (a whole number at or
+above zero; omitted, it stays the historical zero). A quota emitted
+by <code><a href="write_lss.html">write_lss()</a></code> terminates the survey – the LimeSurvey mechanism
 for "if the person declines, end here".</p></dd>
 
 </dl></div>

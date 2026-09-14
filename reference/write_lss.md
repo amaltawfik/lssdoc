@@ -77,7 +77,11 @@ Mapping choices, each validated against real LimeSurvey 6 imports:
   [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   into ExpressionScript (`code.NAOK == "1"`).
 
-- Quotas are emitted with limit zero and the terminate action.
+- Quotas are emitted with the terminate action and the quota's `limit`
+  (zero unless the spec gives one).
+
+- A group's optional `description` is emitted into
+  `group_l10ns.description` (empty when the spec gives none).
 
 - A mandatory or capped ranking also receives `min_answers = 1`,
   overridable through the question's `attributes`.
@@ -112,11 +116,11 @@ spec <- lss_spec(
 )
 out <- tempfile(fileext = ".lss")
 write_lss(spec, out)
-#> ✔ Wrote /tmp/RtmpaVgTgj/file1a1a220ebff0.lss (1 question, 1 group, 0 quotas).
+#> ✔ Wrote /tmp/RtmpxrvxTo/file1a1e74f1491c.lss (1 question, 1 group, 0 quotas).
 audit_lss(out)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpaVgTgj/file1a1a220ebff0.lss
+#> File: /tmp/RtmpxrvxTo/file1a1e74f1491c.lss
 #> Languages: "fr"
 #> ✔ No anomalies detected.
 ```

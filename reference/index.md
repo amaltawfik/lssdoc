@@ -38,6 +38,9 @@ round-trips through
 [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
 and
 [`audit_lss()`](https://amaltawfik.github.io/lssdoc/reference/audit_lss.md).
+The same specification can also be rendered as a Word authoring form –
+one key/value table per block, meant to be filled in and handed back –
+either from an existing spec or as a blank template.
 
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   **\[experimental\]** : Build and validate a survey specification
@@ -46,6 +49,14 @@ and
   **\[experimental\]** :
 
   Write a survey specification to an importable `.lss` file
+
+- [`write_form_docx()`](https://amaltawfik.github.io/lssdoc/reference/write_form_docx.md)
+  **\[experimental\]** : Render a survey specification as a Word
+  authoring form
+
+- [`lss_template_docx()`](https://amaltawfik.github.io/lssdoc/reference/lss_template_docx.md)
+  **\[experimental\]** : Write a blank Word template for authoring a
+  questionnaire
 
 ## Package overview
 
