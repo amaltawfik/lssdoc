@@ -38,9 +38,9 @@ a crafted input file cannot make the package reach the Internet either.
 
 ### Title and Description
 
-Both now say that the package also writes `.lss` files, which it did not
-do when the current Title was written. The package name, the maintainer
-and the scope are otherwise unchanged.
+Both now say that the package also writes `.lss` files. The previous
+Title described a renderer only, which stopped being the whole story.
+The package name, the maintainer and the scope are unchanged.
 
 ### Also in this release
 
@@ -59,7 +59,7 @@ declared languages. No new dependency: reading a form uses only
 * "Days since last update" -- this release follows 0.2.0 closely only
   because it corrects the ERROR you reported on
   r-devel-linux-x86_64-fedora-gcc, well inside the 2026-10-05 deadline.
-  The authoring feature described below was under way when your e-mail
+  The authoring feature described above was under way when your e-mail
   arrived. We finished it and send both together rather than submitting
   the correction now and a feature release a few weeks later, which would
   have meant three submissions in a month instead of two.
@@ -68,7 +68,6 @@ declared languages. No new dependency: reading a form uses only
   writes) and "methodologists" (a correctly spelled English term) in the
   DESCRIPTION are intentional.
 
-<!-- Add the win-builder verdicts (release, devel, oldrelease) once received. -->
 
 ## Test environments
 
@@ -80,7 +79,7 @@ declared languages. No new dependency: reading a form uses only
 * win-builder (Windows Server 2022 x64), each `Status: 1 NOTE`, the
   "Days since last update" note above being the only one:
   * R-release 4.6.1 (2026-06-24)
-  * R-devel (2026-09-13 r90534)
+  * R-devel (2026-09-14 r90539)
   * R-oldrelease 4.5.3 (2026-03-11)
 
 ## Notes for the reviewer
@@ -89,9 +88,11 @@ declared languages. No new dependency: reading a form uses only
   form writer rely on the suggested packages \pkg{officer} and
   \pkg{flextable}; every use is guarded with `requireNamespace()` and a
   classed, actionable error. Parsing, auditing, writing `.lss` files and
-  reading a Word form all work without them. Those examples are wrapped
-  in `\dontrun{}` because they write a Word file and the PDF variant
-  additionally requires a local LibreOffice install.
+  reading a Word form all work without them. The two rendering examples
+  are wrapped in `\dontrun{}`, because rendering a whole questionnaire
+  takes a while and the PDF variant needs a local LibreOffice install;
+  the authoring examples do run on check, guarded by
+  `requireNamespace()`, and write only to `tempfile()`.
 * The `.lss` output is validated against a real LimeSurvey instance
   (7.0.0-beta1). A generated survey covering every supported question
   type, and a bilingual one, both import without a warning and re-export
