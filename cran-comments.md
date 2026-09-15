@@ -93,9 +93,10 @@ declared languages. No new dependency: reading a form uses only
   in `\dontrun{}` because they write a Word file and the PDF variant
   additionally requires a local LibreOffice install.
 * The `.lss` output is validated against a real LimeSurvey instance
-  (7.0.0-beta1): a generated survey covering every supported question
-  type imports without warnings and re-exports with every question,
-  attribute and display condition intact (DBVersion 700).
+  (7.0.0-beta1). A generated survey covering every supported question
+  type, and a bilingual one, both import without a warning and re-export
+  with every question, localised attribute and display condition intact,
+  one row per language in each translation table.
 * All processing is local: the package makes no network calls and never
   uploads questionnaire content to a third-party service.
 
