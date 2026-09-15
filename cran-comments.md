@@ -56,7 +56,7 @@ declared languages. No new dependency: reading a form uses only
 
 0 errors | 0 warnings | 1 note
 
-* "Days since last update: 1" -- this release follows 0.2.0 closely only
+* "Days since last update" -- this release follows 0.2.0 closely only
   because it corrects the ERROR you reported on
   r-devel-linux-x86_64-fedora-gcc, well inside the 2026-10-05 deadline.
   The authoring feature described below was under way when your e-mail
