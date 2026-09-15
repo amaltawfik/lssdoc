@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # covr never sets NOT_CRAN itself, so without this every
+      # skip_on_cran() test would be skipped here too and the reported
+      # coverage would silently drop. Coverage must measure the whole
+      # suite, not the subset CRAN runs.
+      NOT_CRAN: true
 
     steps:
       - uses: actions/checkout@v4
