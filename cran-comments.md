@@ -59,8 +59,10 @@ declared languages. No new dependency: reading a form uses only
 * "Days since last update: 1" -- this release follows 0.2.0 closely only
   because it corrects the ERROR you reported on
   r-devel-linux-x86_64-fedora-gcc, well inside the 2026-10-05 deadline.
-  The authoring feature was already finished and tested when your e-mail
-  arrived, so it travels with the correction rather than delaying it.
+  The authoring feature described below was under way when your e-mail
+  arrived. We finished it and send both together rather than submitting
+  the correction now and a feature release a few weeks later, which would
+  have meant three submissions in a month instead of two.
 
 * If flagged, "LimeSurvey" (the survey software the package reads and
   writes) and "methodologists" (a correctly spelled English term) in the
