@@ -50,7 +50,7 @@ independently of the questionnaire’s own languages.
 
 template <- tempfile(fileext = ".docx")
 lss_template_docx(template, lang = "en")
-#> ✔ Wrote /tmp/RtmpwusqYR/file1b606d1bb54e.docx (21 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpyZUMfK/file1c0d4fb4dfc.docx (21 questions, 2 groups, 1 quota).
 ```
 
 The person who writes the questionnaire often does not use R at all. The
@@ -252,7 +252,7 @@ one.
 check_form_docx(template)
 #> 
 #> ── lssdoc form check ───────────────────────────────────────────────────────────
-#> File: /tmp/RtmpwusqYR/file1b606d1bb54e.docx
+#> File: /tmp/RtmpyZUMfK/file1c0d4fb4dfc.docx
 #> ✔ No problems found: the form reads.
 ```
 
@@ -287,7 +287,7 @@ spec
 
 lss_file <- tempfile(fileext = ".lss")
 write_lss(spec, lss_file)
-#> ✔ Wrote /tmp/RtmpwusqYR/file1b60695c8482.lss (20 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpyZUMfK/file1c0d1d6673e8.lss (20 questions, 2 groups, 1 quota).
 ```
 
 Import the file in LimeSurvey (*Surveys → Create → Import*). All
@@ -309,7 +309,7 @@ back <- read_lss(lss_file)
 audit_lss(back)
 #> 
 #> ── lssdoc audit ────────────────────────────────────────────────────────────────
-#> File: /tmp/RtmpwusqYR/file1b60695c8482.lss
+#> File: /tmp/RtmpyZUMfK/file1c0d1d6673e8.lss
 #> Languages: "en"
 #> ✔ No anomalies detected.
 ```
@@ -353,7 +353,7 @@ write_form_docx(lss, form, lang = "en", strict = FALSE)
 #>   showsurveypolicynotice and 41 more have no place in a specification;
 #>   write_lss() re-emits its own defaults
 #> ℹ Review the result, or fix the survey in the Word authoring form.
-#> ✔ Wrote /tmp/RtmpwusqYR/file1b606beb519b.docx (43 questions, 6 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpyZUMfK/file1c0d5e22b2db.docx (43 questions, 6 groups, 1 quota).
 ```
 
 The conversion is honest about its limits. Question types the form does
