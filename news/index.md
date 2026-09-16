@@ -1,5 +1,7 @@
 # Changelog
 
+## lssdoc (development version)
+
 ## lssdoc 0.3.0
 
 ### New features

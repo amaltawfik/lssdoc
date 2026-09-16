@@ -125,6 +125,6 @@ if (requireNamespace("officer", quietly = TRUE) &&
   write_form_docx(spec, out, lang = "fr")
   file.exists(out)
 }
-#> ✔ Wrote /tmp/RtmpITCKLX/file19f61299f9be.docx (1 question, 1 group, 0 quotas).
+#> ✔ Wrote /tmp/Rtmp9KzfXV/file1a2a55d3af46.docx (1 question, 1 group, 0 quotas).
 #> [1] TRUE
 ```
