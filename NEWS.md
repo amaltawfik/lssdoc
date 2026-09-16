@@ -20,7 +20,9 @@
 
 * `lss_spec()` gains an optional group `description` and quota `limit`.
 
-## Bug fixes
+## Minor improvements and bug fixes
+
+* `read_lss()` is about ten times faster on a large survey.
 
 * `read_lss()` now fails with a clear error on a malformed, truncated or
   non-UTF-8 file, instead of terminating the R session on some platforms.

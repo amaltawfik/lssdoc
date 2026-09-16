@@ -164,7 +164,7 @@ read_lss <- function(file) {
 
   # Validate the structure ourselves rather than trusting the parser to
   # have failed: with RECOVER a broken file yields a partial tree.
-  root <- xml2::xml_find_first(doc, "/*")
+  root <- xml2::xml_find_first(doc, "/*", ns = character())
   root_name <- if (inherits(root, "xml_missing")) {
     NA_character_
   } else {
@@ -206,7 +206,7 @@ read_lss <- function(file) {
   lss_check_db_version(db_version, file)
 
   languages <- xml2::xml_text(
-    xml2::xml_find_all(doc, "/document/languages/language")
+    xml2::xml_find_all(doc, "/document/languages/language", ns = character())
   )
   surveys <- lss_section(doc, "surveys")
   base_language <- if (!is.null(surveys) && "language" %in% names(surveys)) {
@@ -377,7 +377,8 @@ lss_resolve_input <- function(input, arg = "input") {
 #' @keywords internal
 #' @noRd
 lss_scalar <- function(doc, name) {
-  node <- xml2::xml_find_first(doc, paste0("/document/", name))
+  node <- xml2::xml_find_first(doc, paste0("/document/", name),
+                               ns = character())
   if (inherits(node, "xml_missing")) {
     return(NA_character_)
   }
@@ -395,17 +396,20 @@ lss_scalar <- function(doc, name) {
 #' @keywords internal
 #' @noRd
 lss_section <- function(doc, name) {
-  node <- xml2::xml_find_first(doc, paste0("/document/", name))
+  node <- xml2::xml_find_first(doc, paste0("/document/", name),
+                               ns = character())
   if (inherits(node, "xml_missing")) {
     return(NULL)
   }
 
-  fields <- xml2::xml_text(xml2::xml_find_all(node, "./fields/fieldname"))
+  fields <- xml2::xml_text(
+    xml2::xml_find_all(node, "./fields/fieldname", ns = character())
+  )
   if (length(fields) == 0) {
     return(NULL)
   }
 
-  rows <- xml2::xml_find_all(node, "./rows/row")
+  rows <- xml2::xml_find_all(node, "./rows/row", ns = character())
   cols <- lapply(fields, function(field) {
     if (length(rows) == 0) {
       return(character(0))
@@ -413,7 +417,7 @@ lss_section <- function(doc, name) {
     vapply(
       rows,
       function(row) {
-        cell <- xml2::xml_find_first(row, paste0("./", field))
+        cell <- xml2::xml_find_first(row, paste0("./", field), ns = character())
         if (inherits(cell, "xml_missing")) {
           NA_character_
         } else {
