@@ -5,7 +5,7 @@ overall check time was 13 minutes, above the 10-minute limit. The tests
 were the cause and they are now much shorter. On this machine the part
 of the suite CRAN runs went from 1004 seconds to 146, and a full
 `devtools::check(remote = TRUE, manual = TRUE)` with `NOT_CRAN` unset now
-takes 6 minutes end to end, its only note being the one below.
+takes 4 to 6 minutes end to end, its only note being the one below.
 
 ### How the test time was reduced
 
@@ -102,7 +102,7 @@ before.
 ## Test environments
 
 * Local: Windows 11, R 4.6.1, `devtools::check(remote = TRUE, manual = TRUE)`,
-  6 min with `NOT_CRAN` unset
+  4 to 6 min with `NOT_CRAN` unset
 * GitHub Actions (r-lib/actions, R CMD check, `error-on = "warning"`):
   * macOS-latest (R release)
   * windows-latest (R release)
