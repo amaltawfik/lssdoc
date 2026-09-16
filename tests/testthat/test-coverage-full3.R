@@ -18,10 +18,14 @@ test_that("read_lss reports malformed XML that starts with a tag", {
 })
 
 test_that("cover page renders admin and privacy settings when requested", {
+  # A full render of the four-language demo costs about a minute and the
+  # point here is a branch of the renderer, not the document: run it
+  # locally and in CI, keep it out of the CRAN check budget.
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
 
-  lss <- read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc"))
+  lss <- demo_lss()
 
   # Admin settings live on survey_language_settings (alias / end URL /
   # end URL description) and surveys (active). Inject them on every row
@@ -64,10 +68,14 @@ test_that("cover page renders admin and privacy settings when requested", {
 })
 
 test_that("table template renders the full demo across four languages", {
+  # A full render of the four-language demo costs about a minute and the
+  # point here is a branch of the renderer, not the document: run it
+  # locally and in CI, keep it out of the CRAN check budget.
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
 
-  lss <- read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc"))
+  lss <- demo_lss()
   langs <- intersect(c("en", "fr", "de", "es", "it"), lss$languages)[1:4]
   langs <- langs[!is.na(langs)]
 

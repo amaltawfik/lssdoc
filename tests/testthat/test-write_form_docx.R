@@ -67,6 +67,10 @@ expected_keys <- function(kind, chrome) {
 
 
 test_that("lss_template_docx() writes a document with one table per block", {
+  # Sweeps the whole kind table, or the five chrome languages, through a
+  # real Word document. Exhaustive on purpose, and expensive: it runs
+  # locally and in CI, where nothing is on a ten-minute budget.
+  skip_on_cran()
   skip_if_no_docx()
   path <- tempfile(fileext = ".docx")
   on.exit(unlink(path), add = TRUE)
@@ -112,6 +116,9 @@ test_that("the first table is the Survey block, in the chrome language", {
 })
 
 test_that("a Question block carries exactly the rows its kind implies", {
+  # Nine kinds through a real Word document, one more kind sweep: local
+  # and CI keep it, the CRAN budget does not.
+  skip_on_cran()
   skip_if_no_docx()
   chrome <- lss_chrome_strings("fr")
   kinds <- c("single", "multiple", "array", "array5", "ranking", "display",
@@ -143,6 +150,10 @@ test_that("a Question block carries exactly the rows its kind implies", {
 })
 
 test_that("every kind of the table gets its rows, and only those", {
+  # Sweeps the whole kind table, or the five chrome languages, through a
+  # real Word document. Exhaustive on purpose, and expensive: it runs
+  # locally and in CI, where nothing is on a ten-minute budget.
+  skip_on_cran()
   skip_if_no_docx()
   chrome <- lss_chrome_strings("en")
   path <- tempfile(fileext = ".docx")
@@ -215,6 +226,10 @@ test_that("option, exclusive, cap and other-position values follow the contract"
 })
 
 test_that("no cell is ever merged and every table has two grid columns", {
+  # Sweeps the whole kind table, or the five chrome languages, through a
+  # real Word document. Exhaustive on purpose, and expensive: it runs
+  # locally and in CI, where nothing is on a ten-minute budget.
+  skip_on_cran()
   skip_if_no_docx()
   path <- tempfile(fileext = ".docx")
   on.exit(unlink(path), add = TRUE)
@@ -263,6 +278,10 @@ test_that("the template carries the lssdoc-template-version document property", 
 })
 
 test_that("the form renders in every chrome language with its own labels", {
+  # Sweeps the whole kind table, or the five chrome languages, through a
+  # real Word document. Exhaustive on purpose, and expensive: it runs
+  # locally and in CI, where nothing is on a ten-minute budget.
+  skip_on_cran()
   skip_if_no_docx()
   for (lang in c("en", "fr", "de", "es", "it")) {
     path <- tempfile(fileext = ".docx")
@@ -368,6 +387,10 @@ test_that("a line break in a single-line field is refused, naming the field", {
 })
 
 test_that("lss_template_docx() writes a template for all 21 kinds", {
+  # Sweeps the whole kind table, or the five chrome languages, through a
+  # real Word document. Exhaustive on purpose, and expensive: it runs
+  # locally and in CI, where nothing is on a ten-minute budget.
+  skip_on_cran()
   skip_if_no_docx()
   path <- tempfile(fileext = ".docx")
   on.exit(unlink(path), add = TRUE)
@@ -569,6 +592,8 @@ test_that("every table is preceded by two paragraphs and the body ends with sect
 })
 
 test_that("lss_template_docx() writes a multilingual blank form", {
+  # Two blank templates written and read back: local and CI keep it.
+  skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
 

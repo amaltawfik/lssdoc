@@ -125,7 +125,7 @@ test_that("read_lss rejects XML that is not a survey export", {
 test_that("read_lss reads the bundled demo survey", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- read_lss(path)
+  lss <- lss_cached(path)
 
   expect_s3_class(lss, "lss")
   expect_identical(lss$languages, c("en", "de", "es", "fr"))
@@ -141,7 +141,7 @@ test_that("read_lss reads the bundled demo survey", {
 test_that("read_lss keeps localized text and distinguishes empty from absent", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
-  lss <- read_lss(path)
+  lss <- lss_cached(path)
 
   expect_setequal(unique(lss$question_l10ns$language), c("en", "de", "es", "fr"))
   expect_true(all(c("question", "help") %in% names(lss$question_l10ns)))

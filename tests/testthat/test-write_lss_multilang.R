@@ -313,6 +313,9 @@ test_that("the example spec can be built in several languages", {
 })
 
 test_that("a bilingual spec survives the Word form round trip", {
+  # A full Word form round trip (write, re-read, compare): exhaustive
+  # and expensive, and covered again by the form tests. Local and CI.
+  skip_on_cran()
   skip_if_no_docx()
   spec <- lss_example_spec(kinds = c("single", "multiple", "array", "text"),
                            languages = c("fr", "en"))

@@ -105,6 +105,11 @@ form_tbl_xml <- function(inner) {
 # ---- round trips -------------------------------------------------------------
 
 test_that("a specification of all 21 kinds survives the round trip", {
+  # Exhaustive by design -- every authorable kind, or every chrome
+  # language -- and each pass writes and re-reads a whole Word document.
+  # It stays exhaustive locally and in CI; on CRAN the refusals below
+  # cover the reader, and the smaller round trips cover the contract.
+  skip_on_cran()
   skip_if_no_docx()
   path <- tempfile(fileext = ".docx")
   on.exit(unlink(path), add = TRUE)
@@ -127,6 +132,11 @@ test_that("a specification of all 21 kinds survives the round trip", {
 })
 
 test_that("the round trip holds in each of the five chrome languages", {
+  # Exhaustive by design -- every authorable kind, or every chrome
+  # language -- and each pass writes and re-reads a whole Word document.
+  # It stays exhaustive locally and in CI; on CRAN the refusals below
+  # cover the reader, and the smaller round trips cover the contract.
+  skip_on_cran()
   skip_if_no_docx()
   kinds <- c("single", "multiple", "array", "ranking", "text", "display")
   for (lang in c("en", "fr", "de", "es", "it")) {
@@ -183,6 +193,11 @@ test_that("a two-language form reads its suffixed keys back", {
 })
 
 test_that("the blank template reads back as the example specification", {
+  # Exhaustive by design -- every authorable kind, or every chrome
+  # language -- and each pass writes and re-reads a whole Word document.
+  # It stays exhaustive locally and in CI; on CRAN the refusals below
+  # cover the reader, and the smaller round trips cover the contract.
+  skip_on_cran()
   skip_if_no_docx()
   path <- tempfile(fileext = ".docx")
   on.exit(unlink(path), add = TRUE)
@@ -497,6 +512,10 @@ test_that("a duplicate question code is refused", {
 })
 
 test_that("a question block with no code, or a bad one, is refused", {
+  # A battery: one whole Word document written and parsed per case.
+  # Exhaustive locally and in CI; the single-document refusals around
+  # it keep the reader covered on CRAN.
+  skip_on_cran()
   skip_if_no_docx()
   blocks <- form_blocks()
 
@@ -529,6 +548,10 @@ test_that("text next to a block title that is not a question is refused", {
 # ---- value errors -------------------------------------------------------------
 
 test_that("a required field left empty is refused", {
+  # A battery: one whole Word document written and parsed per case.
+  # Exhaustive locally and in CI; the single-document refusals around
+  # it keep the reader covered on CRAN.
+  skip_on_cran()
   skip_if_no_docx()
   chrome <- lss_chrome_strings("fr")
 
@@ -559,6 +582,10 @@ test_that("a required field left empty is refused", {
 })
 
 test_that("an unknown or ambiguous type is refused", {
+  # A battery: one whole Word document written and parsed per case.
+  # Exhaustive locally and in CI; the single-document refusals around
+  # it keep the reader covered on CRAN.
+  skip_on_cran()
   skip_if_no_docx()
   chrome <- lss_chrome_strings("fr")
 
@@ -584,6 +611,9 @@ test_that("an unknown or ambiguous type is refused", {
 })
 
 test_that("a malformed option line is refused, line by line", {
+  # One whole Word document per malformed line, eight of them: the
+  # battery is worth its seconds locally and in CI, not on CRAN.
+  skip_on_cran()
   skip_if_no_docx()
   chrome <- lss_chrome_strings("fr")
 
@@ -638,6 +668,10 @@ test_that("a malformed option line is refused, line by line", {
 })
 
 test_that("a field that does not apply to the kind is refused when filled", {
+  # A battery: one whole Word document written and parsed per case.
+  # Exhaustive locally and in CI; the single-document refusals around
+  # it keep the reader covered on CRAN.
+  skip_on_cran()
   skip_if_no_docx()
   chrome <- lss_chrome_strings("fr")
   blocks <- form_set_row(form_blocks(chrome), 3L, chrome$meta_type, "text")

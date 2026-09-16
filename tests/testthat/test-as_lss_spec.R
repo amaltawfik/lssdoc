@@ -78,6 +78,10 @@ test_that("the only warning of a clean round trip is the HTML flattening", {
 # ---- (b) the LimeSurvey 7 re-export -----------------------------------------
 
 test_that("the LimeSurvey 7 re-export converts strictly and matches our own file", {
+  # Reads a file from dev/, which no source tarball carries: on CRAN this
+  # block can only skip anyway. Saying so up front keeps the local and
+  # CRAN timings comparable.
+  skip_on_cran()
   ls7 <- dev_file("limesurvey_survey_100001.lss")
   ours <- dev_file("lssdoc_0.2.0_validation.lss")
   skip_if_not(file.exists(ls7), "LimeSurvey 7 re-export not available")
@@ -120,7 +124,7 @@ test_that("the LimeSurvey 7 re-export converts strictly and matches our own file
 # ---- (c) the corpus bench ----------------------------------------------------
 
 bench_one <- function(path) {
-  lss <- suppressWarnings(read_lss(path))
+  lss <- suppressWarnings(lss_cached(path))
   items <- lss_unconvertible(lss)
   strict <- tryCatch({
     suppressWarnings(as_lss_spec(lss, strict = TRUE))
@@ -134,6 +138,10 @@ bench_one <- function(path) {
 }
 
 test_that("bench: demo_survey.lss refuses its deferred types and its quotas", {
+  # A corpus bench on the 367 KB demo: convert it twice, write the
+  # result out and read it back. It belongs to the local and CI runs;
+  # the audit_demo bench below covers the same contract on a small file.
+  skip_on_cran()
   b <- bench_one(system.file("extdata", "demo_survey.lss", package = "lssdoc"))
   expect_identical(b$strict, "refused")
   expect_gt(nrow(b$items), 0L)
@@ -154,7 +162,7 @@ test_that("bench: demo_survey.lss refuses its deferred types and its quotas", {
 
 test_that("bench: demo_survey.lss is refused with one error listing every item", {
   lss <- suppressWarnings(
-    read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc")))
+    demo_lss())
   items <- lss_unconvertible(lss)
   err <- expect_error(as_lss_spec(lss), class = "lssdoc_unconvertible")
   expect_identical(err$items, items)
@@ -164,7 +172,7 @@ test_that("bench: demo_survey.lss is refused with one error listing every item",
 
 test_that("what a survey carries outside the spec model is reported once", {
   lss <- suppressWarnings(
-    read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc")))
+    demo_lss())
   res <- lss_convert_spec(lss)
   # one note, not one per field: the point is that the author knows
   expect_length(grep("^survey setting", res$notes), 1L)
@@ -191,6 +199,10 @@ test_that("bench: audit_demo.lss keeps only what the spec can express", {
 })
 
 test_that("bench: the bilingual validation file converts whole", {
+  # Reads a file from dev/, which no source tarball carries: on CRAN this
+  # block can only skip anyway. Saying so up front keeps the local and
+  # CRAN timings comparable.
+  skip_on_cran()
   path <- dev_file("lssdoc_0.3.0_bilingual.lss")
   skip_if_not(file.exists(path), "bilingual validation file not generated")
   b <- bench_one(path)
@@ -581,8 +593,12 @@ test_that("a filter on a question that was dropped is dropped too", {
 test_that("write_form_docx() renders a parsed survey non-strictly", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
+  # Any parsed survey exercises the non-strict path; the eight-question
+  # audit fixture is one, and carries unconvertible items of its own, so
+  # the drop-and-render branch is the one taken. Rendering the
+  # 47-question demo as a Word form instead costs forty seconds.
   lss <- suppressWarnings(
-    read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc")))
+    flawed_lss())
   out <- tempfile(fileext = ".docx")
   suppressWarnings(suppressMessages(
     write_form_docx(lss, out, lang = "fr", strict = FALSE)))
@@ -594,7 +610,7 @@ test_that("write_form_docx() on a parsed survey is strict by default", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   lss <- suppressWarnings(
-    read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc")))
+    flawed_lss())
   expect_error(write_form_docx(lss, tempfile(fileext = ".docx")),
                class = "lssdoc_unconvertible")
 })

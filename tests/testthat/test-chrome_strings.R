@@ -116,9 +116,13 @@ test_that("lss_localized_type_label uses the chrome strings", {
 test_that("the rendered document contains chrome strings in the requested language", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
-  skip_if_not(file.exists(path))
-  lss <- read_lss(path)
+  # A two-question survey, not the 47-question demo: what is asserted below is
+  # the CHROME -- the labels lssdoc writes around the content -- and those do
+  # not depend on how much content there is. The small survey declares the two
+  # languages the render asks for and carries a single-choice and a
+  # multiple-choice question, so the localized type labels have something to
+  # name.
+  lss <- small_lss(c("fr", "de"))
 
   out_fr <- tempfile(fileext = ".docx")
   on.exit(unlink(out_fr), add = TRUE)
@@ -139,9 +143,7 @@ test_that("the rendered document contains chrome strings in the requested langua
 test_that("chrome_lang = 'en' forces English chrome even with FR/DE content", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
-  skip_if_not(file.exists(path))
-  lss <- read_lss(path)
+  lss <- small_lss(c("fr", "de"))
 
   out_en <- tempfile(fileext = ".docx")
   on.exit(unlink(out_en), add = TRUE)
