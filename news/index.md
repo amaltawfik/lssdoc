@@ -30,7 +30,10 @@
 - [`lss_spec()`](https://amaltawfik.github.io/lssdoc/reference/lss_spec.md)
   gains an optional group `description` and quota `limit`.
 
-### Bug fixes
+### Minor improvements and bug fixes
+
+- [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
+  is about ten times faster on a large survey.
 
 - [`read_lss()`](https://amaltawfik.github.io/lssdoc/reference/read_lss.md)
   now fails with a clear error on a malformed, truncated or non-UTF-8
