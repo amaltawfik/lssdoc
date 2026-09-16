@@ -22,7 +22,7 @@ commit_if_changes <- function(msg) {
     message("Nothing to commit: ", msg)
     return(invisible(FALSE))
   }
-  run_cmd("git", c("commit", "-m", msg))
+  run_cmd("git", c("commit", "-m", shQuote(msg)))
   invisible(TRUE)
 }
 
@@ -44,14 +44,14 @@ source("dev/build_pkgdown_site.R") # Build site + clean internal pages
 
 # `docs/` is git-ignored (the site is built and deployed to gh-pages by the
 # pkgdown GitHub Action), so it must not be staged: `git add docs` would fail.
-run_cmd("git", c("add", "README.md", "man", "NAMESPACE"))
+run_cmd("git", c("add", "-A", "--", "CRAN-SUBMISSION", "README.md", "man", "NAMESPACE"))
 commit_if_changes("docs: refresh README and Rd for release")
 run_cmd("git", c("push"))
 
 # 04 BUMP TO DEVELOPMENT VERSION -------
 usethis::use_dev_version()
 run_cmd("git", c("add", "DESCRIPTION", "NEWS.md"))
-run_cmd("git", c("commit", "-m", "chore: start next development version"))
+run_cmd("git", c("commit", "-m", shQuote("chore: start next development version")))
 run_cmd("git", c("push"))
 
 # 05 SESSION INFO -------
