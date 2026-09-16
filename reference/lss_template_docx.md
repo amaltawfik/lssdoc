@@ -91,7 +91,7 @@ if (requireNamespace("officer", quietly = TRUE) &&
                     kinds = "single")
   file.exists(both)
 }
-#> ✔ Wrote /tmp/Rtmp9KzfXV/file1a2a72626316.docx (2 questions, 1 group, 1 quota).
-#> ✔ Wrote /tmp/Rtmp9KzfXV/file1a2aeb9fdd0.docx (1 question, 1 group, 1 quota).
+#> ✔ Wrote /tmp/RtmpTEj9mr/file1a0d64b33125.docx (2 questions, 1 group, 1 quota).
+#> ✔ Wrote /tmp/RtmpTEj9mr/file1a0d1af7b720.docx (1 question, 1 group, 1 quota).
 #> [1] TRUE
 ```

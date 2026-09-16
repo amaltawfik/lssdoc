@@ -109,7 +109,7 @@ if (requireNamespace("officer", quietly = TRUE) &&
   spec <- read_form_docx(form)
   spec
 }
-#> ✔ Wrote /tmp/Rtmp9KzfXV/file1a2a40b57f99.docx (2 questions, 2 groups, 1 quota).
+#> ✔ Wrote /tmp/RtmpTEj9mr/file1a0d667dbd2c.docx (2 questions, 2 groups, 1 quota).
 #> <lss_spec> "Questionnaire d'exemple lssdoc" (fr)
 #> 2 groups, 2 questions, 1 quota
 ```
