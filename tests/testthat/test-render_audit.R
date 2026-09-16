@@ -62,3 +62,22 @@ test_that("render_audit on a clean survey says 'no anomalies'", {
   s <- officer::docx_summary(officer::read_docx(out))
   expect_true(any(grepl("No anomalies detected", s$text)))
 })
+
+test_that("the audit .pdf route renders a temporary .docx and converts it", {
+  # As for the questionnaire: the route, not LibreOffice.
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    .render_audit_docx = function(lss, output, ...) {
+      file.create(output)
+      invisible(output)
+    },
+    .docx_to_pdf = function(docx, pdf) {
+      seen <<- c(docx = docx, pdf = pdf)
+      invisible(pdf)
+    }
+  )
+  out <- tempfile(fileext = ".pdf")
+  .render_audit_pdf(structure(list(), class = "lss"), out)
+  expect_match(seen[["docx"]], "[.]docx$")
+  expect_identical(seen[["pdf"]], out)
+})

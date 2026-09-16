@@ -389,7 +389,8 @@ form_para_lines <- function(p) {
       },
       "noBreakHyphen" = "-",
       "softHyphen" = "",
-      ""
+      # the XPath above selects exactly the seven names handled here
+      "" # nocov
     )
   }, character(1))
   strsplit(paste0(pieces, collapse = ""), "\n", fixed = TRUE)[[1L]]
@@ -668,7 +669,9 @@ form_type_labels <- function() {
     map <- list()
     add <- function(label, kind) {
       label <- form_norm(label)
-      if (!nzchar(label)) return(invisible(NULL))
+      # no kind label of lss_kinds, in any of the five chrome languages,
+      # normalizes to the empty string
+      if (!nzchar(label)) return(invisible(NULL)) # nocov
       map[[label]] <<- unique(c(map[[label]], kind))
       invisible(NULL)
     }

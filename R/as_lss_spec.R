@@ -948,7 +948,9 @@ conv_attributes <- function(st, lss, qid, q, map, langs, label, other) {
                     " is stored per language although LimeSurvey does not localize it; the base-language value is kept")
         }
       }
-      if (is.null(value)) next
+      # `nm` comes from `rows$attribute`, so `global(nm)` always finds its
+      # row and returns a character scalar
+      if (is.null(value)) next # nocov
       keep[[nm]] <- value
     }
     if (length(keep)) q$attributes <- keep

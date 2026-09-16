@@ -201,3 +201,63 @@ test_that("a missing DBVersion is warned about but parses", {
 
   expect_warning(read_lss(tmp), class = "lssdoc_unknown_db_version")
 })
+
+# ---- the remaining decoding paths --------------------------------------------
+
+test_that("read_lss transcodes a big-endian UTF-16 export", {
+  xml <- paste0(
+    "<document><LimeSurveyDocType>Survey</LimeSurveyDocType>",
+    "<DBVersion>700</DBVersion>",
+    "<languages><language>en</language></languages></document>"
+  )
+  body <- iconv(xml, from = "UTF-8", to = "UTF-16BE", toRaw = TRUE)[[1]]
+  skip_if(is.null(body), "iconv() has no UTF-16BE converter here")
+
+  f <- tempfile(fileext = ".lss")
+  on.exit(unlink(f), add = TRUE)
+  writeBin(c(as.raw(c(0xFE, 0xFF)), body), f)   # UTF-16BE BOM
+
+  lss <- read_lss(f)
+  expect_s3_class(lss, "lss")
+  expect_identical(lss$languages, "en")
+})
+
+test_that("a UTF-16 body that cannot be converted is refused", {
+  # A UTF-16LE BOM followed by an odd number of bytes: the last code unit is
+  # truncated, so `iconv()` returns NA and the file is refused as invalid XML
+  # rather than handed to libxml2 half-decoded.
+  f <- tempfile(fileext = ".lss")
+  on.exit(unlink(f), add = TRUE)
+  writeBin(as.raw(c(0xFF, 0xFE, 0x3C, 0x00, 0x64)), f)
+  expect_error(read_lss(f), class = "lssdoc_invalid_xml")
+})
+
+test_that("a parser that fails or returns no document is refused, not trusted", {
+  # Both branches are unreachable from a file that passed the byte and
+  # structural gates above, and both must stay: libxml2 is a C library and
+  # `RECOVER` is a request, not a promise. Mocking the parser is the only way
+  # to exercise what happens when it does not keep it.
+  f <- tempfile(fileext = ".lss")
+  on.exit(unlink(f), add = TRUE)
+  writeLines(c("<document>",
+               "<LimeSurveyDocType>Survey</LimeSurveyDocType>",
+               "<DBVersion>700</DBVersion>",
+               "<languages><language>en</language></languages>",
+               "</document>"), f)
+
+  local({
+    testthat::local_mocked_bindings(
+      read_xml = function(...) stop("libxml2 gave up"),
+      .package = "xml2"
+    )
+    expect_error(read_lss(f), class = "lssdoc_invalid_xml")
+  })
+
+  local({
+    testthat::local_mocked_bindings(
+      read_xml = function(...) NULL,
+      .package = "xml2"
+    )
+    expect_error(read_lss(f), class = "lssdoc_invalid_xml")
+  })
+})

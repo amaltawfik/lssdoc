@@ -614,3 +614,34 @@ test_that("lss_template_docx() writes a multilingual blank form", {
                     kinds = "single")
   expect_identical(read_form_docx(en_form)$languages, c("fr", "en"))
 })
+
+# ---- argument gates and the cell writers' empty cases ------------------------
+
+test_that("lss_example_spec validates its kinds and its languages", {
+  expect_error(lss_example_spec(kinds = character()), class = "lssdoc_bad_spec")
+  expect_error(lss_example_spec(kinds = NA_character_), class = "lssdoc_bad_spec")
+  expect_error(lss_example_spec(kinds = "single", languages = character()),
+               class = "lssdoc_bad_spec")
+  expect_error(lss_example_spec(kinds = "single", languages = NA_character_),
+               class = "lssdoc_bad_spec")
+})
+
+test_that("an absent cell value becomes an empty cell, not an error", {
+  expect_identical(form_single_line(NA_character_, "Question Q1", "Type"), "")
+  expect_identical(form_text_lines(NA_character_), "")
+  # a value that is not a localized list is its own text, whatever language
+  expect_identical(form_lang_text("Oui", "de"), "Oui")
+  expect_null(form_lang_text(NULL, "fr"))
+})
+
+test_that("write_form_docx accepts a plain list specification", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+
+  plain <- unclass(lss_example_spec(kinds = c("single", "text"), lang = "fr"))
+  out <- tempfile(fileext = ".docx")
+  on.exit(unlink(out), add = TRUE)
+  write_form_docx(plain, out, lang = "fr")
+  expect_true(file.exists(out))
+})

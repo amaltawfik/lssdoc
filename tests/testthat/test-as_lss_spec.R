@@ -624,3 +624,377 @@ test_that("a clean survey renders as a form without any refusal", {
   suppressWarnings(suppressMessages(write_form_docx(lss, out, lang = "fr")))
   expect_true(file.exists(out))
 })
+
+# ---- (h) the readers the conversion is built on ------------------------------
+#
+# Every one of these answers "the file does not have that" with a default
+# instead of an error: a section a survey does not carry, a column a version
+# does not write, a language a row does not cover. They are unit-tested
+# because a refusal that fires on a missing column is a bug no fixture would
+# show.
+
+test_that("the cell readers give a default rather than an error", {
+  st <- conv_state()
+  expect_false(conv_has_markup(NULL))
+  expect_false(conv_has_markup(NA_character_))
+  expect_false(conv_has_markup(character(0)))
+  expect_identical(conv_plain(st, NULL, "x"), "")
+  expect_identical(conv_plain(st, NA_character_, "x"), "")
+
+  expect_identical(conv_cell(NULL, "a"), NA_character_)
+  df <- data.frame(a = c("1", NA), stringsAsFactors = FALSE)
+  expect_identical(conv_cell(df, "b"), NA_character_)      # column absent
+  expect_identical(conv_cell(df, "a", 3L), NA_character_)  # row absent
+  expect_identical(conv_cell(df, "a", 2L, default = "-"), "-")  # cell NA
+})
+
+test_that("the per-language readers answer NA for what a table does not hold", {
+  langs <- c("fr", "en")
+  empty <- conv_lang_index(NULL, "language")
+  expect_identical(ls(empty), character(0))
+  expect_identical(ls(conv_lang_index(data.frame(), "language")), character(0))
+  expect_identical(ls(conv_lang_index(data.frame(a = "1"), "language")),
+                   character(0))
+
+  expect_identical(conv_raw_lang(NULL, empty, "value", langs),
+                   c(NA_character_, NA_character_))
+  tbl <- data.frame(language = "fr", value = "a", stringsAsFactors = FALSE)
+  idx <- conv_lang_index(tbl, "language")
+  expect_identical(conv_raw_lang(tbl, idx, "absent", langs),
+                   c(NA_character_, NA_character_))   # column absent
+  expect_identical(conv_raw_lang(tbl, idx, "value", langs), c("a", NA))
+
+  l10n <- data.frame(qid = "1", language = "fr", question = "Q ?",
+                     stringsAsFactors = FALSE)
+  l_idx <- lss_build_l10n_index(l10n, "qid")
+  expect_identical(conv_raw_l10n(l10n, l_idx, "1", "question", "fr"), "Q ?")
+  expect_identical(conv_raw_l10n(l10n, l_idx, "9", "question", "fr"),
+                   NA_character_)   # this entity has no row
+  expect_identical(conv_raw_l10n(l10n, l_idx, "1", "question", "de"),
+                   NA_character_)   # this language has no row
+})
+
+test_that("a quota limit that is not a count reads as no limit", {
+  expect_identical(conv_limit("7"), 7L)
+  expect_identical(conv_limit("beaucoup"), 0L)
+  expect_identical(conv_limit(-2L), 0L)
+  expect_identical(conv_limit(c(1L, 2L)), 0L)
+  expect_identical(conv_limit(NULL), 0L)
+})
+
+test_that("a disjunction with a term that is not a comparison is foreign", {
+  expect_identical(conv_relevance('(Q1.NAOK == "1" or Q1 est vide)'),
+                   NA_character_)
+})
+
+# ---- (h2) the sweeps, on the tables they read --------------------------------
+
+test_that("the structural sweep names an owner it cannot read, and counts", {
+  # a quotas table with no `name` column: the row number is all there is
+  st <- conv_state()
+  conv_structural(st, list(quotas = data.frame(autoload_url = "1",
+                                               stringsAsFactors = FALSE)))
+  expect_length(st$notes, 1L)
+  expect_match(st$notes[[1L]], "row 1", fixed = TRUE)
+
+  # seven owners: six are shown and the rest are counted
+  st2 <- conv_state()
+  conv_structural(st2, list(questions = data.frame(
+    title = paste0("q", 1:7), preg = "[0-9]+", stringsAsFactors = FALSE)))
+  items <- conv_table(st2)
+  expect_identical(nrow(items), 1L)
+  expect_match(items$code[[1L]], "and 1 more", fixed = TRUE)
+})
+
+test_that("what a survey carries outside the model is noted, once each", {
+  st <- conv_state()
+  conv_outside_model(
+    st,
+    list(surveys = NULL, survey_language_settings = NULL,
+         conditions = data.frame(cid = c("1", "2"), stringsAsFactors = FALSE),
+         question_attributes = data.frame(qid = c("1", "99"), attribute = "x",
+                                          value = "1", stringsAsFactors = FALSE)),
+    qids = "1")
+  expect_length(st$notes, 2L)
+  expect_match(st$notes[[1L]], "conditions table", fixed = TRUE)
+  expect_match(st$notes[[2L]], "subquestion", fixed = TRUE)
+})
+
+# ---- (h3) the attribute reader ------------------------------------------------
+
+kind_map <- function(kind) lss_kinds[match(kind, lss_kinds$kind), , drop = FALSE]
+
+attr_lss <- function(...) {
+  list(question_attributes = data.frame(qid = "1", ..., stringsAsFactors = FALSE))
+}
+
+a_multiple <- function() {
+  list(code = "Q1", kind = "multiple",
+       options = list(list(code = "1", text = list(fr = "A")),
+                      list(code = "2", text = list(fr = "B"))))
+}
+
+test_that("the other option is refused on a kind that cannot carry one", {
+  st <- conv_state()
+  q <- list(code = "Q1", kind = "ranking",
+            options = list(list(code = "1", text = list(fr = "A"))))
+  expect_null(conv_attributes(st, list(), "1", q, kind_map("ranking"), "fr",
+                              "Q1", other = TRUE))
+  expect_identical(conv_table(st)$item, "other")
+})
+
+test_that("a language-less other label is reused for every language", {
+  st <- conv_state()
+  q <- list(code = "Q1", kind = "single",
+            options = list(list(code = "1", text = list(fr = "A", en = "A"))))
+  out <- conv_attributes(st, attr_lss(attribute = "other_replace_text",
+                                      value = "Autre"),
+                         "1", q, kind_map("single"), c("fr", "en"), "Q1",
+                         other = TRUE)
+  other <- out$options[[length(out$options)]]
+  expect_true(isTRUE(other$other))
+  expect_identical(other$text, list(fr = "Autre", en = "Autre"))
+})
+
+test_that("an other position the spec does not know is refused", {
+  st <- conv_state()
+  q <- list(code = "Q1", kind = "single",
+            options = list(list(code = "1", text = list(fr = "A"))))
+  expect_null(conv_attributes(st, attr_lss(attribute = "other_position",
+                                           value = "au milieu"),
+                              "1", q, kind_map("single"), "fr", "Q1",
+                              other = TRUE))
+  expect_identical(conv_table(st)$item, "other_position")
+})
+
+test_that("an exclusion is refused off a multiple choice, and on unknown codes", {
+  st <- conv_state()
+  q <- list(code = "Q1", kind = "single",
+            options = list(list(code = "1", text = list(fr = "A"))))
+  expect_null(conv_attributes(st, attr_lss(attribute = "exclude_all_others",
+                                           value = "1"),
+                              "1", q, kind_map("single"), "fr", "Q1",
+                              other = FALSE))
+  expect_identical(conv_table(st)$item, "exclude_all_others")
+
+  st2 <- conv_state()
+  expect_null(conv_attributes(st2, attr_lss(attribute = "exclude_all_others",
+                                            value = "9"),
+                              "1", a_multiple(), kind_map("multiple"), "fr",
+                              "Q1", other = FALSE))
+  expect_match(conv_table(st2)$reason, "9", fixed = TRUE)
+})
+
+test_that("a cap that is not a whole number is refused", {
+  st <- conv_state()
+  expect_null(conv_attributes(st, attr_lss(attribute = "max_answers",
+                                           value = "beaucoup"),
+                              "1", a_multiple(), kind_map("multiple"), "fr",
+                              "Q1", other = FALSE))
+  expect_identical(conv_table(st)$item, "max_answers")
+})
+
+test_that("an attribute stored under no declared language is kept and said", {
+  # LimeSurvey localizes `prefix`, but this file stores it under a language
+  # the survey does not declare: the value is not lost, and the author is
+  # told it will be repeated under every language.
+  st <- conv_state()
+  out <- conv_attributes(
+    st,
+    attr_lss(attribute = "prefix", value = "CHF", language = "de"),
+    "1", a_multiple(), kind_map("multiple"), "fr", "Q1", other = FALSE)
+  expect_identical(out$attributes$prefix, "CHF")
+  expect_match(st$notes[[1L]], "no value in any declared language", fixed = TRUE)
+})
+
+test_that("an attribute LimeSurvey does not localize, stored per language, is said", {
+  st <- conv_state()
+  lss <- list(question_attributes = data.frame(
+    qid = "1", attribute = "public_statistics", value = c("1", "1"),
+    language = c("fr", "en"), stringsAsFactors = FALSE))
+  out <- conv_attributes(st, lss, "1", a_multiple(), kind_map("multiple"),
+                         c("fr", "en"), "Q1", other = FALSE)
+  expect_identical(out$attributes$public_statistics, "1")
+  expect_match(st$notes[[1L]], "does not localize it", fixed = TRUE)
+})
+
+# ---- (h4) the quota reader ----------------------------------------------------
+
+quota_lss <- function(quotas, members = NULL, settings = NULL) {
+  list(quotas = quotas, quota_members = members,
+       quota_languagesettings = settings)
+}
+
+one_quota <- function(action = "1", active = "1") {
+  data.frame(id = "1", name = "Q", qlimit = "10", action = action,
+             active = active, autoload_url = "0", stringsAsFactors = FALSE)
+}
+
+test_that("a quota built on no member at all is refused", {
+  st <- conv_state()
+  expect_identical(conv_quotas(st, quota_lss(one_quota()), "fr", list(), list()),
+                   list())
+  expect_match(conv_table(st)$reason, "0 question(s)", fixed = TRUE)
+})
+
+test_that("a quota action other than terminate is refused", {
+  st <- conv_state()
+  members <- data.frame(quota_id = "1", qid = "1", code = "1",
+                        stringsAsFactors = FALSE)
+  conv_quotas(st, quota_lss(one_quota(action = "2"), members), "fr",
+              list(), list("1" = "Q1"))
+  expect_match(conv_table(st)$reason, "terminate action", fixed = TRUE)
+})
+
+test_that("a quota on a question the conversion dropped is refused", {
+  st <- conv_state()
+  members <- data.frame(quota_id = "1", qid = "9", code = "1",
+                        stringsAsFactors = FALSE)
+  conv_quotas(st, quota_lss(one_quota(), members), "fr", list(), list())
+  expect_match(conv_table(st)$reason, "not part of the converted survey",
+               fixed = TRUE)
+})
+
+test_that("a quota on a kind that has no single coded answer is refused", {
+  st <- conv_state()
+  members <- data.frame(quota_id = "1", qid = "1", code = "1",
+                        stringsAsFactors = FALSE)
+  defined <- list(Q1 = list(code = "Q1", kind = "text"))
+  conv_quotas(st, quota_lss(one_quota(), members), "fr", defined,
+              list("1" = "Q1"))
+  expect_match(conv_table(st)$reason, "text", fixed = TRUE)
+})
+
+test_that("a quota naming an answer code the question does not have is refused", {
+  st <- conv_state()
+  members <- data.frame(quota_id = "1", qid = "1", code = "9",
+                        stringsAsFactors = FALSE)
+  defined <- list(Q1 = list(code = "Q1", kind = "yesno"))
+  conv_quotas(st, quota_lss(one_quota(), members), "fr", defined,
+              list("1" = "Q1"))
+  expect_match(conv_table(st)$reason, "does not exist", fixed = TRUE)
+})
+
+test_that("an inactive quota is written active, and said", {
+  st <- conv_state()
+  members <- data.frame(quota_id = "1", qid = "1", code = "Y",
+                        stringsAsFactors = FALSE)
+  defined <- list(Q1 = list(code = "Q1", kind = "yesno"))
+  out <- conv_quotas(st, quota_lss(one_quota(active = "0"), members), "fr",
+                     defined, list("1" = "Q1"))
+  expect_length(out, 1L)
+  expect_identical(out[[1L]]$question, "Q1")
+  expect_true(any(grepl("inactive", st$notes, fixed = TRUE)))
+})
+
+# ---- (h5) whole surveys that exercise the remaining branches ------------------
+
+test_that("a survey that declares no language at all falls back to the default", {
+  lss <- one_choice()
+  lss$languages <- character(0)
+  lss$base_language <- ""
+  res <- lss_convert_spec(lss)
+  expect_identical(res$spec$languages, lss_spec_defaults$language)
+})
+
+test_that("a survey with no title in its base language is refused by name", {
+  lss <- one_choice()
+  lss$survey_language_settings$surveyls_title <- ""
+  res <- lss_convert_spec(lss)
+  expect_null(res$spec)
+  expect_true(any(res$unconvertible$item == "title"))
+})
+
+test_that("a group that holds no question is dropped with a note", {
+  lss <- one_choice()
+  lss$groups <- rbind(
+    lss$groups,
+    data.frame(gid = "2", sid = "1", group_order = "2", grelevance = "1",
+               randomization_group = "", stringsAsFactors = FALSE))
+  lss$group_l10ns <- rbind(
+    lss$group_l10ns,
+    data.frame(gid = "2", group_name = "G2", description = "",
+               language = "fr", stringsAsFactors = FALSE))
+  res <- lss_convert_spec(lss)
+  expect_true(any(grepl("holds no question", res$notes, fixed = TRUE)))
+  expect_length(res$spec$groups, 1L)
+})
+
+test_that("a specification the validator refuses is reported, not thrown", {
+  # Every question converts on its own; the assembly is what fails, and the
+  # refusal has to land in the report like any other unconvertible item.
+  lss <- one_choice()
+  testthat::local_mocked_bindings(
+    lss_spec = function(...) lssdoc_abort("nope", class = "lssdoc_bad_spec"))
+  res <- lss_convert_spec(lss)
+  expect_null(res$spec)
+  expect_true(any(res$unconvertible$item == "specification"))
+})
+
+test_that("a type lssdoc never heard of is named as such", {
+  lss <- one_choice()
+  lss$questions$type <- "@"
+  lss$questions$question_theme_name <- "whatever"
+  res <- lss_convert_spec(lss)
+  expect_match(res$unconvertible$reason[[1L]], "is not a type lssdoc can author",
+               fixed = TRUE)
+})
+
+test_that("a theme that is not the authorable one is replaced, and said", {
+  lss <- one_choice()
+  lss$questions$question_theme_name <- "listradio_custom"
+  res <- lss_convert_spec(lss)
+  expect_true(any(grepl("replaced by the authorable", res$notes, fixed = TRUE)))
+})
+
+test_that("soft mandatory is read as mandatory, and said", {
+  lss <- one_choice()
+  lss$questions$mandatory <- "S"
+  res <- lss_convert_spec(lss)
+  expect_true(res$spec$groups[[1L]]$questions[[1L]]$mandatory)
+  expect_true(any(grepl("soft mandatory", res$notes, fixed = TRUE)))
+})
+
+test_that("an attribute refusal drops the question it belongs to", {
+  lss <- one_choice()
+  lss$questions$type <- "R"
+  lss$questions$question_theme_name <- "ranking"
+  lss$questions$other <- "Y"
+  res <- lss_convert_spec(lss)
+  expect_null(res$spec)
+  expect_true(any(res$unconvertible$item == "other"))
+})
+
+test_that("an answer list with no scale column still reads, and empties", {
+  # `scale_id` is optional in the wild: without it nothing is off-scale, and
+  # the filter that keeps scale 0 keeps nothing, which is a shape refusal --
+  # never a half-read question.
+  lss <- one_choice()
+  lss$answers$scale_id <- NULL
+  res <- lss_convert_spec(lss)
+  expect_null(res$spec)
+  expect_true(any(res$unconvertible$item == "shape"))
+})
+
+test_that("an item with no label in the base language refuses its question", {
+  lss <- one_choice()
+  lss$answer_l10ns$answer <- c("", "")
+  res <- lss_convert_spec(lss)
+  expect_null(res$spec)
+  expect_true(any(res$unconvertible$item == "options"))
+})
+
+test_that("a subquestion list with no scale column still reads, and empties", {
+  # the mirror of the answers case above, on the other storage table
+  lss <- one_choice()
+  lss$questions$type <- "M"
+  lss$questions$question_theme_name <- "multiplechoice"
+  lss$answers <- NULL
+  lss$answer_l10ns <- NULL
+  lss$subquestions <- data.frame(
+    qid = c("2", "3"), parent_qid = "1", title = c("S1", "S2"),
+    question_order = c("1", "2"), stringsAsFactors = FALSE)
+  res <- lss_convert_spec(lss)
+  expect_null(res$spec)
+  expect_true(any(res$unconvertible$item == "shape"))
+})

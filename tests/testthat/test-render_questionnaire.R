@@ -236,3 +236,32 @@ test_that("render_questionnaire accepts a colors override and runs end-to-end", 
   expect_true(file.exists(out))
   expect_true(file.size(out) > 10000L)
 })
+
+# ---- the .pdf route ----------------------------------------------------------
+
+test_that("lss_detect_output_format reads both extensions and refuses a third", {
+  expect_identical(lss_detect_output_format("a.docx"), "docx")
+  expect_identical(lss_detect_output_format("a.PDF"), "pdf")
+  expect_error(lss_detect_output_format("a.odt"), class = "lssdoc_bad_output_ext")
+})
+
+test_that("the .pdf route renders a temporary .docx and converts it", {
+  # The conversion itself needs LibreOffice, which CI does not have: what is
+  # under test here is the ROUTE -- a temporary .docx, handed to the
+  # converter with the caller's own output path.
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    .render_questionnaire_docx = function(lss, output, ...) {
+      file.create(output)
+      invisible(output)
+    },
+    .docx_to_pdf = function(docx, pdf) {
+      seen <<- c(docx = docx, pdf = pdf)
+      invisible(pdf)
+    }
+  )
+  out <- tempfile(fileext = ".pdf")
+  .render_questionnaire_pdf(structure(list(), class = "lss"), out)
+  expect_match(seen[["docx"]], "[.]docx$")
+  expect_identical(seen[["pdf"]], out)
+})

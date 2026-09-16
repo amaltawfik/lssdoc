@@ -1023,3 +1023,35 @@ test_that("an unusable quota limit is refused", {
   expect_error(quota_spec(2.5), class = "lssdoc_bad_spec")
   expect_error(quota_spec(c(1L, 2L)), class = "lssdoc_bad_spec")
 })
+
+# ---- the argument gate and the emitter's own invariant -----------------------
+
+test_that("write_lss accepts a plain list and refuses anything else", {
+  skip_on_cran()   # writes a file
+  expect_error(write_lss(42, tempfile(fileext = ".lss")),
+               class = "lssdoc_bad_spec")
+
+  plain <- unclass(lss_example_spec(kinds = c("single", "text"), lang = "fr"))
+  expect_false(inherits(plain, "lss_spec"))
+  out <- tempfile(fileext = ".lss")
+  on.exit(unlink(out), add = TRUE)
+  suppressMessages(write_lss(plain, out))
+  expect_true(file.exists(out))
+
+  expect_error(write_lss(plain, 1L), class = "lssdoc_bad_path")
+})
+
+test_that("write_lss names an unknown settings field", {
+  spec <- lss_example_spec(kinds = "text", lang = "fr")
+  expect_error(
+    write_lss(spec, tempfile(fileext = ".lss"),
+              settings = list(no_such_field = "1")),
+    class = "lssdoc_bad_settings"
+  )
+})
+
+test_that("the relevance emitter refuses an expression the validator never saw", {
+  # `spec_validate()` owns the syntax, so this is an internal invariant: the
+  # emitter says so rather than writing an equation LimeSurvey cannot read.
+  expect_error(translate_relevance("Q1 ~ 2", list()), class = "lssdoc_bad_spec")
+})

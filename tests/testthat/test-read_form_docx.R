@@ -1119,3 +1119,397 @@ test_that("canonical_spec() normalizes counts, defaults and field order", {
   expect_identical(vector_form$groups[[1L]]$questions[[1L]]$text$fr,
                    "Deux\nlignes")
 })
+
+# ---- the reader's remaining refusals -----------------------------------------
+#
+# The reader has one branch per way a form can be wrong, and a branch that
+# never runs is a message nobody has ever read. What follows walks the ones
+# the round trips above cannot reach: the internals are called directly where
+# a whole Word document would only be a slower way to build the same input,
+# and a document is written where the branch is about the document itself.
+
+# One key/value row, as `form_table_row()` hands it over.
+form_raw_row <- function(key, value, row = 1L, numbered = FALSE) {
+  list(table = 1L, row = row, key_lines = key, value_lines = value,
+       numbered = numbered)
+}
+
+# One resolved entry, as `form_block_entries()` hands it to the builders.
+form_entry <- function(field, lines, lang = NA_character_, row = 1L) {
+  list(field = field, lang = lang, lines = lines, row = row, numbered = FALSE)
+}
+
+# Raw XML for a two-column table, cell by cell.
+form_cell_xml <- function(text) {
+  paste0("<w:tc><w:p><w:r><w:t>", text, "</w:t></w:r></w:p></w:tc>")
+}
+form_row_xml <- function(key, value) {
+  paste0("<w:tr>", form_cell_xml(key), form_cell_xml(value), "</w:tr>")
+}
+form_table_xml <- function(...) {
+  paste0("<w:tbl><w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid>",
+         paste0(c(...), collapse = ""), "</w:tbl>")
+}
+
+# ---- cell text ---------------------------------------------------------------
+
+test_that("a language token that is not a code is passed through untouched", {
+  expect_identical(form_lang_code("123"), "123")
+  expect_identical(form_lang_code("DE-informal"), "de-informal")
+})
+
+test_that("Word's break and symbol elements are read as what they show", {
+  doc <- form_xml(paste0(
+    "<w:p><w:r><w:t>a</w:t><w:tab/><w:t>b</w:t><w:cr/>",
+    "<w:sym w:char=\"00E9\"/><w:sym/><w:noBreakHyphen/><w:softHyphen/>",
+    "<w:t>c</w:t></w:r></w:p>"))
+  p <- xml2::xml_find_first(doc, "//w:p", FORM_NS)
+  expect_identical(form_para_lines(p), c("a b", "é-c"))
+
+  # a paragraph with no text element at all is one empty line
+  empty <- xml2::xml_find_first(form_xml("<w:p/>"), "//w:p", FORM_NS)
+  expect_identical(form_para_lines(empty), "")
+})
+
+# ---- the dictionaries --------------------------------------------------------
+
+test_that("a word that names no block and a field that has no label say so", {
+  expect_identical(form_block_lang("ceci n'est pas un bloc"), NA_character_)
+  expect_identical(form_label_of("question", "not_a_field",
+                                 lss_chrome_strings("fr")),
+                   "not_a_field")
+})
+
+# ---- rows and values ---------------------------------------------------------
+
+test_that("a row with nothing in either cell is not a row at all", {
+  ctx <- form_test_ctx()
+  expect_null(form_resolve_key(form_raw_row("", ""), "question", ctx))
+})
+
+test_that("the reserved other word still needs a label after the equals sign", {
+  ctx <- form_test_ctx()
+  expect_error(form_parse_items("Autre =", ctx, "options", "Options"),
+               class = "lssdoc_bad_form_value")
+})
+
+test_that("an array row or column cannot be the native other option", {
+  ctx <- form_test_ctx()
+  expect_error(form_parse_items(c("R1 = Ligne", "Autre"), ctx, "rows", "Lignes"),
+               class = "lssdoc_bad_form_value")
+  expect_error(form_parse_items("Autre", ctx, "columns", "Colonnes"),
+               class = "lssdoc_bad_form_value")
+})
+
+test_that("the declared languages are read as language codes, once each", {
+  ctx <- form_test_ctx(where = "Survey block")
+  expect_error(form_set_languages(list(form_entry("languages", "fr, 123")), ctx),
+               class = "lssdoc_bad_form_value")
+  expect_error(form_set_languages(list(form_entry("languages", "fr, fr")), ctx),
+               class = "lssdoc_bad_form_value")
+  expect_identical(form_set_languages(list(form_entry("languages", "fr, de-informal")),
+                                      ctx),
+                   c("fr", "de-informal"))
+})
+
+test_that("a block read before the survey one still has a language to read in", {
+  chrome <- lss_chrome_strings("fr")
+  ctx <- form_new_ctx("fixture.docx", collect = FALSE)
+  ctx$chrome_lang <- "fr"
+  ctx$chrome <- chrome
+  expect_null(ctx$languages)
+  block <- list(kind = "group",
+                rows = list(form_raw_row(chrome$form_title, c("A", "B"))))
+  # the group title takes one line, and this cell holds two
+  expect_error(form_block_entries(block, ctx), class = "lssdoc_bad_form_value")
+  expect_identical(ctx$languages, lss_spec_defaults$language)
+})
+
+# ---- one field across several languages --------------------------------------
+
+test_that("a text given in one language only is refused, naming the other", {
+  ctx <- form_test_ctx()
+  ctx$languages <- c("fr", "de")
+  entries <- list(form_entry("wording", "Question ?", "fr"))
+  expect_error(form_localized(entries, "wording", ctx, "Libellé"),
+               class = "lssdoc_bad_form_key")
+  # absent everywhere and not required: nothing, not a refusal
+  expect_null(form_localized(list(), "help", ctx, "Aide"))
+})
+
+test_that("an item list lines up with the primary language, item by item", {
+  ctx <- form_test_ctx()
+  ctx$languages <- c("fr", "de")
+  label <- "Options"
+  items <- function(fr = NULL, de = NULL) {
+    out <- list()
+    if (!is.null(fr)) out <- c(out, list(form_entry("options", fr, "fr")))
+    if (!is.null(de)) out <- c(out, list(form_entry("options", de, "de")))
+    out
+  }
+
+  # absent everywhere and not required
+  expect_null(form_localized_items(list(), "options", ctx, label))
+
+  # given in the translation only: the primary language defines the list
+  expect_error(form_localized_items(items(de = c("1 = Ja", "2 = Nein")),
+                                    "options", ctx, label),
+               class = "lssdoc_bad_form_key")
+
+  # given in the primary language only
+  expect_error(form_localized_items(items(fr = c("1 = Oui", "2 = Non")),
+                                    "options", ctx, label),
+               class = "lssdoc_bad_form_key")
+
+  # a translation with one item too few
+  expect_error(form_localized_items(items(c("1 = Oui", "2 = Non"), "1 = Ja"),
+                                    "options", ctx, label),
+               class = "lssdoc_bad_form_value")
+
+  # the other option in another position
+  expect_error(form_localized_items(items(c("1 = Oui", "Autre"),
+                                          c("Autre", "1 = Ja")),
+                                    "options", ctx, label),
+               class = "lssdoc_bad_form_value")
+
+  # a code that is not the one the primary language gave
+  expect_error(form_localized_items(items(c("1 = Oui", "2 = Non"),
+                                          c("1 = Ja", "9 = Nein")),
+                                    "options", ctx, label),
+               class = "lssdoc_bad_form_value")
+
+  # and the shape that does line up
+  ok <- form_localized_items(items(c("1 = Oui", "2 = Non"),
+                                   c("1 = Ja", "Nein")), "options", ctx, label)
+  expect_length(ok, 2L)
+  expect_identical(ok[[2L]]$text, list(fr = "Non", de = "Nein"))
+})
+
+# ---- one block into one piece of the spec ------------------------------------
+
+test_that("a question with no type is refused before anything else is read", {
+  ctx <- form_test_ctx()
+  expect_error(form_build_question(list(), "Q1", ctx),
+               class = "lssdoc_bad_form_value")
+})
+
+test_that("the position of the other option is checked against the options", {
+  ctx <- form_test_ctx()
+  base <- list(form_entry("type", "single"),
+               form_entry("wording", "Question ?", "fr"))
+
+  no_other <- c(base, list(form_entry("options", c("1 = Oui", "2 = Non"), "fr"),
+                           form_entry("other_position", "Fin")))
+  expect_error(form_build_question(no_other, "Q1", ctx),
+               class = "lssdoc_bad_form_value")
+
+  unknown_code <- c(base, list(
+    form_entry("options", c("1 = Oui", "2 = Non", "Autre"), "fr"),
+    form_entry("other_position", "Après 9")))
+  expect_error(form_build_question(unknown_code, "Q1", ctx),
+               class = "lssdoc_bad_form_value")
+})
+
+test_that("an exclusive line names an option code, and skips the other one", {
+  ctx <- form_test_ctx()
+  options <- list(list(code = "1", text = list(fr = "Oui")),
+                  list(other = TRUE, text = list(fr = "Autre")))
+  expect_error(
+    form_apply_exclusive(list(form_entry("exclusive", "9")), options, ctx),
+    class = "lssdoc_bad_form_value")
+  marked <- form_apply_exclusive(list(form_entry("exclusive", "1")), options, ctx)
+  expect_true(isTRUE(marked[[1L]]$exclusive))
+  expect_false(isTRUE(marked[[2L]]$exclusive))
+})
+
+test_that("a quota needs a condition, and defaults to no limit", {
+  ctx <- form_test_ctx(where = "Quota 1")
+  expect_error(form_build_quota(list(form_entry("name", "Genre", "fr")), ctx),
+               class = "lssdoc_bad_form_value")
+
+  quota <- form_build_quota(
+    list(form_entry("condition", "Q1 = 2"),
+         form_entry("message", "Merci", "fr")), ctx)
+  expect_identical(quota$limit, 0L)
+  expect_identical(quota$question, "Q1")
+})
+
+# ---- the body scan -----------------------------------------------------------
+
+test_that("a document with no body, and one with no table, are refused", {
+  ctx <- form_test_ctx()
+  ctx$path <- "fixture.docx"
+  headless <- xml2::read_xml(paste0(
+    "<w:document xmlns:w=\"",
+    "http://schemas.openxmlformats.org/wordprocessingml/2006/main\"/>"))
+  expect_error(form_scan_body(headless, ctx), class = "lssdoc_bad_form_file")
+  expect_error(form_scan_body(form_xml("<w:p/>"), ctx),
+               class = "lssdoc_bad_form_block")
+})
+
+test_that("two block titles in one table open two blocks", {
+  # Word merges two tables pasted one under the other: the second title row
+  # has to close the first block rather than be read as one of its fields.
+  chrome <- lss_chrome_strings("fr")
+  ctx <- form_test_ctx()
+  ctx$path <- "fixture.docx"
+  doc <- form_xml(form_table_xml(
+    form_row_xml(chrome$form_block_group, ""),
+    form_row_xml(chrome$form_title, "Profil"),
+    form_row_xml(chrome$form_block_question, "Q1"),
+    form_row_xml(chrome$meta_type, "text")))
+  blocks <- form_scan_body(doc, ctx)
+  expect_identical(vapply(blocks, `[[`, character(1), "kind"),
+                   c("group", "question"))
+})
+
+# ---- the assembly ------------------------------------------------------------
+
+test_that("a spec refusal that carries no code is matched on its message", {
+  # `spec_abort()` names the question; a refusal raised anywhere else in
+  # `lss_spec()` does not, and the anchored fallback is what names it then.
+  ctx <- form_test_ctx()
+  groups <- list(list(title = list(fr = "G"),
+                      questions = list(list(code = "Q10", kind = "text",
+                                            text = list(fr = "Question ?")))))
+  testthat::local_mocked_bindings(
+    lss_spec = function(...) {
+      lssdoc_abort("Something about Q10 does not work.", class = "lssdoc_bad_spec")
+    })
+  err <- expect_error(
+    form_assemble(list(title = list(fr = "T")), groups, list(), ctx),
+    class = "lssdoc_bad_form_spec")
+  expect_identical(err$form_code, "Q10")
+})
+
+# ---- the canonical form ------------------------------------------------------
+
+test_that("canonical_spec drops empty texts and keeps extra attributes", {
+  spec <- list(
+    languages = c("fr", "en"),
+    title = list(fr = "T", en = "T"),
+    groups = list(list(
+      title = list(fr = "G"),                       # no text for [en]
+      questions = list(list(
+        code = "Q1", kind = "multiple",
+        text = list(fr = "Question ?", en = ""),    # empty for [en]
+        help = list(fr = ""),                       # empty everywhere
+        attributes = list(zzz = 2L, aaa = 1L, min_answers = 1L))))))
+  out <- canonical_spec(spec)
+  q <- out$groups[[1L]]$questions[[1L]]
+
+  expect_identical(names(out$groups[[1L]]$title), "fr")
+  expect_identical(names(q$text), "fr")
+  expect_null(q$help)
+  expect_null(q$options)       # a kind that carries options, with none given
+  expect_null(q$max_answers)   # and no cap
+  # the cap's own attribute first, then everything else in name order
+  expect_identical(names(q$attributes), c("min_answers", "aaa", "zzz"))
+  expect_identical(q$attributes$zzz, "2")
+})
+
+# ---- documents the reader has to refuse as documents --------------------------
+
+test_that("an archive that is not a Word document is refused as a file", {
+  skip_on_cran()
+  skip_if_not_installed("zip")
+
+  # a zip with no word/document.xml at all
+  dir <- tempfile("lssdoc-nodoc")
+  dir.create(dir)
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+  writeLines("not a form", file.path(dir, "note.txt"))
+  no_part <- tempfile(fileext = ".docx")
+  on.exit(unlink(no_part), add = TRUE)
+  zip::zip(no_part, "note.txt", root = dir)
+  expect_error(read_form_docx(no_part), class = "lssdoc_bad_form_file")
+
+  # and one whose word/document.xml is not XML
+  dir2 <- tempfile("lssdoc-badxml")
+  dir.create(file.path(dir2, "word"), recursive = TRUE)
+  on.exit(unlink(dir2, recursive = TRUE), add = TRUE)
+  writeLines("this is not xml <<<", file.path(dir2, "word", "document.xml"))
+  bad_xml <- tempfile(fileext = ".docx")
+  on.exit(unlink(bad_xml), add = TRUE)
+  zip::zip(bad_xml, "word/document.xml", root = dir2)
+  expect_error(read_form_docx(bad_xml), class = "lssdoc_bad_form_file")
+})
+
+# A form whose properties carry the contract version but not the chrome
+# language: the reader then takes the language from the first block word.
+form_fixture_no_lang <- function(path, blocks, chrome_lang = "fr") {
+  chrome <- lss_chrome_strings(chrome_lang)
+  theme <- lss_render_theme()
+  theme$content_width_in <- lss_content_width_in("A4-portrait")
+  theme$chrome <- chrome
+  theme$chrome_lang <- chrome_lang
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "Questionnaire")
+  for (b in blocks) {
+    rows <- lapply(b$rows, function(r) form_row(r[[1L]], r[[2L]]))
+    doc <- form_add_block(doc, theme, rows, b$title, b$value %||% "")
+  }
+  doc <- officer::set_doc_properties(
+    doc,
+    values = list(`lssdoc-template-version` = as.character(LSS_FORM_VERSION)))
+  print(doc, target = path)
+  path
+}
+
+test_that("without the language property the first block word gives the chrome", {
+  skip_on_cran()
+  skip_if_no_docx()
+  path <- tempfile(fileext = ".docx")
+  on.exit(unlink(path), add = TRUE)
+  form_fixture_no_lang(path, form_blocks(lss_chrome_strings("de")),
+                       chrome_lang = "de")
+  spec <- read_form_docx(path)
+  expect_s3_class(spec, "lss_spec")
+  expect_identical(spec$languages, "fr")
+})
+
+# ---- collect mode: the block-level problems, in one pass ----------------------
+
+test_that("check_form_docx reads every block past a block-level problem", {
+  # Three documents, because the problems contradict one another: a form with
+  # no survey block cannot also have two. Each is read in collect mode, where
+  # a refusal records the problem and the read goes on to the next block --
+  # the path a strict read never takes.
+  skip_on_cran()
+  skip_if_no_docx()
+  chrome <- lss_chrome_strings("fr")
+  base <- form_blocks(chrome)
+  survey <- base[[1L]]
+  group <- base[[2L]]
+  question <- base[[3L]]
+  no_code <- utils::modifyList(question, list(value = ""))
+
+  # (1) no survey block at all: the group is read, and the missing block is
+  # the last thing said
+  a <- tempfile(fileext = ".docx")
+  on.exit(unlink(a), add = TRUE)
+  form_fixture(a, list(group, question))
+  out_a <- check_form_docx(a)
+  expect_true(any(out_a$class == "lssdoc_bad_form_block"))
+  expect_true(any(grepl("appears before", out_a$message, fixed = TRUE)))
+  expect_true(any(grepl("has no", out_a$message, fixed = TRUE)))
+
+  # (2) a survey block that is not the first table
+  b <- tempfile(fileext = ".docx")
+  on.exit(unlink(b), add = TRUE)
+  form_fixture(b, list(group, question, survey))
+  out_b <- check_form_docx(b)
+  expect_true(any(grepl("must be the first table", out_b$message, fixed = TRUE)))
+
+  # (3) a question before any group, a duplicate code, a question with no code
+  # and a second survey block
+  c_path <- tempfile(fileext = ".docx")
+  on.exit(unlink(c_path), add = TRUE)
+  form_fixture(c_path, list(survey, question, group, question, question,
+                            no_code, survey))
+  out_c <- check_form_docx(c_path)
+  expect_true(any(grepl("before any", out_c$message, fixed = TRUE)))
+  expect_true(any(grepl("duplicate question code", out_c$message, fixed = TRUE)))
+  expect_true(any(grepl("second", out_c$message, fixed = TRUE)))
+  expect_s3_class(out_c, "lss_form_check")
+})
