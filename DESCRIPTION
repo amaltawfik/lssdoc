@@ -13,10 +13,11 @@ Description: Turn a 'LimeSurvey' '.lss' survey export into a
     duplicate codes, array-scale inconsistencies and orphan structural
     references. Questionnaires travel the other way too: describe one in
     R, or fill in a Word form, and write a '.lss' file ready to import.
-    Meant for the people who work on questionnaires -- researchers,
-    methodologists, ethics committees, translators and reviewers -- and
-    fully local: the source file is the only input, and no questionnaire
-    content is uploaded to a third-party service.
+    Meant for the researchers and survey methodologists who build
+    questionnaires; the document it produces can go as it is to ethics
+    committees, translators and reviewers. Fully local: the source file
+    is the only input, and no questionnaire content is uploaded to a
+    third-party service.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en-US

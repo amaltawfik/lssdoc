@@ -18,7 +18,7 @@ library(lssdoc)
 ```
 
 Many questionnaires are written by people who live in Word, not in R:
-researchers, methodologists, translators, ethics committees. lssdoc lets
+researchers, methodologists, translators. lssdoc lets
 them write the questionnaire in a **Word form** and turns that form into a
 LimeSurvey `.lss` file ready to import. Nothing is typed twice, nothing is
 uploaded anywhere, and every mistake is reported before LimeSurvey ever
