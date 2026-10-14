@@ -4,6 +4,8 @@
 
 ## lssdoc 0.3.0
 
+CRAN release: 2026-09-16
+
 ### New features
 
 - Write a questionnaire in Word and turn it into a LimeSurvey file, with

@@ -1,12 +1,12 @@
 # lssdoc: LimeSurvey questionnaires to and from Word
 
 **lssdoc** turns a LimeSurvey `.lss` export into a polished Word
-(`.docx`) or PDF questionnaire document for anyone working with a
-LimeSurvey survey: researchers, survey methodologists, ethics
-committees, translators and reviewers. It renders the questionnaire
-content side by side in up to four languages, runs an automated
-integrity audit, and produces a layout that reads as a published
-instrument – not a developer dump.
+(`.docx`) or PDF questionnaire document. It is meant for the researchers
+and survey methodologists who build questionnaires; the document it
+produces can go as it is to ethics committees, translators and
+reviewers. It renders the questionnaire content side by side in up to
+four languages, runs an automated integrity audit, and produces a layout
+that reads as a published instrument – not a developer dump.
 
 It also works the other way around. Write a questionnaire in a Word
 form, or describe it in R, and lssdoc writes the `.lss` file you import
