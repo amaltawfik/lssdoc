@@ -1,4 +1,4 @@
-# Content-snapshot tests for render_questionnaire().
+# Content-snapshot tests for render_documentation().
 #
 # Each test renders a small docx and asserts that specific tokens are
 # present (or absent) in the document text. These are not exact-byte
@@ -15,27 +15,27 @@ lss_render_text <- function(lss, ..., template = "cards") {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss, out, template = template, ...)
+  render_documentation(lss, out, template = template, ...)
   s <- officer::docx_summary(officer::read_docx(out))
   paste(s$text[!is.na(s$text)], collapse = " | ")
 }
 
-# ---- Cover subtitle is the single-word localized noun --------------
+# ---- Cover subtitle: "Questionnaire documentation", localized ------
 
-test_that("the cover subtitle is the single localized noun in English", {
+test_that("the cover subtitle reads 'Questionnaire documentation' in English", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   txt <- lss_render_text(lss_cached(path), chrome_lang = "en")
-  expect_true(grepl("\\bQuestionnaire\\b", txt))
+  expect_true(grepl("Questionnaire documentation", txt, fixed = TRUE))
   # The previous long subtitle must NOT be there.
   expect_false(grepl("LimeSurvey questionnaire review", txt))
 })
 
-test_that("the cover subtitle localizes to 'Fragebogen' in German chrome", {
+test_that("the cover subtitle localizes to 'Fragebogendokumentation' in German chrome", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   txt <- lss_render_text(lss_cached(path), chrome_lang = "de")
-  expect_true(grepl("Fragebogen", txt))
+  expect_true(grepl("Fragebogendokumentation", txt, fixed = TRUE))
 })
 
 # ---- Mandatory header: full word in cards, abbreviated in table ----
@@ -227,7 +227,7 @@ test_that("the multiple-choice stem appears once, not once per option", {
   skip_on_cran()
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss, out, chrome_lang = "en", languages = c("fr", "de"))
+  render_documentation(lss, out, chrome_lang = "en", languages = c("fr", "de"))
   s <- officer::docx_summary(officer::read_docx(out))
   cells <- s$text[!is.na(s$text)]
   # Strip HTML tags the stem may carry, then count exact-containment.

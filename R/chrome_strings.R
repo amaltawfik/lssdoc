@@ -30,8 +30,9 @@
 lss_chrome_strings <- function(lang = "en") {
   base <- list(
     # ---- Cover page ----
-    cover_subtitle_review = "Questionnaire",
+    cover_subtitle_review = "Questionnaire documentation",
     cover_subtitle_audit  = "Questionnaire audit report",
+    questionnaire_title   = "Questionnaire",
     cover_source_file     = "Source file",
     cover_survey_id       = "Survey ID",
     cover_languages       = "Languages",
@@ -213,8 +214,9 @@ lss_chrome_strings <- function(lang = "en") {
   )
 
   fr <- list(
-    cover_subtitle_review = "Questionnaire",
+    cover_subtitle_review = "Documentation du questionnaire",
     cover_subtitle_audit  = "Rapport d'audit du questionnaire",
+    questionnaire_title   = "Questionnaire",
     cover_source_file     = "Fichier source",
     cover_survey_id       = "Identifiant de l'enqu\u00EAte",
     cover_languages       = "Langues",
@@ -375,8 +377,9 @@ lss_chrome_strings <- function(lang = "en") {
   )
 
   de <- list(
-    cover_subtitle_review = "Fragebogen",
+    cover_subtitle_review = "Fragebogendokumentation",
     cover_subtitle_audit  = "Audit-Bericht zum Fragebogen",
+    questionnaire_title   = "Fragebogen",
     cover_source_file     = "Quelldatei",
     cover_survey_id       = "Umfrage-ID",
     cover_languages       = "Sprachen",
@@ -535,8 +538,9 @@ lss_chrome_strings <- function(lang = "en") {
   # Spanish and Italian: best-effort translations. Reviewers should
   # validate before using in an official publication.
   es <- list(
-    cover_subtitle_review = "Cuestionario",
+    cover_subtitle_review = "Documentaci\u00F3n del cuestionario",
     cover_subtitle_audit  = "Informe de auditor\u00EDa del cuestionario",
+    questionnaire_title   = "Cuestionario",
     cover_source_file     = "Archivo de origen",
     cover_survey_id       = "Identificador de la encuesta",
     cover_languages       = "Idiomas",
@@ -693,8 +697,9 @@ lss_chrome_strings <- function(lang = "en") {
   )
 
   it <- list(
-    cover_subtitle_review = "Questionario",
+    cover_subtitle_review = "Documentazione del questionario",
     cover_subtitle_audit  = "Rapporto di audit del questionario",
+    questionnaire_title   = "Questionario",
     cover_source_file     = "File sorgente",
     cover_survey_id       = "Identificativo dell'indagine",
     cover_languages       = "Lingue",

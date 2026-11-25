@@ -2,7 +2,7 @@
 #'
 #' Read a LimeSurvey survey structure export (`.lss`, an XML file) and turn
 #' it into a structured `lss` object that the rest of the package can
-#' audit ([audit_lss()]) and render ([render_questionnaire()],
+#' audit ([audit_lss()]) and render ([render_documentation()],
 #' [render_audit()]). Parsing is fully local: the file is never uploaded
 #' anywhere.
 #'

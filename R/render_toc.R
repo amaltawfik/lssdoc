@@ -378,7 +378,7 @@ lss_render_toc <- function(doc, model, theme, sections = list()) {
                  lss_section_bookmark("consent"), top_props)
   }
   # Questionnaire section, then its groups indented beneath it.
-  doc <- entry(doc, chrome$cover_subtitle_review,
+  doc <- entry(doc, chrome$questionnaire_title,
                lss_section_bookmark("questionnaire"), top_props)
   primary <- model$languages[1]
   for (i in seq_along(model$groups)) {

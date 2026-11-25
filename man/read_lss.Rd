@@ -24,7 +24,7 @@ character.
 \description{
 Read a LimeSurvey survey structure export (\code{.lss}, an XML file) and turn
 it into a structured \code{lss} object that the rest of the package can
-audit (\code{\link[=audit_lss]{audit_lss()}}) and render (\code{\link[=render_questionnaire]{render_questionnaire()}},
+audit (\code{\link[=audit_lss]{audit_lss()}}) and render (\code{\link[=render_documentation]{render_documentation()}},
 \code{\link[=render_audit]{render_audit()}}). Parsing is fully local: the file is never uploaded
 anywhere.
 }

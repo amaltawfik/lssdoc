@@ -1,12 +1,12 @@
 #' Render a questionnaire to a Word document (internal)
 #'
-#' Internal Word-document renderer used by [render_questionnaire()] for the
+#' Internal Word-document renderer used by [render_documentation()] for the
 #' `.docx` branch. The user-facing API and argument documentation live on
-#' [render_questionnaire()].
+#' [render_documentation()].
 #'
 #' @keywords internal
 #' @noRd
-.render_questionnaire_docx <- function(
+.render_documentation_docx <- function(
   lss,
   output,
   languages = NULL,
@@ -25,6 +25,7 @@
   show_item_heading = FALSE,
   show_raw_filter = FALSE,
   show_groups = TRUE,
+  show_group_description = TRUE,
   show_welcome = TRUE,
   show_endtext = TRUE,
   show_description = TRUE,
@@ -218,7 +219,7 @@
   # Questionnaire section heading: anchors the TOC "Questionnaire" entry;
   # the group headings follow as styled sub-headings of this section.
   doc <- lss_render_section_heading(
-    doc, theme, theme$chrome$cover_subtitle_review,
+    doc, theme, theme$chrome$questionnaire_title,
     lss_section_bookmark("questionnaire")
   )
 
@@ -253,7 +254,8 @@
         table_rows,
         lss_table_template_rows_for_group(
           model$groups[[i]], langs, theme,
-          show_help = show_help, show_groups = show_groups, state = state
+          show_help = show_help, show_groups = show_groups,
+          show_group_description = show_group_description, state = state
         )
       )
     }
@@ -289,6 +291,7 @@
         show_attrs = show_attrs,
         show_technical_attrs = show_technical_attrs,
         show_groups = show_groups,
+        show_group_description = show_group_description,
         audit_idx = audit_idx,
         state = state
       )

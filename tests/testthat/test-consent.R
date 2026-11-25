@@ -8,7 +8,7 @@ test_that("show_consent renders the policy notice and consent checkbox", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(path, out, chrome_lang = "en")
+  render_documentation(path, out, chrome_lang = "en")
   txt <- paste(
     officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
   )
@@ -28,7 +28,7 @@ test_that("show_consent = FALSE omits the consent block", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(path, out, chrome_lang = "en", show_consent = FALSE)
+  render_documentation(path, out, chrome_lang = "en", show_consent = FALSE)
   txt <- paste(
     officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
   )

@@ -12,20 +12,20 @@ test_that("print.lss summarizes the structure", {
   expect_invisible(print(lss))
 })
 
-test_that(".render_questionnaire_docx validates lss and output", {
+test_that(".render_documentation_docx validates lss and output", {
   expect_error(
-    lssdoc:::.render_questionnaire_docx(list(), tempfile(fileext = ".docx")),
+    lssdoc:::.render_documentation_docx(list(), tempfile(fileext = ".docx")),
     class = "lssdoc_bad_lss"
   )
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- lss_cached(path)
   expect_error(
-    lssdoc:::.render_questionnaire_docx(lss, 123),
+    lssdoc:::.render_documentation_docx(lss, 123),
     class = "lssdoc_bad_output"
   )
   expect_error(
-    lssdoc:::.render_questionnaire_docx(lss, c("a", "b")),
+    lssdoc:::.render_documentation_docx(lss, c("a", "b")),
     class = "lssdoc_bad_output"
   )
 })

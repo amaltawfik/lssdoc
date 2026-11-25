@@ -47,7 +47,7 @@ test_that("cover page renders admin and privacy settings when requested", {
 
   out <- tempfile(fileext = ".docx")
   expect_no_error(
-    render_questionnaire(
+    render_documentation(
       lss, out,
       languages             = c("en", "fr"),
       template              = "table",
@@ -81,7 +81,7 @@ test_that("table template renders the full demo across four languages", {
 
   out <- tempfile(fileext = ".docx")
   expect_no_error(
-    render_questionnaire(
+    render_documentation(
       lss, out,
       languages        = langs,
       template         = "table",

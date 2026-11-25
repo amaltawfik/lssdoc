@@ -19,7 +19,8 @@
 lss_render_group <- function(doc, group, langs, theme,
                              show_help, show_attrs, show_technical_attrs,
                              audit_idx, state,
-                             show_groups = TRUE) {
+                             show_groups = TRUE,
+                             show_group_description = TRUE) {
   # The group index must still advance even when the banner itself is
   # hidden -- bookmarks, audit references and the TOC depend on it.
   state$group_index <- state$group_index + 1L
@@ -73,7 +74,7 @@ lss_render_group <- function(doc, group, langs, theme,
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
     logical(1)
   ))
-  if (any_desc) {
+  if (any_desc && isTRUE(show_group_description)) {
     doc <- lss_render_lang_block(doc, group$descriptions, langs, theme,
                                  size = theme$size_subq, italic = TRUE)
   }

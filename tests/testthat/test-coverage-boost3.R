@@ -241,7 +241,7 @@ test_that("a group description and answer-order note render in both templates", 
   for (tmpl in c("cards", "table")) {
     out <- tempfile(fileext = ".docx")
     on.exit(unlink(out), add = TRUE)
-    render_questionnaire(lss, out, template = tmpl,
+    render_documentation(lss, out, template = tmpl,
                          languages = c("en", "de", "es", "fr"),
                          chrome_lang = "en", show_help = TRUE)
     expect_true(file.exists(out))

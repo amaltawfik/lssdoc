@@ -26,7 +26,7 @@
 #'   `1.5` and `0.75`, tuned to a 2:1 logo. Resize or pre-crop your
 #'   image to fit a different aspect ratio.
 #' @param font Optional body font name (character). `NULL` (default)
-#'   keeps Calibri. See [render_questionnaire()] for guidance on
+#'   keeps Calibri. See [render_documentation()] for guidance on
 #'   overrides.
 #' @param font_code Optional monospace font (character) used for
 #'   code-like content (variable codes, raw expressions). `NULL`
@@ -34,10 +34,10 @@
 #' @param colors Optional named list of hex color overrides for the
 #'   editorial petrol-blue palette. `NULL` (default) keeps the
 #'   package palette intact. Same shape and accepted names as in
-#'   [render_questionnaire()].
+#'   [render_documentation()].
 #' @param authors,description Optional cover-page credit block
 #'   (`authors`) and free-form note (`description`). `NULL` (default)
-#'   for both. Same shapes as in [render_questionnaire()].
+#'   for both. Same shapes as in [render_documentation()].
 #' @param chrome_lang Language used for the document chrome (column
 #'   headers, row labels, audit section). One of `"en"`, `"fr"`,
 #'   `"de"`, `"es"`, `"it"`. `NULL` (default) follows `languages[1]`
@@ -46,7 +46,7 @@
 #' @return The `output` path, invisibly.
 #'
 #' @seealso [audit_lss()] to inspect the same findings in the console;
-#'   [render_questionnaire()] for the full questionnaire document.
+#'   [render_documentation()] for the full questionnaire document.
 #'
 #' @examples
 #' \dontrun{

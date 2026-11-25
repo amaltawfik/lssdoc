@@ -1,19 +1,19 @@
-test_that("render_questionnaire rejects objects that are not lss", {
+test_that("render_documentation rejects objects that are not lss", {
   expect_error(
-    render_questionnaire(list(), tempfile(fileext = ".docx")),
+    render_documentation(list(), tempfile(fileext = ".docx")),
     class = "lssdoc_bad_input"
   )
 })
 
-test_that("render_questionnaire validates its output argument", {
+test_that("render_documentation validates its output argument", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- lss_cached(path)
-  expect_error(render_questionnaire(lss, 123), class = "lssdoc_bad_output")
-  expect_error(render_questionnaire(lss, c("a", "b")), class = "lssdoc_bad_output")
+  expect_error(render_documentation(lss, 123), class = "lssdoc_bad_output")
+  expect_error(render_documentation(lss, c("a", "b")), class = "lssdoc_bad_output")
 })
 
-test_that("render_questionnaire produces a non-empty .docx for hesav (2 langs)", {
+test_that("render_documentation produces a non-empty .docx for hesav (2 langs)", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
@@ -22,7 +22,7 @@ test_that("render_questionnaire produces a non-empty .docx for hesav (2 langs)",
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
 
-  res <- render_questionnaire(lss_cached(path), out, chrome_lang = "en")
+  res <- render_documentation(lss_cached(path), out, chrome_lang = "en")
   expect_identical(res, out)
   expect_true(file.exists(out))
   expect_true(file.size(out) > 10000)
@@ -39,7 +39,7 @@ test_that("render_questionnaire produces a non-empty .docx for hesav (2 langs)",
   expect_true(sum(s$content_type == "table cell") > 200L)
 })
 
-test_that("render_questionnaire with show_audit = FALSE drops the audit section", {
+test_that("render_documentation with show_audit = FALSE drops the audit section", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
@@ -48,7 +48,7 @@ test_that("render_questionnaire with show_audit = FALSE drops the audit section"
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
 
-  render_questionnaire(lss_cached(path), out, show_audit = FALSE)
+  render_documentation(lss_cached(path), out, show_audit = FALSE)
   s <- officer::docx_summary(officer::read_docx(out))
   # No "Audit findings" heading is present in the document.
   txt <- s$text[!is.na(s$text)]
@@ -66,7 +66,7 @@ test_that("the cover page carries the Survey ID and LimeSurvey last-save fields"
   # Force English chrome so the test pins exact English labels; the
   # default chrome_lang would follow the survey's primary content
   # language (e.g. German for this fixture) and translate the labels.
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en")
+  render_documentation(lss_cached(path), out, chrome_lang = "en")
   s <- officer::docx_summary(officer::read_docx(out))
   txt <- paste(s$text[!is.na(s$text)], collapse = " | ")
   expect_true(grepl("Survey ID", txt))
@@ -74,23 +74,23 @@ test_that("the cover page carries the Survey ID and LimeSurvey last-save fields"
   expect_true(grepl("354814", txt))  # demo_survey survey id
 })
 
-test_that("render_questionnaire validates the logo argument", {
+test_that("render_documentation validates the logo argument", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- lss_cached(path)
   expect_error(
-    render_questionnaire(lss, tempfile(fileext = ".docx"), logo = c("a", "b")),
+    render_documentation(lss, tempfile(fileext = ".docx"), logo = c("a", "b")),
     class = "lssdoc_bad_logo"
   )
   expect_error(
-    render_questionnaire(lss, tempfile(fileext = ".docx"), logo = "nope.png"),
+    render_documentation(lss, tempfile(fileext = ".docx"), logo = "nope.png"),
     class = "lssdoc_logo_not_found"
   )
   bad <- tempfile(fileext = ".gif")
   writeLines("x", bad)
   on.exit(unlink(bad), add = TRUE)
   expect_error(
-    render_questionnaire(lss, tempfile(fileext = ".docx"), logo = bad),
+    render_documentation(lss, tempfile(fileext = ".docx"), logo = bad),
     class = "lssdoc_bad_logo_format"
   )
 })
@@ -112,14 +112,14 @@ test_that("a valid logo is embedded in the rendered document", {
   on.exit(unlink(out), add = TRUE)
   size_no_logo <- file.size({
     f <- tempfile(fileext = ".docx")
-    render_questionnaire(lss_cached(path), f)
+    render_documentation(lss_cached(path), f)
     f
   })
-  render_questionnaire(lss_cached(path), out, logo = logo)
+  render_documentation(lss_cached(path), out, logo = logo)
   expect_true(file.size(out) > size_no_logo)
 })
 
-test_that("render_questionnaire errors with the right class when officer/flextable are missing", {
+test_that("render_documentation errors with the right class when officer/flextable are missing", {
   skip("requires the suggested packages to be intentionally unavailable")
 })
 
@@ -171,7 +171,7 @@ test_that("authors and description appear on the cover when supplied", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss_cached(path), out, languages = c("fr", "de"),
     authors = list(
       list(name = "Amal Tawfik", affiliation = "HES-SO Valais",
@@ -220,7 +220,7 @@ test_that("lss_validate_colors accepts NULL, normalizes hex maps, rejects garbag
   )
 })
 
-test_that("render_questionnaire accepts a colors override and runs end-to-end", {
+test_that("render_documentation accepts a colors override and runs end-to-end", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
@@ -228,7 +228,7 @@ test_that("render_questionnaire accepts a colors override and runs end-to-end", 
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss_cached(path), out,
     languages = c("fr", "de"),
     colors = list(primary = "#5C9F1A", accent = "#7FA82E")
@@ -251,7 +251,7 @@ test_that("the .pdf route renders a temporary .docx and converts it", {
   # converter with the caller's own output path.
   seen <- NULL
   testthat::local_mocked_bindings(
-    .render_questionnaire_docx = function(lss, output, ...) {
+    .render_documentation_docx = function(lss, output, ...) {
       file.create(output)
       invisible(output)
     },
@@ -261,7 +261,7 @@ test_that("the .pdf route renders a temporary .docx and converts it", {
     }
   )
   out <- tempfile(fileext = ".pdf")
-  .render_questionnaire_pdf(structure(list(), class = "lss"), out)
+  .render_documentation_pdf(structure(list(), class = "lss"), out)
   expect_match(seen[["docx"]], "[.]docx$")
   expect_identical(seen[["pdf"]], out)
 })

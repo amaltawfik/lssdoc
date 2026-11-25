@@ -243,7 +243,7 @@ test_that("a render with every option enabled exercises the optional paths", {
     value = "Please specify", language = "", stringsAsFactors = FALSE))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss, out, template = "cards", languages = c("en", "de", "es", "fr"),
     chrome_lang = "en", show_help = TRUE, show_audit = TRUE,
     show_index = TRUE, show_quotas = TRUE, show_raw_filter = TRUE)
@@ -258,7 +258,7 @@ test_that("rendering the audit-demo survey surfaces inline audit markers", {
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
   for (tmpl in c("cards", "table")) {
-    render_questionnaire(lss_cached(path), out, template = tmpl,
+    render_documentation(lss_cached(path), out, template = tmpl,
                          chrome_lang = "en", show_audit = TRUE, show_help = TRUE)
     expect_true(file.exists(out))
   }

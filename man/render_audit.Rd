@@ -44,7 +44,7 @@ the cover logo-free.}
 image to fit a different aspect ratio.}
 
 \item{font}{Optional body font name (character). \code{NULL} (default)
-keeps Calibri. See \code{\link[=render_questionnaire]{render_questionnaire()}} for guidance on
+keeps Calibri. See \code{\link[=render_documentation]{render_documentation()}} for guidance on
 overrides.}
 
 \item{font_code}{Optional monospace font (character) used for
@@ -54,11 +54,11 @@ code-like content (variable codes, raw expressions). \code{NULL}
 \item{colors}{Optional named list of hex color overrides for the
 editorial petrol-blue palette. \code{NULL} (default) keeps the
 package palette intact. Same shape and accepted names as in
-\code{\link[=render_questionnaire]{render_questionnaire()}}.}
+\code{\link[=render_documentation]{render_documentation()}}.}
 
 \item{authors, description}{Optional cover-page credit block
 (\code{authors}) and free-form note (\code{description}). \code{NULL} (default)
-for both. Same shapes as in \code{\link[=render_questionnaire]{render_questionnaire()}}.}
+for both. Same shapes as in \code{\link[=render_documentation]{render_documentation()}}.}
 
 \item{chrome_lang}{Language used for the document chrome (column
 headers, row labels, audit section). One of \code{"en"}, \code{"fr"},
@@ -91,5 +91,5 @@ render_audit("survey.lss", "qa.pdf")
 }
 \seealso{
 \code{\link[=audit_lss]{audit_lss()}} to inspect the same findings in the console;
-\code{\link[=render_questionnaire]{render_questionnaire()}} for the full questionnaire document.
+\code{\link[=render_documentation]{render_documentation()}} for the full questionnaire document.
 }

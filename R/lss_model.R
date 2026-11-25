@@ -2,7 +2,7 @@
 #'
 #' Join the structural and localized sections of a parsed `.lss` into a
 #' per-group, per-question model keyed by language. This is the backbone
-#' consumed by [audit_lss()] and [render_questionnaire()]: it resolves the
+#' consumed by [audit_lss()] and [render_documentation()]: it resolves the
 #' display order, attaches each question's localized texts, answer options,
 #' subquestions, and attributes, and labels the question type. Language
 #' identifiers and all user text are preserved verbatim.

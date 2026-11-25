@@ -3,7 +3,7 @@
 # URL-splitting helpers. (The audit detectors that only fire on
 # malformed surveys are covered by test-audit-fixture.R, which audits
 # the bundled audit_demo.lss.) These lift render_audit_section.R,
-# render_cover.R and render_questionnaire.R toward full coverage.
+# render_cover.R and render_documentation.R toward full coverage.
 
 # ---- print.lss_audit: the clean and the capped/overflow branches ---
 
@@ -46,11 +46,11 @@ test_that("print.lss_audit caps the list and summarizes the remainder", {
 
 # ---- Output-extension guard ----------------------------------------
 
-test_that("render_questionnaire rejects an output path that is neither .docx nor .pdf", {
+test_that("render_documentation rejects an output path that is neither .docx nor .pdf", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   expect_error(
-    render_questionnaire(path, tempfile(fileext = ".txt")),
+    render_documentation(path, tempfile(fileext = ".txt")),
     class = "lssdoc_bad_output_ext"
   )
 })

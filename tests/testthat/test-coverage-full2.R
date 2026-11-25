@@ -80,7 +80,7 @@ test_that("a multiple-choice question with a real exclude_all_others renders its
   lss$question_attributes <- qa
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss, out, template = "cards", languages = LL,
+  render_documentation(lss, out, template = "cards", languages = LL,
                        chrome_lang = "en")
   expect_true(file.exists(out))
 })
@@ -98,7 +98,7 @@ test_that("the cover renders optional survey metadata and privacy settings", {
   lss$surveys$active <- "Y"
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss, out, template = "cards", languages = LL, chrome_lang = "en",
     show_privacy_settings = TRUE,
     description = "Protocol at https://example.org/study and more text.")
@@ -120,7 +120,7 @@ test_that("a quota with a localized name and message renders its rows", {
   lss$quota_languagesettings <- qls
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss, out, template = "cards", languages = LL,
+  render_documentation(lss, out, template = "cards", languages = LL,
                        chrome_lang = "en", show_quotas = TRUE)
   expect_true(file.exists(out))
 })

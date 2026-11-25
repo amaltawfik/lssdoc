@@ -31,17 +31,17 @@ test_that("lss_section parses fields, empty rows and missing cells", {
   expect_null(lssdoc:::lss_section(doc, "absent"))
 })
 
-test_that("render_questionnaire validates base_size bounds", {
+test_that("render_documentation validates base_size bounds", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   lss <- lss_cached(path)
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  expect_error(render_questionnaire(lss, out, base_size = 99),
+  expect_error(render_documentation(lss, out, base_size = 99),
                class = "lssdoc_bad_base_size")
-  expect_error(render_questionnaire(lss, out, base_size = 3),
+  expect_error(render_documentation(lss, out, base_size = 3),
                class = "lssdoc_bad_base_size")
-  expect_error(render_questionnaire(lss, out, base_size = NA_real_),
+  expect_error(render_documentation(lss, out, base_size = NA_real_),
                class = "lssdoc_bad_base_size")
 })
 
@@ -74,7 +74,7 @@ test_that("the table template surfaces the raw filter line when asked", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, template = "table",
+  render_documentation(lss_cached(path), out, template = "table",
                        languages = c("fr", "de"), chrome_lang = "en",
                        show_raw_filter = TRUE)
   txt <- paste(officer::docx_summary(officer::read_docx(out))$text, collapse = " | ")

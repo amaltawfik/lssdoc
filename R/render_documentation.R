@@ -1,4 +1,4 @@
-#' Render a LimeSurvey questionnaire to a Word or PDF document
+#' Render the documentation of a LimeSurvey questionnaire to Word or PDF
 #'
 #' Build a professional questionnaire document from a LimeSurvey survey,
 #' displaying up to four languages side by side. Each question becomes a
@@ -105,6 +105,11 @@
 #'   `FALSE` to flatten the document into a single sequence of items
 #'   with no section breaks (useful when groups exist only as
 #'   internal organization).
+#' @param show_group_description Logical. If `TRUE` (default), the
+#'   description of a group is printed under its heading: it is the text
+#'   LimeSurvey shows respondents under the group title. `FALSE` leaves
+#'   it out. In the `"table"` template the description belongs to the
+#'   group rows, so `show_groups = FALSE` leaves it out as well.
 #' @param show_welcome Logical. If `TRUE` (default), include the
 #'   survey's multilingual welcome text (`surveyls_welcometext`) as
 #'   a side-by-side block (cards) or embedded row (table).
@@ -305,21 +310,21 @@
 #' file <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
 #'
 #' # One-shot: parse + render Word document
-#' render_questionnaire(file, tempfile(fileext = ".docx"))
+#' render_documentation(file, tempfile(fileext = ".docx"))
 #'
 #' # Same call, PDF output (format inferred from extension)
-#' render_questionnaire(file, tempfile(fileext = ".pdf"))
+#' render_documentation(file, tempfile(fileext = ".pdf"))
 #'
 #' # Parse once, render several variants without re-parsing
 #' lss <- read_lss(file)
-#' render_questionnaire(lss, tempfile(fileext = ".docx"),
+#' render_documentation(lss, tempfile(fileext = ".docx"),
 #'                      languages = "en")
-#' render_questionnaire(lss, tempfile(fileext = ".docx"),
+#' render_documentation(lss, tempfile(fileext = ".docx"),
 #'                      template = "table",
 #'                      languages = c("en", "fr"))
 #'
 #' # Branded cover with authors block and palette override
-#' render_questionnaire(
+#' render_documentation(
 #'   lss,
 #'   tempfile(fileext = ".docx"),
 #'   template    = "table",
@@ -334,7 +339,7 @@
 #' )
 #' }
 #' @export
-render_questionnaire <- function(
+render_documentation <- function(
   input,
   output,
   languages = NULL,
@@ -353,6 +358,7 @@ render_questionnaire <- function(
   show_item_heading = FALSE,
   show_raw_filter = FALSE,
   show_groups = TRUE,
+  show_group_description = TRUE,
   show_welcome = TRUE,
   show_endtext = TRUE,
   show_description = TRUE,
@@ -383,9 +389,9 @@ render_questionnaire <- function(
   args$lss <- lss
   do.call(
     if (identical(lss_detect_output_format(output), "pdf"))
-      .render_questionnaire_pdf
+      .render_documentation_pdf
     else
-      .render_questionnaire_docx,
+      .render_documentation_docx,
     args
   )
 }
@@ -411,9 +417,9 @@ lss_detect_output_format <- function(output) {
 #'
 #' @keywords internal
 #' @noRd
-.render_questionnaire_pdf <- function(lss, output, ...) {
+.render_documentation_pdf <- function(lss, output, ...) {
   tmp <- tempfile(fileext = ".docx")
   on.exit(unlink(tmp), add = TRUE)
-  .render_questionnaire_docx(lss, tmp, ...)
+  .render_documentation_docx(lss, tmp, ...)
   .docx_to_pdf(tmp, output)
 }

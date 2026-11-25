@@ -345,7 +345,8 @@ lss_table_text_row <- function(lss, langs, field, kind) {
 #' @noRd
 lss_table_template_rows_for_group <- function(g, langs, theme,
                                               show_help, state,
-                                              show_groups = TRUE) {
+                                              show_groups = TRUE,
+                                              show_group_description = TRUE) {
   chrome <- theme$chrome
   rows <- list()
   # The group index must still advance even when the row itself is
@@ -377,7 +378,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
       v <- if (!is.null(g$descriptions[[lg]])) g$descriptions[[lg]] else NA_character_
       if (is.null(v) || is.na(v)) NA_character_ else as.character(v)
     }, character(1))
-    if (any(!is.na(desc_vals) & nzchar(trimws(desc_vals)))) {
+    if (isTRUE(show_group_description) &&
+        any(!is.na(desc_vals) & nzchar(trimws(desc_vals)))) {
       rows[[length(rows) + 1L]] <- list(
         kind = "group_description",
         text_by_lang = stats::setNames(as.list(desc_vals), langs)

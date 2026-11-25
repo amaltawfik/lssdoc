@@ -2,7 +2,7 @@
 #
 # The review templates (`cards`, `table`) answer "what does this survey
 # contain?"; the form answers "what do I have to type to author one?". It is
-# the writing-side counterpart of `render_questionnaire()`: one Word table per
+# the writing-side counterpart of `render_documentation()`: one Word table per
 # block (Survey, Group, Question, Quota), two columns, key on the left and
 # value on the right, every key a localized label recognized by its TEXT and
 # never by its position. `read_form_docx()` (0.3.0, step 3) parses these
@@ -792,7 +792,7 @@ form_add_block <- function(doc, theme, rows, title_key, title_value = "") {
 #' \strong{Experimental.} Write an [lss_spec()] as a `.docx` **form**: one
 #' two-column table per block (Survey, Group, Question, Quota), keys on the
 #' left, values on the right. Unlike the review documents produced by
-#' [render_questionnaire()], this document is meant to be *edited*: an author
+#' [render_documentation()], this document is meant to be *edited*: an author
 #' fills or changes the value cells in Word and the companion reader
 #' (0.3.0) turns the file back into a specification.
 #'
@@ -860,7 +860,7 @@ form_add_block <- function(doc, theme, rows, title_key, title_value = "") {
 #'   file.exists(out)
 #' }
 #' @seealso [lss_template_docx()] for a blank template, [lss_spec()],
-#'   [write_lss()], [render_questionnaire()].
+#'   [write_lss()], [render_documentation()].
 #' @export
 write_form_docx <- function(spec, path, lang = NULL, hints = FALSE,
                             strict = TRUE) {

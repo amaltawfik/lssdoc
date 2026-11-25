@@ -17,7 +17,7 @@ test_that("show_quotas renders a quota section with resolved conditions", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(out = out, input = path, chrome_lang = "en")
+  render_documentation(out = out, input = path, chrome_lang = "en")
   txt <- paste(
     officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
   )
@@ -41,7 +41,7 @@ test_that("show_quotas = FALSE and quota-less surveys produce no quota section",
 
   out_off <- tempfile(fileext = ".docx")
   on.exit(unlink(out_off), add = TRUE)
-  render_questionnaire(demo, out_off, chrome_lang = "en", show_quotas = FALSE)
+  render_documentation(demo, out_off, chrome_lang = "en", show_quotas = FALSE)
   t_off <- paste(
     officer::docx_summary(officer::read_docx(out_off))$text, collapse = " | "
   )
@@ -54,7 +54,7 @@ test_that("show_quotas = FALSE and quota-less surveys produce no quota section",
   lss_noq$quota_members <- lss_noq$quota_members[0, , drop = FALSE]
   out_none <- tempfile(fileext = ".docx")
   on.exit(unlink(out_none), add = TRUE)
-  render_questionnaire(lss_noq, out_none, chrome_lang = "en")
+  render_documentation(lss_noq, out_none, chrome_lang = "en")
   t_none <- paste(
     officer::docx_summary(officer::read_docx(out_none))$text, collapse = " | "
   )

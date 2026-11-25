@@ -96,7 +96,7 @@ test_that("a render with authors, description, admin/privacy and item headings s
   )
 
   expect_no_error(
-    render_questionnaire(
+    render_documentation(
       lss_cached(path), out, chrome_lang = "en",
       logo = logo,
       authors = authors,

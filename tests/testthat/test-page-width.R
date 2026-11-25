@@ -34,8 +34,8 @@ test_that("page_format = 'auto' is template-aware (cards portrait, table landsca
   cards_out <- tempfile(fileext = ".docx")
   table_out <- tempfile(fileext = ".docx")
   on.exit(unlink(c(cards_out, table_out)), add = TRUE)
-  render_questionnaire(lss, cards_out, template = "cards", chrome_lang = "en")
-  render_questionnaire(lss, table_out, template = "table", chrome_lang = "en")
+  render_documentation(lss, cards_out, template = "cards", chrome_lang = "en")
+  render_documentation(lss, table_out, template = "table", chrome_lang = "en")
   expect_identical(orientation_of(cards_out), "portrait")
   expect_identical(orientation_of(table_out), "landscape")
 })
@@ -54,7 +54,7 @@ test_that("landscape cards widen every panel without overflowing", {
   for (tmpl in c("cards", "table")) {
     out <- tempfile(fileext = ".docx")
     expect_no_error(
-      render_questionnaire(lss, out, template = tmpl,
+      render_documentation(lss, out, template = tmpl,
                            page_format = "A4-landscape", chrome_lang = "en")
     )
     expect_true(file.size(out) > 10000L)

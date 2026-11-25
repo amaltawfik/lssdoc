@@ -68,7 +68,7 @@ docx_rows <- function(s) {
 render_summary <- function(lss, ...) {
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  suppressMessages(render_questionnaire(lss, out, ...))
+  suppressMessages(render_documentation(lss, out, ...))
   officer::docx_summary(officer::read_docx(out))
 }
 
@@ -610,7 +610,7 @@ render_grids <- function(lss, ...) {
   out <- tempfile(fileext = ".docx")
   dir <- tempfile()
   on.exit(unlink(c(out, dir), recursive = TRUE), add = TRUE)
-  suppressMessages(render_questionnaire(lss, out, ...))
+  suppressMessages(render_documentation(lss, out, ...))
   utils::unzip(out, files = "word/document.xml", exdir = dir)
   xml <- xml2::read_xml(file.path(dir, "word", "document.xml"))
   ns <- c(w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main")

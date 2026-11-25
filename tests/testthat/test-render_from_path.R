@@ -1,4 +1,4 @@
-test_that("render_questionnaire parses then renders to .docx", {
+test_that("render_documentation parses then renders to .docx", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
@@ -6,7 +6,7 @@ test_that("render_questionnaire parses then renders to .docx", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  res <- render_questionnaire(path, out)
+  res <- render_documentation(path, out)
   expect_identical(res, out)
   expect_true(file.size(out) > 10000)
 })
@@ -38,7 +38,7 @@ test_that(".docx_to_pdf reports a clear error when soffice is unavailable", {
   )
 })
 
-test_that("render_questionnaire and render_audit produce PDFs when soffice is present", {
+test_that("render_documentation and render_audit produce PDFs when soffice is present", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
@@ -52,7 +52,7 @@ test_that("render_questionnaire and render_audit produce PDFs when soffice is pr
   pdf_aud  <- tempfile(fileext = ".pdf")
   on.exit({ unlink(pdf_full); unlink(pdf_aud) }, add = TRUE)
 
-  render_questionnaire(path, pdf_full)
+  render_documentation(path, pdf_full)
   expect_true(file.exists(pdf_full))
   expect_true(file.size(pdf_full) > 50000)
 

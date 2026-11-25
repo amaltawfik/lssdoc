@@ -47,11 +47,11 @@ print(audit_lss(lss2))
 # 4. Rendu Word complet (avec audit incrusté par défaut)
 # -----------------------------------------------------------------
 review_docx <- file.path(out_dir, "review.docx")
-render_questionnaire(lss, review_docx)
+render_documentation(lss, review_docx)
 
 # Version finale propre (sans audit)
 final_docx <- file.path(out_dir, "final.docx")
-render_questionnaire(lss, final_docx, show_audit = FALSE)
+render_documentation(lss, final_docx, show_audit = FALSE)
 
 
 # -----------------------------------------------------------------
@@ -64,7 +64,7 @@ render_audit(lss2, audit_docx) # le fichier qui a 1 finding
 # -----------------------------------------------------------------
 # 6. Pipelines en un appel (parse + render)
 # -----------------------------------------------------------------
-render_questionnaire(
+render_documentation(
   system.file("extdata", "hesav_2026.lss", package = "lssdoc"),
   file.path(out_dir, "pipe_review.docx")
 )
@@ -77,7 +77,7 @@ render_audit(
 # -----------------------------------------------------------------
 # 7. Sortie PDF (nécessite LibreOffice installé)
 # -----------------------------------------------------------------
-render_questionnaire(
+render_documentation(
   system.file("extdata", "hesav_2026.lss", package = "lssdoc"),
   file.path(out_dir, "review.pdf")
 )
@@ -99,7 +99,7 @@ rect(0, 0, 1, 1, col = "#1F4E79", border = NA)
 text(0.5, 0.5, "MON LOGO", col = "white", cex = 4, font = 2)
 grDevices::dev.off()
 
-render_questionnaire(
+render_documentation(
   lss,
   file.path(out_dir, "review_with_logo.docx"),
   logo = logo_path
@@ -109,7 +109,7 @@ render_questionnaire(
 # -----------------------------------------------------------------
 # 9. Restriction à un sous-ensemble de langues
 # -----------------------------------------------------------------
-render_questionnaire(
+render_documentation(
   lss,
   file.path(out_dir, "review_fr_only.docx"),
   languages = "fr"
@@ -119,7 +119,7 @@ render_questionnaire(
 # -----------------------------------------------------------------
 # 10. Forcer un format de page (utile pour 3-4 langues)
 # -----------------------------------------------------------------
-render_questionnaire(
+render_documentation(
   lss,
   file.path(out_dir, "review_landscape.docx"),
   page_format = "A4-landscape"

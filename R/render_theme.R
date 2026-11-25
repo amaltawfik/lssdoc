@@ -55,7 +55,7 @@ lss_render_theme <- function(base_size = 10L) {
     # Body font: Calibri is pre-installed on Windows (and metric-substituted
     # with Carlito on Mac/Linux LibreOffice), so column widths computed at
     # render time match what the reader will see in every environment.
-    # Override at the call site via render_questionnaire(font = "...") when the
+    # Override at the call site via render_documentation(font = "...") when the
     # reader's machine has a preferred face installed (Source Sans 3,
     # IBM Plex Sans, a corporate brand font, ...).
     font_body = "Calibri",
@@ -63,7 +63,7 @@ lss_render_theme <- function(base_size = 10L) {
     # raw relevance expression, the variable index entries). Consolas is
     # installed on every recent Windows; LibreOffice substitutes a similar
     # mono face, and Word on macOS picks Menlo. Override via
-    # render_questionnaire(font_code = "JetBrains Mono") for sharper code style.
+    # render_documentation(font_code = "JetBrains Mono") for sharper code style.
     font_code = "Consolas",
     # Content sizes derive from base_size so one argument scales the whole
     # body. Defaults (base_size 10): meta 8, lang header 9, question 10,
@@ -110,7 +110,7 @@ lss_normalize_authors <- function(authors) {
     lssdoc_abort(
       c(
         "{.arg authors} must be {.code NULL}, a character vector, or a list of named lists.",
-        "i" = "See {.fn render_questionnaire} for the accepted shapes."
+        "i" = "See {.fn render_documentation} for the accepted shapes."
       ),
       class = "lssdoc_bad_authors"
     )

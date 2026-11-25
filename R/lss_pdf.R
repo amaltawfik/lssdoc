@@ -1,7 +1,7 @@
 #' Convert a `.docx` to `.pdf` locally (internal)
 #'
 #' Internal `.docx` -> `.pdf` converter used by the `.pdf` branch of
-#' [render_questionnaire()] and [render_audit()]. Calls LibreOffice
+#' [render_documentation()] and [render_audit()]. Calls LibreOffice
 #' headless (or Word, on Windows). All processing stays on the user's
 #' machine: no upload, no network call.
 #'

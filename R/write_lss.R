@@ -7,7 +7,7 @@
 #' *Create survey -> Import*. The output targets LimeSurvey 6
 #' (DBVersion 700). The emitted file can be
 #' read back with [read_lss()], checked with [audit_lss()] and rendered
-#' with [render_questionnaire()] -- so the document reviewers read is
+#' with [render_documentation()] -- so the document reviewers read is
 #' produced from the very file LimeSurvey receives.
 #'
 #' @param spec An [lss_spec()] object, or a plain list with the same
@@ -107,7 +107,7 @@
 #' write_lss(spec, out)
 #' audit_lss(out)
 #' @seealso [lss_spec()], [read_lss()], [audit_lss()],
-#'   [render_questionnaire()].
+#'   [render_documentation()].
 #' @export
 write_lss <- function(spec, file, sid = 100001L, settings = list()) {
   if (!inherits(spec, "lss_spec")) {

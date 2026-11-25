@@ -26,7 +26,7 @@ The public API is four functions:
 |----------|------|
 | `read_lss(file)` | Parse a `.lss` into a structured `lss` object. |
 | `audit_lss(input)` | Inspect a survey for anomalies. |
-| `render_questionnaire(input, output, ...)` | Render the full questionnaire to Word or PDF. |
+| `render_documentation(input, output, ...)` | Render the full questionnaire to Word or PDF. |
 | `render_audit(input, output, ...)` | Render the audit findings alone. |
 
 This vignette uses the demo survey that ships with the package -- a
@@ -62,13 +62,13 @@ audit_lss(read_lss(broken))
 
 ## Render
 
-`render_questionnaire()` writes the document; the output format is inferred
+`render_documentation()` writes the document; the output format is inferred
 from the file extension (`.docx` or `.pdf`). Rendering uses the suggested
 packages \pkg{officer} and \pkg{flextable}.
 
 ```{r, eval = FALSE}
 # Parse once (above), then render different variants without re-reading.
-render_questionnaire(lss, "review.docx")
+render_documentation(lss, "review.docx")
 ```
 
 Two templates are available. The **`"cards"`** template (default) stacks
@@ -82,7 +82,7 @@ The **`"table"`** template is one dense table covering the whole
 document -- one row per variable, with its value codes beneath:
 
 ```{r, eval = FALSE}
-render_questionnaire(lss, "questionnaire.docx", template = "table")
+render_documentation(lss, "questionnaire.docx", template = "table")
 ```
 
 ```{r, echo = FALSE, out.width = "100%"}
@@ -104,7 +104,7 @@ knitr::include_graphics("../man/figures/template_table.png")
 - `page_format` -- `"auto"`, `"A4-portrait"`, `"A4-landscape"` or `"A3"`.
 
 ```{r, eval = FALSE}
-render_questionnaire(
+render_documentation(
   lss, "review_en_fr.docx",
   languages   = c("en", "fr"),
   template    = "table",
@@ -119,7 +119,7 @@ and converts it locally via LibreOffice (which must be installed and on
 the `PATH`). No upload, no network call.
 
 ```{r, eval = FALSE}
-render_questionnaire(lss, "review.pdf")
+render_documentation(lss, "review.pdf")
 ```
 
 ## Audit-only document

@@ -36,7 +36,7 @@ Invisibly, the path to the written file.
 \strong{Experimental.} Write an \code{\link[=lss_spec]{lss_spec()}} as a \code{.docx} \strong{form}: one
 two-column table per block (Survey, Group, Question, Quota), keys on the
 left, values on the right. Unlike the review documents produced by
-\code{\link[=render_questionnaire]{render_questionnaire()}}, this document is meant to be \emph{edited}: an author
+\code{\link[=render_documentation]{render_documentation()}}, this document is meant to be \emph{edited}: an author
 fills or changes the value cells in Word and the companion reader
 (0.3.0) turns the file back into a specification.
 
@@ -88,5 +88,5 @@ if (requireNamespace("officer", quietly = TRUE) &&
 }
 \seealso{
 \code{\link[=lss_template_docx]{lss_template_docx()}} for a blank template, \code{\link[=lss_spec]{lss_spec()}},
-\code{\link[=write_lss]{write_lss()}}, \code{\link[=render_questionnaire]{render_questionnaire()}}.
+\code{\link[=write_lss]{write_lss()}}, \code{\link[=render_documentation]{render_documentation()}}.
 }

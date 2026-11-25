@@ -16,7 +16,7 @@ test_that("demo_survey renders both templates across its question types", {
   for (tmpl in c("cards", "table")) {
     out <- tempfile(fileext = ".docx")
     expect_no_error(
-      render_questionnaire(lss, out, template = tmpl, chrome_lang = "en")
+      render_documentation(lss, out, template = tmpl, chrome_lang = "en")
     )
     txt <- paste(
       officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
@@ -41,7 +41,7 @@ test_that("predefined-scale and structural types document their Value", {
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en")
+  render_documentation(lss_cached(path), out, chrome_lang = "en")
   txt <- paste(
     officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
   )
@@ -78,7 +78,7 @@ test_that("a non-default answer / option order is noted, normal is silent", {
   # both templates; the order is annotated consistently in each layout.
   for (tmpl in c("cards", "table")) {
     out <- tempfile(fileext = ".docx")
-    render_questionnaire(lss, out, template = tmpl, chrome_lang = "en")
+    render_documentation(lss, out, template = tmpl, chrome_lang = "en")
     txt <- paste(
       officer::docx_summary(officer::read_docx(out))$text, collapse = " | "
     )

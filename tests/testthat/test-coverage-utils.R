@@ -55,7 +55,7 @@ test_that("lss_compose renders lists, super/subscript and an empty placeholder",
   expect_no_error(lss_compose_plain("plain text", theme))
 })
 
-test_that("render_questionnaire produces a real PDF when LibreOffice is available", {
+test_that("render_documentation produces a real PDF when LibreOffice is available", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
@@ -64,7 +64,7 @@ test_that("render_questionnaire produces a real PDF when LibreOffice is availabl
   skip_if_not(file.exists(path))
   out <- tempfile(fileext = ".pdf")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(path, out, chrome_lang = "en", languages = c("fr", "de"))
+  render_documentation(path, out, chrome_lang = "en", languages = c("fr", "de"))
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 1000)
 })

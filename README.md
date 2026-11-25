@@ -130,7 +130,7 @@ Reading, auditing and rendering:
 |----|----|
 | `read_lss(file)` | Parse a `.lss` into a structured `lss` object. |
 | `audit_lss(input)` | Inspect a survey for anomalies; returns an `lss_audit` object with a `print()` method. |
-| `render_questionnaire(input, output, ...)` | Render the full questionnaire to a Word or PDF document. |
+| `render_documentation(input, output, ...)` | Render the full questionnaire to a Word or PDF document. |
 | `render_audit(input, output, ...)` | Render the audit findings alone to a Word or PDF document. |
 
 Writing a questionnaire (experimental):
@@ -145,7 +145,7 @@ Writing a questionnaire (experimental):
 | `write_form_docx(x, path, lang)` | Render a specification, or an existing survey, as the form. |
 | `write_lss(spec, file)` | Write a specification as an importable `.lss` file. |
 
-`audit_lss()`, `render_questionnaire()` and `render_audit()` accept
+`audit_lss()`, `render_documentation()` and `render_audit()` accept
 `input` as either a path to a `.lss` file or a pre-parsed `lss` object.
 The output format for the two renderers is inferred from the extension
 of `output` (`.docx` or `.pdf`).
@@ -156,7 +156,7 @@ of `output` (`.docx` or `.pdf`).
 library(lssdoc)
 
 # Parse the .lss and render the Word document in a single call.
-render_questionnaire("survey.lss", "review.docx")
+render_documentation("survey.lss", "review.docx")
 ```
 
 The output uses the `"cards"` template by default, with `chrome_lang`
@@ -167,7 +167,7 @@ table of contents).
 ### Table layout
 
 ``` r
-render_questionnaire(
+render_documentation(
   "survey.lss",
   "review.docx",
   languages   = c("en", "fr"),
@@ -187,7 +187,7 @@ scaffolding to follow the content.
 ### Ethics committee submission
 
 ``` r
-render_questionnaire(
+render_documentation(
   "survey.lss",
   "ethics_review.docx",
   languages              = c("en", "fr"),
@@ -217,7 +217,7 @@ clickable), and the privacy / admin settings rows in the metadata table.
 ### Minimal questionnaire – just the variables
 
 ``` r
-render_questionnaire(
+render_documentation(
   "survey.lss",
   "minimal.docx",
   template         = "table",
@@ -243,8 +243,8 @@ lss   <- read_lss("survey.lss")
 audit <- audit_lss(lss)
 print(audit)  # console summary of flagged anomalies
 
-render_questionnaire(lss, "review_en.docx", languages = "en")
-render_questionnaire(lss, "review_fr.docx", languages = "fr")
+render_documentation(lss, "review_en.docx", languages = "en")
+render_documentation(lss, "review_fr.docx", languages = "fr")
 render_audit(lss, "qa_followup.docx")
 ```
 
@@ -275,7 +275,7 @@ audit_lss(read_lss(demo))
 # Same call, just pass a .pdf path. The package writes the .docx
 # into a temp file and converts it locally via LibreOffice
 # (must be installed and on PATH).
-render_questionnaire("survey.lss", "review.pdf", template = "table")
+render_documentation("survey.lss", "review.pdf", template = "table")
 render_audit("survey.lss", "qa.pdf")
 ```
 

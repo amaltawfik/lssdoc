@@ -7,7 +7,7 @@ outline_document_xml <- function(lss, ...) {
   out <- tempfile(fileext = ".docx")
   dir <- tempfile()
   on.exit(unlink(c(out, dir), recursive = TRUE), add = TRUE)
-  suppressMessages(render_questionnaire(lss, out, ...))
+  suppressMessages(render_documentation(lss, out, ...))
   utils::unzip(out, files = "word/document.xml", exdir = dir)
   xml2::read_xml(file.path(dir, "word", "document.xml"))
 }

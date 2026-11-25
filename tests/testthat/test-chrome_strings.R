@@ -1,6 +1,6 @@
 test_that("lss_chrome_strings returns a localized string set for every supported language", {
   required <- c(
-    "cover_subtitle_review", "cover_subtitle_audit",
+    "cover_subtitle_review", "cover_subtitle_audit", "questionnaire_title",
     "cover_source_file", "cover_survey_id", "cover_languages",
     "cover_groups", "cover_questions", "cover_subquestions",
     "cover_answer_options", "cover_last_modified", "cover_generated",
@@ -127,7 +127,7 @@ test_that("the rendered document contains chrome strings in the requested langua
 
   out_fr <- tempfile(fileext = ".docx")
   on.exit(unlink(out_fr), add = TRUE)
-  render_questionnaire(lss, out_fr, languages = c("fr", "de"), chrome_lang = "fr")
+  render_documentation(lss, out_fr, languages = c("fr", "de"), chrome_lang = "fr")
   s_fr <- officer::docx_summary(officer::read_docx(out_fr))
   txt_fr <- paste(s_fr$text[!is.na(s_fr$text)], collapse = " | ")
   # A handful of FR-specific chrome strings should appear; we do not
@@ -148,7 +148,7 @@ test_that("chrome_lang = 'en' forces English chrome even with FR/DE content", {
 
   out_en <- tempfile(fileext = ".docx")
   on.exit(unlink(out_en), add = TRUE)
-  render_questionnaire(lss, out_en, languages = c("fr", "de"), chrome_lang = "en")
+  render_documentation(lss, out_en, languages = c("fr", "de"), chrome_lang = "en")
   s_en <- officer::docx_summary(officer::read_docx(out_en))
   txt_en <- paste(s_en$text[!is.na(s_en$text)], collapse = " | ")
   expect_true(grepl("Table of contents", txt_en))
@@ -187,4 +187,19 @@ test_that("form_other_position_after_fmt carries exactly one %s", {
                      1L, info = lang)
     expect_identical(sprintf(fmt, "3"), sub("%s", "3", fmt, fixed = TRUE))
   }
+})
+
+test_that("the cover subtitle names the document in every chrome language", {
+  subtitle <- vapply(
+    c("en", "fr", "de", "es", "it"),
+    function(lang) lss_chrome_strings(lang)$cover_subtitle_review,
+    character(1)
+  )
+  expect_identical(unname(subtitle), c(
+    "Questionnaire documentation",
+    "Documentation du questionnaire",
+    "Fragebogendokumentation",
+    "Documentaci\u00F3n del cuestionario",
+    "Documentazione del questionario"
+  ))
 })

@@ -52,7 +52,7 @@ test_that("audit_demo.lss parses and renders in both modes without error", {
   on.exit(unlink(c(out_a, out_q)), add = TRUE)
   expect_no_error(render_audit(path, out_a, chrome_lang = "en"))
   expect_no_error(
-    render_questionnaire(path, out_q, chrome_lang = "en", show_audit = TRUE)
+    render_documentation(path, out_q, chrome_lang = "en", show_audit = TRUE)
   )
   expect_true(file.exists(out_a))
   expect_true(file.exists(out_q))

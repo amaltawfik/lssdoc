@@ -70,7 +70,7 @@ test_that("cover fallback branches fire for empty titles and null-valued metadat
 
   out <- tempfile(fileext = ".docx")
   expect_no_error(
-    render_questionnaire(
+    render_documentation(
       lss, out,
       languages             = c("en", "fr"),
       show_admin_settings   = TRUE,
@@ -102,7 +102,7 @@ test_that("cover admin block returns empty for an NA language-settings value", {
 
   out <- tempfile(fileext = ".docx")
   expect_no_error(
-    render_questionnaire(
+    render_documentation(
       lss, out,
       languages           = c("en", "fr"),
       show_admin_settings = TRUE

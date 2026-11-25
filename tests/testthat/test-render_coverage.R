@@ -7,14 +7,14 @@ lss_render_q_text <- function(input, ..., template = "cards") {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(input, out, template = template, ...)
+  render_documentation(input, out, template = template, ...)
   s <- officer::docx_summary(officer::read_docx(out))
   paste(s$text[!is.na(s$text)], collapse = " | ")
 }
 
 # ---- Render arguments and toggles ----------------------------------
 
-test_that("render_questionnaire honors a single-language scalar 'title'", {
+test_that("render_documentation honors a single-language scalar 'title'", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   txt <- lss_render_q_text(lss_cached(path), chrome_lang = "en",
@@ -22,7 +22,7 @@ test_that("render_questionnaire honors a single-language scalar 'title'", {
   expect_true(grepl("Custom Override Title", txt))
 })
 
-test_that("render_questionnaire honors a per-language named title", {
+test_that("render_documentation honors a per-language named title", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   txt <- lss_render_q_text(
@@ -42,7 +42,7 @@ test_that("show_header_title = FALSE hides the survey title from page headers", 
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en",
+  render_documentation(lss_cached(path), out, chrome_lang = "en",
                        show_header_title = FALSE)
   # The doc is well-formed.
   expect_true(file.size(out) > 10000L)
@@ -67,9 +67,9 @@ test_that("show_item_heading = TRUE adds the bold variable heading line", {
   out_off <- tempfile(fileext = ".docx")
   out_on  <- tempfile(fileext = ".docx")
   on.exit({ unlink(out_off); unlink(out_on) }, add = TRUE)
-  render_questionnaire(lss_cached(path), out_off, chrome_lang = "en",
+  render_documentation(lss_cached(path), out_off, chrome_lang = "en",
                        show_item_heading = FALSE)
-  render_questionnaire(lss_cached(path), out_on,  chrome_lang = "en",
+  render_documentation(lss_cached(path), out_on,  chrome_lang = "en",
                        show_item_heading = TRUE)
   # The TRUE variant adds one styled heading paragraph per item, so
   # the document carries strictly more paragraphs than the off
@@ -101,7 +101,7 @@ test_that("page_format = 'A4-landscape' is accepted", {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en",
+  render_documentation(lss_cached(path), out, chrome_lang = "en",
                        page_format = "A4-landscape")
   expect_true(file.size(out) > 10000L)
 })
@@ -114,7 +114,7 @@ test_that("page_format = 'A3' is accepted", {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en",
+  render_documentation(lss_cached(path), out, chrome_lang = "en",
                        page_format = "A3")
   expect_true(file.size(out) > 10000L)
 })
@@ -129,7 +129,7 @@ test_that("font and font_code overrides flow through the theme", {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en",
+  render_documentation(lss_cached(path), out, chrome_lang = "en",
                        font = "Source Sans 3", font_code = "JetBrains Mono")
   expect_true(file.size(out) > 10000L)
 })
@@ -217,7 +217,7 @@ test_that("description with line breaks and URLs renders without error", {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss_cached(path), out, chrome_lang = "en",
     description = paste0(
       "Line one.\n",
@@ -234,7 +234,7 @@ test_that("description with line breaks and URLs renders without error", {
 
 # ---- Cover ID resolver and various titles --------------------------
 
-test_that("render_questionnaire accepts authors as a named character vector", {
+test_that("render_documentation accepts authors as a named character vector", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
@@ -242,7 +242,7 @@ test_that("render_questionnaire accepts authors as a named character vector", {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss_cached(path), out, chrome_lang = "en",
     authors = c("Amal Tawfik" = "HES-SO Valais-Wallis",
                 "John Doe" = "")
@@ -254,7 +254,7 @@ test_that("render_questionnaire accepts authors as a named character vector", {
   expect_true(grepl("John Doe", txt))
 })
 
-test_that("render_questionnaire accepts authors as an unnamed character vector", {
+test_that("render_documentation accepts authors as an unnamed character vector", {
   path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
   skip_if_not(file.exists(path))
   skip_on_cran()
@@ -262,7 +262,7 @@ test_that("render_questionnaire accepts authors as an unnamed character vector",
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(
+  render_documentation(
     lss_cached(path), out, chrome_lang = "en",
     authors = c("Amal Tawfik", "John Doe")
   )
@@ -286,7 +286,7 @@ test_that("show_admin_settings = TRUE accepts the flag without error", {
   # underlying LimeSurvey field is non-empty; the fixture is silent
   # on those. We assert only that the path runs without error and
   # produces a valid document.
-  render_questionnaire(lss_cached(path), out, chrome_lang = "en",
+  render_documentation(lss_cached(path), out, chrome_lang = "en",
                        show_admin_settings = TRUE)
   expect_true(file.size(out) > 10000L)
 })
@@ -301,7 +301,7 @@ test_that("a one-language render produces a portrait document", {
   skip_if_not_installed("flextable")
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
-  render_questionnaire(lss_cached(path), out, languages = "fr",
+  render_documentation(lss_cached(path), out, languages = "fr",
                        chrome_lang = "fr")
   expect_true(file.size(out) > 10000L)
 })

@@ -2,7 +2,11 @@
 
 ## Breaking changes
 
-* `render_questionnaire()` now numbers the questions, not the cards (#10).
+* `render_questionnaire()` is renamed `render_documentation()` (#9). A call
+  only needs the new name. The cover of the document now says
+  "Questionnaire documentation".
+
+* `render_documentation()` now numbers the questions, not the cards (#10).
   A question has one number, whatever the number of cards or rows it takes.
   The rows of an array are numbered `28.1`, `28.2` and so on, as are the
   options of a multiple choice and the positions of a ranking in the table
@@ -15,11 +19,15 @@
 
 ## Minor improvements and bug fixes
 
+* `render_documentation()` gains `show_group_description`. `FALSE` leaves
+  out the description of a group, the text LimeSurvey shows respondents
+  under the group title.
+
 * A question hidden from respondents (LimeSurvey attribute `hidden` at 1)
   now says so on its card or row. It used to be rendered like any other
   question.
 
-* The document rendered by `render_questionnaire()` now gives its section
+* The document rendered by `render_documentation()` now gives its section
   and group headings an outline level: Word lists them in its navigation
   pane and the PDF carries bookmarks (#8). In the table layout the groups
   are table rows and stay out of the pane.

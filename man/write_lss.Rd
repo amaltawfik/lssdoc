@@ -39,7 +39,7 @@ LimeSurvey structure file (\code{.lss}) that imports directly through
 \emph{Create survey -> Import}. The output targets LimeSurvey 6
 (DBVersion 700). The emitted file can be
 read back with \code{\link[=read_lss]{read_lss()}}, checked with \code{\link[=audit_lss]{audit_lss()}} and rendered
-with \code{\link[=render_questionnaire]{render_questionnaire()}} -- so the document reviewers read is
+with \code{\link[=render_documentation]{render_documentation()}} -- so the document reviewers read is
 produced from the very file LimeSurvey receives.
 
 Mapping choices, each validated against real LimeSurvey 6 imports:
@@ -124,5 +124,5 @@ audit_lss(out)
 }
 \seealso{
 \code{\link[=lss_spec]{lss_spec()}}, \code{\link[=read_lss]{read_lss()}}, \code{\link[=audit_lss]{audit_lss()}},
-\code{\link[=render_questionnaire]{render_questionnaire()}}.
+\code{\link[=render_documentation]{render_documentation()}}.
 }

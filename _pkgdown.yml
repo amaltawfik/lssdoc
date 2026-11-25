@@ -92,7 +92,7 @@ reference:
       a `.lss` file or a pre-parsed `lss` object returned by
       `read_lss()`.
     contents:
-      - render_questionnaire
+      - render_documentation
       - render_audit
   - title: Read and audit
     desc: >

@@ -341,14 +341,14 @@ test_that("a bilingual spec survives the Word form round trip", {
     sort(unique(as.data.frame(lss$question_l10ns)$language)), c("en", "fr"))
 })
 
-test_that("render_questionnaire() renders a bilingual emitted file", {
+test_that("render_documentation() renders a bilingual emitted file", {
   skip_if_no_docx()
   lss_file <- write_spec(bi_spec())
   out <- tempfile(fileext = ".docx")
   on.exit(unlink(out), add = TRUE)
 
   suppressMessages(
-    render_questionnaire(lss_file, out, languages = c("fr", "en")))
+    render_documentation(lss_file, out, languages = c("fr", "en")))
   expect_true(file.exists(out))
   expect_gt(file.size(out), 0)
 })

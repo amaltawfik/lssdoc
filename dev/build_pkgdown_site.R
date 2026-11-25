@@ -177,7 +177,7 @@ if (requireNamespace("officer", quietly = TRUE) &&
       table = file.path(docs_dir, "demo_survey-table.docx")
     )
     for (tmpl in names(targets)) {
-      lssdoc::render_questionnaire(
+      lssdoc::render_documentation(
         demo, targets[[tmpl]],
         template = tmpl, languages = langs, chrome_lang = "en"
       )
