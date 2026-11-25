@@ -322,7 +322,11 @@ lss_render_consent <- function(doc, lss, langs, theme) {
 
 #' Render a static, always-populated table of contents
 #'
-#' Lists the survey groups, one per line, with their sequential index.
+#' Lists the sections of the document and, under the questionnaire, its
+#' groups, one per line, each followed by the numbers of its questions
+#' (`numbers`, computed from the model when `NULL`). The groups are listed
+#' only when the document draws them (`show_groups`): their bookmarks sit
+#' on the group headings (cards) or on the group rows (table).
 #' We render a manual list instead of a Word TOC field for three reasons:
 #' (1) Word's TOC field auto-refresh produces page numbers `1` everywhere
 #' when refresh runs before pagination -- a well-known quirk; (2)
@@ -334,7 +338,8 @@ lss_render_consent <- function(doc, lss, langs, theme) {
 #'
 #' @keywords internal
 #' @noRd
-lss_render_toc <- function(doc, model, theme, sections = list()) {
+lss_render_toc <- function(doc, model, theme, sections = list(),
+                           numbers = NULL, show_groups = TRUE) {
   chrome <- theme$chrome
   # Same styled heading as every other section (14 pt bold primary with a
   # bottom filet and space above), so the table of contents is not glued
@@ -356,16 +361,30 @@ lss_render_toc <- function(doc, model, theme, sections = list()) {
     font.family = theme$font_body, font.size = entry_size,
     color = theme$color_accent
   )
-  entry <- function(doc, label, bookmark, props, indent = 0) {
+  # The question numbers of a group follow its name after a tab, outside
+  # the link, in the muted colour, as in render_questionnaire().
+  range_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = entry_size,
+    color = theme$color_muted
+  )
+  entry <- function(doc, label, bookmark, props, indent = 0, range = "",
+                    tab = NULL) {
+    link <- officer::hyperlink_ftext(
+      href = paste0("#", bookmark), text = label, prop = props
+    )
+    if (!nzchar(range)) {
+      fp_p <- officer::fp_par(padding.top = 2, padding.bottom = 2,
+                              padding.left = indent)
+      return(officer::body_add_fpar(doc, officer::fpar(link, fp_p = fp_p)))
+    }
+    fp_p <- officer::fp_par(
+      padding.top = 2, padding.bottom = 2, padding.left = indent,
+      tabs = officer::fp_tabs(officer::fp_tab(pos = tab, style = "left"))
+    )
     officer::body_add_fpar(
       doc,
-      officer::fpar(
-        officer::hyperlink_ftext(
-          href = paste0("#", bookmark), text = label, prop = props
-        ),
-        fp_p = officer::fp_par(padding.top = 2, padding.bottom = 2,
-                               padding.left = indent)
-      )
+      officer::fpar(link, officer::run_tab(),
+                    officer::ftext(range, prop = range_props), fp_p = fp_p)
     )
   }
 
@@ -380,15 +399,37 @@ lss_render_toc <- function(doc, model, theme, sections = list()) {
   # Questionnaire section, then its groups indented beneath it.
   doc <- entry(doc, chrome$questionnaire_title,
                lss_section_bookmark("questionnaire"), top_props)
-  primary <- model$languages[1]
-  for (i in seq_along(model$groups)) {
-    group <- model$groups[[i]]
-    gname <- if (!is.null(group$names[[primary]])) group$names[[primary]] else NA
-    if (is.null(gname) || is.na(gname) || !nzchar(gname)) {
-      gname <- paste0("Group ", group$gid)
+  # The groups only when the document draws them: their bookmarks sit on
+  # the group headings (cards) or the group rows (table).
+  if (isTRUE(show_groups) && length(model$groups)) {
+    if (is.null(numbers)) numbers <- lss_item_numbers(model)
+    primary <- model$languages[1]
+    gnames <- vapply(model$groups, function(group) {
+      gname <- group$names[[primary]]
+      if (is.null(gname) || is.na(gname) || !nzchar(gname)) {
+        gname <- paste0("Group ", group$gid)
+      }
+      lss_strip_group_number_prefix(gname)
+    }, character(1))
+    ranges <- vapply(model$groups, function(group) {
+      qids <- vapply(group$questions, function(q) as.character(q$qid),
+                     character(1))
+      nums <- numbers$no[numbers$qid %in% qids & !is.na(numbers$no)]
+      if (length(nums) == 0L) {
+        ""
+      } else if (length(nums) == 1L) {
+        sprintf(chrome$q_toc_question_fmt, nums[1])
+      } else {
+        sprintf(chrome$q_toc_questions_fmt, min(nums), max(nums))
+      }
+    }, character(1))
+    # The tab stop: past the longest group name, as in the questionnaire.
+    tab <- (18 + lss_q_text_width(gnames, theme$font_body, entry_size) + 14) / 72
+    tab <- min(tab, theme$content_width_in - 1.25)
+    for (i in seq_along(model$groups)) {
+      doc <- entry(doc, gnames[i], lss_group_bookmark(i), grp_props,
+                   indent = 18, range = ranges[i], tab = tab)
     }
-    gname <- lss_strip_group_number_prefix(gname)
-    doc <- entry(doc, gname, lss_group_bookmark(i), grp_props, indent = 18)
   }
   if (isTRUE(sections$quotas)) {
     doc <- entry(doc, chrome$quotas_title,

@@ -193,7 +193,8 @@
       any(vapply(model$groups, function(g) length(g$questions) > 0L, logical(1)))
   )
   if (isTRUE(show_toc) && length(model$groups) >= 2L) {
-    doc <- lss_render_toc(doc, model, theme, sections = toc_sections)
+    doc <- lss_render_toc(doc, model, theme, sections = toc_sections,
+                          numbers = state$numbers, show_groups = show_groups)
     doc <- officer::body_add_break(doc)
   }
   if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {

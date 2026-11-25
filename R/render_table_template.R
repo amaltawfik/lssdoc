@@ -290,6 +290,42 @@ lss_render_table_template <- function(doc, rows, langs, theme,
   ft <- lss_table_template_polish(ft, theme, rows, n_lang = length(langs))
 
   doc <- flextable::body_add_flextable(doc, ft, align = "left")
+  lss_table_bookmark_groups(doc, rows)
+}
+
+#' Bookmark the group rows of the table just inserted
+#'
+#' The table of contents links each group to `lss_group_bookmark(<index>)`.
+#' flextable has no bookmark chunk, so the bookmark goes into the XML of
+#' the table at the cursor: in the first paragraph of each body row of kind
+#' `"group"` (header rows, which carry `w:tblHeader`, are skipped), in the
+#' form `officer::body_bookmark()` writes. The id derives from the name,
+#' which is unique in the document, so it cannot collide with the uuids
+#' officer gives its own bookmarks.
+#'
+#' @keywords internal
+#' @noRd
+lss_table_bookmark_groups <- function(doc, rows) {
+  ns <- c(w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
+  tbl <- officer::docx_current_block_xml(doc)
+  trs <- xml2::xml_find_all(tbl, "w:tr[not(w:trPr/w:tblHeader)]", ns)
+  for (i in seq_along(rows)) {
+    r <- rows[[i]]
+    if (!identical(r$kind, "group") || is.null(r$group_index)) next
+    p <- xml2::xml_find_first(trs[[i]], ".//w:p", ns)
+    name <- lss_group_bookmark(r$group_index)
+    start <- xml2::read_xml(sprintf(
+      "<w:bookmarkStart xmlns:w=\"%s\" w:id=\"%s\" w:name=\"%s\"/>",
+      ns[["w"]], name, name
+    ))
+    end <- xml2::read_xml(sprintf(
+      "<w:bookmarkEnd xmlns:w=\"%s\" w:id=\"%s\"/>", ns[["w"]], name
+    ))
+    # After the paragraph properties, when there are some.
+    xml2::xml_add_child(p, start,
+                        .where = length(xml2::xml_find_all(p, "w:pPr", ns)))
+    xml2::xml_add_child(p, end)
+  }
   doc
 }
 
@@ -368,7 +404,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     )
     rows[[length(rows) + 1L]] <- list(
       kind = "group",
-      name_by_lang = group_names
+      name_by_lang = group_names,
+      group_index = state$group_index
     )
     # Group description (when the author wrote one): a row right under
     # the banner carrying the localized intro text, mirroring what the
