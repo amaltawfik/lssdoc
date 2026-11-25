@@ -22,21 +22,21 @@ License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://
 downloads](https://cranlogs.r-pkg.org/badges/grand-total/lssdoc)](https://CRAN.R-project.org/package=lssdoc)
 <!-- badges: end -->
 
-**lssdoc** turns a LimeSurvey `.lss` export into a polished Word
-(`.docx`) or PDF questionnaire document. It is meant for the
-researchers and survey methodologists who build questionnaires; the
-document it produces can go as it is to ethics committees,
-translators and reviewers. It renders the questionnaire
-content side by side in up to four languages, runs an automated
-integrity audit, and produces a layout that reads as a published
-instrument – not a developer dump.
+**lssdoc** turns a LimeSurvey `.lss` export into Word (`.docx`) or PDF
+documents. It is meant for the researchers and survey methodologists who
+build questionnaires. The documents it produces can go as they are to
+ethics committees, translators and reviewers. There are two of them.
 
-It also works the other way around. Write a questionnaire in a Word
-form, or describe it in R, and lssdoc writes the `.lss` file you import
-into LimeSurvey – so the people who design a questionnaire never have to
-build it by hand in a web interface.
+The **questionnaire** shows the survey as a respondent reads it, in one
+language: each question with its number, its text and its answer
+options, one per line.
 
-Two output templates:
+<img src="man/figures/questionnaire.png" alt="Questionnaire layout: the title, the legend and the first questions of the demo survey, each with its number, its text, its answer options and the LimeSurvey codes in small gray type" width="100%" />
+
+The **documentation** gives every question in full, with its variable,
+its type, its filter and its attributes, in up to four languages side by
+side. It also runs an automated integrity audit. It comes in two
+templates:
 
 - **`"cards"`** – one detached block per item (meta table + question
   table), stacked vertically. Closest to the printed questionnaire a
@@ -53,6 +53,11 @@ Two output templates:
   artifact.
 
   <img src="man/figures/template_table.png" alt="Table layout: one variable per row with English and French columns -- a yes/no single choice, two Number variables, a computed variable, a display item, a multiple-choice question expanded into one row per option with its free-text Other, and a single-choice answer scale; the column header repeats automatically at the top of each new page" width="100%" />
+
+lssdoc also works the other way around. Write a questionnaire in a Word
+form, or describe it in R, and lssdoc writes the `.lss` file you import
+into LimeSurvey – so the people who design a questionnaire never have to
+build it by hand in a web interface.
 
 Other things lssdoc takes care of for you:
 
@@ -130,7 +135,8 @@ Reading, auditing and rendering:
 |----|----|
 | `read_lss(file)` | Parse a `.lss` into a structured `lss` object. |
 | `audit_lss(input)` | Inspect a survey for anomalies; returns an `lss_audit` object with a `print()` method. |
-| `render_documentation(input, output, ...)` | Render the full questionnaire to a Word or PDF document. |
+| `render_questionnaire(input, output, ...)` | Render the questionnaire as it reads, in one language, to a Word or PDF document. |
+| `render_documentation(input, output, ...)` | Render the full documentation of the survey to a Word or PDF document. |
 | `render_audit(input, output, ...)` | Render the audit findings alone to a Word or PDF document. |
 
 Writing a questionnaire (experimental):
@@ -145,24 +151,52 @@ Writing a questionnaire (experimental):
 | `write_form_docx(x, path, lang)` | Render a specification, or an existing survey, as the form. |
 | `write_lss(spec, file)` | Write a specification as an importable `.lss` file. |
 
-`audit_lss()`, `render_documentation()` and `render_audit()` accept
-`input` as either a path to a `.lss` file or a pre-parsed `lss` object.
-The output format for the two renderers is inferred from the extension
-of `output` (`.docx` or `.pdf`).
+`audit_lss()` and the three `render_*()` functions accept `input` as
+either a path to a `.lss` file or a pre-parsed `lss` object. The output
+format of the renderers is inferred from the extension of `output`
+(`.docx` or `.pdf`).
 
-### A one-line pipeline
+### One line per document
 
 ``` r
 library(lssdoc)
 
-# Parse the .lss and render the Word document in a single call.
-render_documentation("survey.lss", "review.docx")
+# The questionnaire as it reads, in the base language of the survey
+render_questionnaire("survey.lss", "questionnaire.docx")
+
+# Its full documentation, all languages side by side
+render_documentation("survey.lss", "documentation.docx")
 ```
 
-The output uses the `"cards"` template by default, with `chrome_lang`
-following the survey’s primary content language. Open `review.docx` in
-Word, click **Yes** when prompted to update fields (page numbers and the
-table of contents).
+Each call parses the `.lss` and writes the Word document. The
+documentation uses the `"cards"` template by default, with `chrome_lang`
+following the survey’s primary content language. Open
+`documentation.docx` in Word and click **Yes** when prompted to update
+fields (page numbers and the table of contents). The questionnaire opens
+without that prompt.
+
+### The questionnaire, one language at a time
+
+``` r
+lss <- read_lss("survey.lss")
+
+# One file per language
+render_questionnaire(lss, "questionnaire_fr.docx", language = "fr")
+render_questionnaire(lss, "questionnaire_de.docx", language = "de")
+
+# The copy a respondent reads: no codes, no hidden questions
+render_questionnaire(lss, "respondent_fr.docx", language = "fr",
+                     show_codes = FALSE)
+
+# Swiss French for Word's spelling checker and hyphenation
+render_questionnaire(lss, "questionnaire_fr.docx", language = "fr",
+                     proofing_lang = "fr-CH")
+```
+
+The codes of LimeSurvey are printed in small gray type next to what they
+name. The code of a question is the name of its variable. The question
+numbers are those of the documentation, so “question 12” is the same
+question in both documents.
 
 ### Table layout
 
@@ -214,7 +248,7 @@ The cover page picks up the authors block (with clickable ORCID
 hyperlinks), the description (with URLs auto-detected and made
 clickable), and the privacy / admin settings rows in the metadata table.
 
-### Minimal questionnaire – just the variables
+### Just the variables
 
 ``` r
 render_documentation(
@@ -243,8 +277,9 @@ lss   <- read_lss("survey.lss")
 audit <- audit_lss(lss)
 print(audit)  # console summary of flagged anomalies
 
-render_documentation(lss, "review_en.docx", languages = "en")
-render_documentation(lss, "review_fr.docx", languages = "fr")
+render_questionnaire(lss, "questionnaire_en.docx", language = "en")
+render_questionnaire(lss, "questionnaire_fr.docx", language = "fr")
+render_documentation(lss, "documentation.docx")
 render_audit(lss, "qa_followup.docx")
 ```
 
@@ -275,7 +310,8 @@ audit_lss(read_lss(demo))
 # Same call, just pass a .pdf path. The package writes the .docx
 # into a temp file and converts it locally via LibreOffice
 # (must be installed and on PATH).
-render_documentation("survey.lss", "review.pdf", template = "table")
+render_questionnaire("survey.lss", "questionnaire.pdf")
+render_documentation("survey.lss", "documentation.pdf", template = "table")
 render_audit("survey.lss", "qa.pdf")
 ```
 
@@ -325,7 +361,7 @@ Run `citation("lssdoc")` for the up-to-date citation, or cite as:
     Tawfik A (2026). _lssdoc: 'LimeSurvey' '.lss' Questionnaires to and
     from Word Documents_. doi:10.32614/CRAN.package.lssdoc
     <https://doi.org/10.32614/CRAN.package.lssdoc>. R package version
-    0.3.0, <https://CRAN.R-project.org/package=lssdoc>.
+    0.3.0.9000, <https://CRAN.R-project.org/package=lssdoc>.
 
 ## License
 

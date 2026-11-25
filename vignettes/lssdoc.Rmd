@@ -15,18 +15,20 @@ knitr::opts_chunk$set(
 library(lssdoc)
 ```
 
-**lssdoc** turns a LimeSurvey `.lss` export into a polished Word (`.docx`)
-or PDF questionnaire document, displaying up to four languages side by
-side, and runs a rule-based audit of the survey. Everything stays on your
+**lssdoc** turns a LimeSurvey `.lss` export into Word (`.docx`) or PDF
+documents: the questionnaire as a respondent reads it, in one language,
+and its full documentation, with up to four languages side by side. It
+also runs a rule-based audit of the survey. Everything stays on your
 machine.
 
-The public API is four functions:
+This vignette covers five functions:
 
 | Function | Role |
 |----------|------|
 | `read_lss(file)` | Parse a `.lss` into a structured `lss` object. |
 | `audit_lss(input)` | Inspect a survey for anomalies. |
-| `render_documentation(input, output, ...)` | Render the full questionnaire to Word or PDF. |
+| `render_questionnaire(input, output, ...)` | Render the questionnaire as it reads, in one language. |
+| `render_documentation(input, output, ...)` | Render the full documentation of the survey. |
 | `render_audit(input, output, ...)` | Render the audit findings alone. |
 
 This vignette uses the demo survey that ships with the package -- a
@@ -60,19 +62,62 @@ broken <- system.file("extdata", "audit_demo.lss", package = "lssdoc")
 audit_lss(read_lss(broken))
 ```
 
-## Render
+## Render the questionnaire
 
-`render_documentation()` writes the document; the output format is inferred
-from the file extension (`.docx` or `.pdf`). Rendering uses the suggested
-packages \pkg{officer} and \pkg{flextable}.
+`render_questionnaire()` writes the questionnaire as a respondent reads
+it, in one language: each question with its number and its text, then its
+subquestions and its answer options, one per line. The output format is
+inferred from the file extension (`.docx` or `.pdf`). Rendering uses the
+suggested package **officer**.
 
 ```{r, eval = FALSE}
-# Parse once (above), then render different variants without re-reading.
-render_documentation(lss, "review.docx")
+# Parse once (above), then render without re-reading.
+render_questionnaire(lss, "questionnaire.docx")
+```
+
+```{r, echo = FALSE, out.width = "100%"}
+knitr::include_graphics("../man/figures/questionnaire.png")
+```
+
+The codes of LimeSurvey are printed in small gray type next to what they
+name. The question numbers are those of the documentation described
+below.
+
+### Useful arguments
+
+- `language`: the language to render, one per document. The base language
+  of the survey by default.
+- `show_codes`: `FALSE` removes the codes, and with them the questions
+  that LimeSurvey hides from respondents.
+- `show_help`, `show_toc`, `show_description`, `show_welcome`,
+  `show_consent`, `show_endtext`: what surrounds the questions. All are on
+  by default.
+- `max_options`: the number of options a long list of answer options is
+  cut down to (default `12`).
+- `proofing_lang`: the language declared to Word for its spelling checker
+  and its hyphenation, e.g. `"fr-CH"`.
+
+```{r, eval = FALSE}
+render_questionnaire(
+  lss, "questionnaire_fr.docx",
+  language   = "fr",
+  show_codes = FALSE
+)
+```
+
+## Render the documentation
+
+`render_documentation()` writes the full documentation of the survey:
+every question with its variable, its type, its filter and its
+attributes, in up to four languages side by side. Rendering uses the
+suggested packages **officer** and **flextable**.
+
+```{r, eval = FALSE}
+render_documentation(lss, "documentation.docx")
 ```
 
 Two templates are available. The **`"cards"`** template (default) stacks
-one block per item -- closest to the printed questionnaire:
+one block per item:
 
 ```{r, echo = FALSE, out.width = "100%"}
 knitr::include_graphics("../man/figures/template_cards.png")
@@ -82,7 +127,7 @@ The **`"table"`** template is one dense table covering the whole
 document -- one row per variable, with its value codes beneath:
 
 ```{r, eval = FALSE}
-render_documentation(lss, "questionnaire.docx", template = "table")
+render_documentation(lss, "documentation.docx", template = "table")
 ```
 
 ```{r, echo = FALSE, out.width = "100%"}
@@ -119,13 +164,14 @@ and converts it locally via LibreOffice (which must be installed and on
 the `PATH`). No upload, no network call.
 
 ```{r, eval = FALSE}
-render_documentation(lss, "review.pdf")
+render_questionnaire(lss, "questionnaire.pdf")
+render_documentation(lss, "documentation.pdf")
 ```
 
 ## Audit-only document
 
 `render_audit()` produces a focused QA document -- the cover page, then one
-section per severity -- separate from the full review.
+section per severity -- separate from the documentation.
 
 ```{r, eval = FALSE}
 render_audit(lss, "qa.docx")

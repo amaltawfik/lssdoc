@@ -49,7 +49,7 @@ translation in \code{language} is printed in the base language and marked
 as not translated, and a warning lists the elements concerned.}
 
 \item{show_codes}{Logical. If \code{TRUE} (default), print the codes of
-LimeSurvey in small grey type: the code of each question, which is
+LimeSurvey in small gray type: the code of each question, which is
 the name of its variable, the code of each subquestion and of each
 answer option, and the filter of a question, which is written with
 those codes (\verb{if Q11 = 2}). \code{FALSE} removes them all.}
@@ -99,7 +99,7 @@ title. The \code{.lss} file embeds no logo.}
 \item{font, font_code}{Body font and font of the codes. \code{NULL} (default)
 keeps Calibri and Consolas, as in \code{\link[=render_documentation]{render_documentation()}}.}
 
-\item{colors}{Optional named list of hex colours, with the names
+\item{colors}{Optional named list of hex colors, with the names
 \code{\link[=render_documentation]{render_documentation()}} accepts. This document uses \code{"primary"} for
 its title, its headings and the question numbers, \code{"accent"} for the
 links of the table of contents, \code{"text"} for what is asked and
@@ -130,7 +130,7 @@ The \code{output} path, invisibly.
 Build a short document that shows a questionnaire the way a respondent
 goes through it, in one language: each question with its number and its
 text, then its subquestions and its answer options, one per line. The
-codes of LimeSurvey are printed in small grey type next to what they
+codes of LimeSurvey are printed in small gray type next to what they
 name. It is the copy to read through, and the one to hand to an ethics
 committee or a translator. For the full documentation of a survey, with
 the type, the filter expression and the attributes of every question and
@@ -155,7 +155,7 @@ question without options says what it expects, for instance
 when it has them.
 
 What the respondent only reads (the welcome text, the privacy notice,
-the text displays, the group descriptions) is set in grey and
+the text displays, the group descriptions) is set in gray and
 justified. What is asked is left-aligned.
 
 The type of a question, its attributes, the audit, the variable index

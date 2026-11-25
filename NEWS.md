@@ -25,7 +25,7 @@
 * `render_questionnaire()` now renders the questionnaire as it reads, in
   one language (#9). Each question has its number and its text, then its
   subquestions and its answer options, one per line. The codes of
-  LimeSurvey are printed in small grey type, and `show_codes = FALSE`
+  LimeSurvey are printed in small gray type, and `show_codes = FALSE`
   removes them. The numbers are those of `render_documentation()`. The
   document declares its language to Word (`proofing_lang`), so the spelling
   checker and the hyphenation follow the questionnaire.

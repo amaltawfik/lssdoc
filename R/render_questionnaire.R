@@ -3,7 +3,7 @@
 #' Build a short document that shows a questionnaire the way a respondent
 #' goes through it, in one language: each question with its number and its
 #' text, then its subquestions and its answer options, one per line. The
-#' codes of LimeSurvey are printed in small grey type next to what they
+#' codes of LimeSurvey are printed in small gray type next to what they
 #' name. It is the copy to read through, and the one to hand to an ethics
 #' committee or a translator. For the full documentation of a survey, with
 #' the type, the filter expression and the attributes of every question and
@@ -25,7 +25,7 @@
 #'   translation in `language` is printed in the base language and marked
 #'   as not translated, and a warning lists the elements concerned.
 #' @param show_codes Logical. If `TRUE` (default), print the codes of
-#'   LimeSurvey in small grey type: the code of each question, which is
+#'   LimeSurvey in small gray type: the code of each question, which is
 #'   the name of its variable, the code of each subquestion and of each
 #'   answer option, and the filter of a question, which is written with
 #'   those codes (`if Q11 = 2`). `FALSE` removes them all.
@@ -63,7 +63,7 @@
 #'   `0.75` by default.
 #' @param font,font_code Body font and font of the codes. `NULL` (default)
 #'   keeps Calibri and Consolas, as in [render_documentation()].
-#' @param colors Optional named list of hex colours, with the names
+#' @param colors Optional named list of hex colors, with the names
 #'   [render_documentation()] accepts. This document uses `"primary"` for
 #'   its title, its headings and the question numbers, `"accent"` for the
 #'   links of the table of contents, `"text"` for what is asked and
@@ -98,7 +98,7 @@
 #' when it has them.
 #'
 #' What the respondent only reads (the welcome text, the privacy notice,
-#' the text displays, the group descriptions) is set in grey and
+#' the text displays, the group descriptions) is set in gray and
 #' justified. What is asked is left-aligned.
 #'
 #' The type of a question, its attributes, the audit, the variable index
