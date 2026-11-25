@@ -893,3 +893,28 @@ test_that("a .pdf output goes through the .docx builder", {
   suppressWarnings(suppressMessages(render_questionnaire(lss, out)))
   expect_identical(called, c("TRUE", out))
 })
+
+test_that("the mention of the question type does not depend on the help text", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  lss <- demo_lss()
+  mention <- "(several answers possible)"
+
+  # nationality is a multiple choice whose help reads "Several answers
+  # possible.". The help is the text of the survey and the mention comes
+  # from the question type: the document prints both.
+  path <- q_render(lss, language = "en")
+  on.exit(unlink(path), add = TRUE)
+  text <- q_paras(q_parts(path)$doc)
+  at <- which(grepl("  nationality", text, fixed = TRUE))[1]
+  expect_match(text[at], mention, fixed = TRUE)
+  expect_identical(text[at + 1L], "Several answers possible.")
+
+  # show_help = FALSE removes the help and leaves the mention.
+  path2 <- q_render(lss, language = "en", show_help = FALSE)
+  on.exit(unlink(path2), add = TRUE)
+  text2 <- q_paras(q_parts(path2)$doc)
+  at2 <- which(grepl("  nationality", text2, fixed = TRUE))[1]
+  expect_match(text2[at2], mention, fixed = TRUE)
+  expect_false("Several answers possible." %in% text2)
+})
