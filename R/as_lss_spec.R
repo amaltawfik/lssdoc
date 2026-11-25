@@ -321,7 +321,8 @@ conv_structural <- function(st, lss) {
     col <- switch(section,
                   groups = "gid", questions = "title", subquestions = "title",
                   question_l10ns = "qid", answers = "qid", quotas = "name",
-                  quota_languagesettings = "quotals_quota_id", NULL)
+                  quota_languagesettings = "quotals_quota_id")
+    # switch() gives NULL for a section without an arm.
     if (is.null(col) || !col %in% names(tbl)) return(paste0("row ", rows))
     value <- as.character(tbl[[col]][rows])
     value <- switch(section,

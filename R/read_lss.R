@@ -171,7 +171,9 @@ read_lss <- function(file) {
     xml2::xml_name(root)
   }
   if (is.na(root_name) || !identical(root_name, "document")) {
-    found <- if (is.na(root_name)) "none" else root_name
+    # A document without a root: libxml2 fails before it gets here, the
+    # guard stays for a parser that would not.
+    found <- if (is.na(root_name)) "none" else root_name # nocov
     lssdoc_abort(
       c(
         "{.path {file}} is not a LimeSurvey survey structure file.",
