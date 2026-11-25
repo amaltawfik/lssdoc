@@ -5,9 +5,12 @@
 #' Render one group: a banner, optional description, then each item
 #'
 #' Groups become a visible section banner (bold colored paragraph, not a
-#' Heading style) followed by their items. Items themselves use Heading 1
-#' so Word numbers them sequentially across the whole document, which keeps
-#' the navigation index flat and ignores the group hierarchy in numbering.
+#' Heading style) followed by their items. The banner has outline level 2,
+#' under the level-1 section headings, so Word's navigation pane lists it.
+#' Items are not headings and have no outline level: each one starts with
+#' its meta table (or with the bold "N. variable" line when
+#' `show_item_heading = TRUE`), and its number is a running counter across
+#' the whole document, shown in the "No" column of the meta table.
 #'
 #' @keywords internal
 #' @noRd
@@ -59,6 +62,7 @@ lss_render_group <- function(doc, group, langs, theme,
         )
       )
     )
+    doc <- lss_set_outline_level(doc, 2L)
     # Anchor the group heading with a bookmark so the manual TOC entries
     # can hyperlink to it.
     doc <- officer::body_bookmark(doc, lss_group_bookmark(state$group_index))

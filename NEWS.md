@@ -1,5 +1,12 @@
 # lssdoc (development version)
 
+## Minor improvements and bug fixes
+
+* The document rendered by `render_questionnaire()` now gives its section
+  and group headings an outline level: Word lists them in its navigation
+  pane and the PDF carries bookmarks (#8). In the table layout the groups
+  are table rows and stay out of the pane.
+
 # lssdoc 0.3.0
 
 ## New features

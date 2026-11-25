@@ -100,7 +100,9 @@ lss_section_bookmark <- function(name) {
 #' depend on the reference template's heading definition. The same look
 #' as the group headings keeps the document typographically uniform.
 #' `keep_with_next` stops the title from being stranded at the foot of a
-#' page, and the bookmark anchors the matching static-TOC entry.
+#' page, and the bookmark anchors the matching static-TOC entry. Outline
+#' level 1 lists the heading in Word's navigation pane, above the level-2
+#' group headings.
 #'
 #' @keywords internal
 #' @noRd
@@ -119,7 +121,54 @@ lss_render_section_heading <- function(doc, theme, text, bookmark) {
       )
     )
   )
+  doc <- lss_set_outline_level(doc, 1L)
   officer::body_bookmark(doc, bookmark)
+}
+
+#' Give the paragraph at the cursor a Word outline level
+#'
+#' Word builds its navigation pane from the outline level of each
+#' paragraph, whatever its style, and adds no list number for it, so a
+#' styled heading keeps its look and still shows in the pane.
+#' `officer::fp_par()` has no argument for the level: the `w:outlineLvl`
+#' element is written into the `w:pPr` of the block at the cursor, i.e.
+#' the paragraph just added. `level` is Word's level (1 to 9); the XML
+#' value is 0-based. The CT_PPr sequence ends with `w:divId`,
+#' `w:cnfStyle`, `w:rPr`, `w:sectPr` and `w:pPrChange`, so the element
+#' goes before the first of them when one is present. An existing level
+#' is replaced. A block that is not a paragraph (a table) is left as it
+#' is: Word ignores outline levels inside tables.
+#'
+#' @keywords internal
+#' @noRd
+lss_set_outline_level <- function(doc, level) {
+  w <- "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+  ns <- c(w = w)
+  p <- officer::docx_current_block_xml(doc)
+  if (!identical(xml2::xml_name(p), "p")) return(doc)
+  ppr <- xml2::xml_find_first(p, "w:pPr", ns)
+  if (inherits(ppr, "xml_missing")) {
+    ppr <- xml2::xml_add_child(
+      p, xml2::as_xml_document(sprintf("<w:pPr xmlns:w=\"%s\"/>", w)),
+      .where = 0L
+    )
+  }
+  xml2::xml_remove(xml2::xml_find_all(ppr, "w:outlineLvl", ns))
+  lvl <- xml2::as_xml_document(sprintf(
+    "<w:outlineLvl xmlns:w=\"%s\" w:val=\"%d\"/>", w, as.integer(level) - 1L
+  ))
+  closer <- xml2::xml_find_first(
+    ppr,
+    paste0("*[self::w:divId or self::w:cnfStyle or self::w:rPr or ",
+           "self::w:sectPr or self::w:pPrChange]"),
+    ns
+  )
+  if (inherits(closer, "xml_missing")) {
+    xml2::xml_add_child(ppr, lvl)
+  } else {
+    xml2::xml_add_sibling(closer, lvl, .where = "before")
+  }
+  doc
 }
 
 lss_language_label <- function(code) {
