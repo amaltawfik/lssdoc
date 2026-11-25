@@ -661,3 +661,38 @@ test_that("the demo survey keeps the minimum No widths", {
   expect_length(big, 1L)
   expect_identical(big[[1]][[2]], 432)
 })
+
+test_that("the cards helpers take a missing scale and a question absent from the table", {
+  rows <- list(
+    list(code = "R1", scale_id = NULL),
+    list(code = "R2", scale_id = NA),
+    list(code = "C1", scale_id = "1")
+  )
+  # No scale counts as scale 0: two rows by one column.
+  two_d <- list(qid = "t", code = "qt", type = ":", subquestions = rows)
+  expect_identical(lss_cards_subitem_count(two_d), 2L)
+  arr <- list(qid = "a", code = "qa", type = "F", subquestions = rows[1:2])
+  expect_identical(lss_cards_subitem_count(arr), 2L)
+
+  # A question the numbers table does not hold counts as "".
+  m <- list(groups = list(list(questions = list(arr))))
+  numbers <- lss_item_numbers(m)
+  expect_identical(lss_cards_widest_label(m, numbers), "1.2")
+  expect_identical(lss_cards_widest_label(m, numbers[0, , drop = FALSE]), "")
+})
+
+test_that("the variable index leaves the No cell empty when there is no number", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  theme <- lss_render_theme()
+  theme$chrome <- lss_chrome_strings("en")
+  entries <- list(
+    list(code = "b", no = NULL),
+    list(code = "a", no = NA_character_),
+    list(code = "c", no = "3")
+  )
+  doc <- lss_render_index(officer::read_docx(), entries, theme)
+  s <- officer::docx_summary(doc)
+  cells <- lapply(Filter(function(r) !r$header, docx_rows(s)), `[[`, "cells")
+  expect_identical(cells, list(c("a", ""), c("b", ""), c("c", "3")))
+})
