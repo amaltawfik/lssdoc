@@ -645,10 +645,12 @@ lss_q_other_item <- function(ctx, q, code) {
   }
 }
 
-#' The options LimeSurvey builds in for C and E arrays
+#' The options LimeSurvey builds in for a question type
 #'
-#' The labelled scales of the full document (`lss_predefined_labelled()`).
-#' A and B arrays print one line instead ("For each row: 5-point choice").
+#' The labelled scales of the full document (`lss_predefined_labelled()`):
+#' the arrays C and E, the yes/no question (Y) and the gender question (G).
+#' A and B arrays print one line instead ("For each row: 5-point choice
+#' (1 to 5)").
 #'
 #' @keywords internal
 #' @noRd
@@ -762,8 +764,8 @@ lss_q_open_key <- function(type) {
     "N" = "q_open_number", "K" = "q_open_numbers",
     "S" = "q_open_short_text", "Q" = "q_open_short_texts",
     "T" = "q_open_long_text", "U" = "q_open_long_text",
-    "D" = "q_open_date", "Y" = "q_open_yes_no", "G" = "q_open_gender",
-    "5" = "q_open_five_point", "|" = "q_open_file", "I" = "q_open_language",
+    "D" = "q_open_date", "5" = "q_open_five_point",
+    "|" = "q_open_file", "I" = "q_open_language",
     "q_open_free"
   )
 }
@@ -812,6 +814,8 @@ lss_q_body <- function(ctx, q) {
   } else if (type %in% c("C", "E")) {
     c(rows(), list(lss_q_row_prefix(ctx)),
       lss_q_option_paras(ctx, lss_q_builtin_items(ctx, type)))
+  } else if (type %in% c("Y", "G")) {
+    lss_q_option_paras(ctx, lss_q_builtin_items(ctx, type))
   } else if (identical(type, "1")) {
     out <- rows()
     scales <- sort(unique(vapply(q$answers, function(a) {

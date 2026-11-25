@@ -58,8 +58,8 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "q_options_total_fmt", "q_no_label", "q_other", "q_free_text",
     "q_filter_if_fmt", "q_filtered", "q_not_translated",
     "q_open_number", "q_open_short_text", "q_open_long_text", "q_open_date",
-    "q_open_numbers", "q_open_short_texts", "q_open_yes_no", "q_open_gender",
-    "q_open_five_point", "q_open_ten_point", "q_open_file",
+    "q_open_numbers", "q_open_short_texts", "q_open_five_point",
+    "q_open_ten_point", "q_open_file",
     "q_open_language", "q_open_free"
   )
   for (lang in c("en", "fr", "de", "es", "it")) {

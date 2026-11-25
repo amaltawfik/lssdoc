@@ -1257,7 +1257,7 @@ lss_predefined_labelled <- function(type) {
     "E" = list(c("I", "value_array_increase"), c("S", "value_array_same"),
                c("D", "value_array_decrease")),
     "Y" = list(c("Y", "value_array_yes"), c("N", "value_array_no")),
-    "G" = list(c("M", "value_gender_male"), c("F", "value_gender_female")),
+    "G" = list(c("F", "value_gender_female"), c("M", "value_gender_male")),
     NULL
   )
 }

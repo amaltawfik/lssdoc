@@ -156,8 +156,8 @@ test_that("the chrome of the readable questionnaire exists in five languages", {
     "q_options_total_fmt", "q_no_label", "q_other", "q_free_text",
     "q_filter_if_fmt", "q_filtered", "q_not_translated",
     "q_open_number", "q_open_short_text", "q_open_long_text", "q_open_date",
-    "q_open_numbers", "q_open_short_texts", "q_open_yes_no", "q_open_gender",
-    "q_open_five_point", "q_open_ten_point", "q_open_file",
+    "q_open_numbers", "q_open_short_texts", "q_open_five_point",
+    "q_open_ten_point", "q_open_file",
     "q_open_language", "q_open_free"
   )
   for (lg in c("en", "fr", "de", "es", "it")) {
@@ -531,19 +531,23 @@ test_that("each type says what it asks, in the edge cases too", {
   )
   # Every type has its "Answer:" string.
   expect_identical(
-    vapply(c("N", "K", "S", "Q", "T", "U", "D", "Y", "G", "5", "|", "I", "?"),
+    vapply(c("N", "K", "S", "Q", "T", "U", "D", "5", "|", "I", "?"),
            lss_q_open_key, "", USE.NAMES = FALSE),
     c("q_open_number", "q_open_numbers", "q_open_short_text",
       "q_open_short_texts", "q_open_long_text", "q_open_long_text",
-      "q_open_date", "q_open_yes_no", "q_open_gender", "q_open_five_point",
-      "q_open_file", "q_open_language", "q_open_free")
+      "q_open_date", "q_open_five_point", "q_open_file", "q_open_language",
+      "q_open_free")
   )
   expect_identical(lss_q_item(NA, "x")$code, "")
   expect_length(lss_q_builtin_items(ctx, "C"), 3L)
   expect_identical(body("A", subquestions = list(sq)),
-                   c("A\tOui", "Pour chaque ligne\u00A0: choix sur 5 points"))
+                   c("A\tOui", "Pour chaque ligne\u00A0: choix sur 5 points (1 \u00E0 5)"))
   expect_identical(body("B", subquestions = list(sq)),
-                   c("A\tOui", "Pour chaque ligne\u00A0: choix sur 10 points"))
+                   c("A\tOui", "Pour chaque ligne\u00A0: choix sur 10 points (1 \u00E0 10)"))
+  expect_identical(body("5"), "R\u00E9ponse\u00A0: choix sur 5 points (1 \u00E0 5)")
+  # Yes/no and gender list their built-in options, female first.
+  expect_identical(body("Y"), c("Y\tOui", "N\tNon"))
+  expect_identical(body("G"), c("F\tFemme", "M\tHomme"))
   # Question line: a text display and a help text missing in French.
   num <- data.frame(status = "display", hidden = FALSE, no = NA_integer_)
   line <- plan_text(lss_q_question(ctx, q("X", texts = tx("", "Hello")), num))
@@ -752,8 +756,8 @@ test_that("the fixture renders in French with the defaults", {
   expect_true("Y\tOui" %in% text)
   expect_true("I\tAugmenter" %in% text)
   expect_false("10\t10" %in% text)
-  expect_true(any(grepl("^Pour chaque ligne\u00A0: choix sur 10 points$", text)))
-  expect_true(any(grepl("^Pour chaque ligne\u00A0: choix sur 5 points$", text)))
+  expect_true("Pour chaque ligne\u00A0: choix sur 10 points (1 \u00E0 10)" %in% text)
+  expect_true("Pour chaque ligne\u00A0: choix sur 5 points (1 \u00E0 5)" %in% text)
 })
 
 test_that("show_codes = FALSE leaves no code, show_hidden follows it", {
@@ -841,6 +845,44 @@ test_that("the chrome can be in another language than the questions", {
   ), W)
   hanging <- as.numeric(xml2::xml_attr(ind, "w:hanging", W)) / 20
   expect_gt(hanging, lss_q_text_width("berechnet", "Calibri", 9))
+})
+
+test_that("yes/no and gender list their options, the N-point scales their range", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  lss <- demo_lss()
+  # The options under the line of their question, before the next question.
+  after <- function(text, code, n = 2L) {
+    i <- grep(paste0("  ", code, "$"), text)
+    expect_length(i, 1L)
+    text[i + seq_len(n)]
+  }
+  path <- suppressWarnings(q_render(lss, language = "en"))
+  on.exit(unlink(path), add = TRUE)
+  text <- q_paras(q_parts(path)$doc)
+  expect_identical(after(text, "democonsent"), c("Y\tYes", "N\tNo"))
+  expect_identical(after(text, "gender"), c("F\tFemale", "M\tMale"))
+  expect_false(any(grepl("^Answer: (yes or no|gender)", text)))
+  expect_true(any(grepl("^Answer: 5-point choice \\(1 to 5\\)$", text)))
+  expect_true("For each row: 5-point choice (1 to 5)" %in% text)
+  expect_true("For each row: 10-point choice (1 to 10)" %in% text)
+
+  # Without codes the labels remain; in German they are German even when
+  # the chrome is French: they belong to the questionnaire.
+  path2 <- suppressWarnings(q_render(lss, language = "de", chrome_lang = "fr",
+                                     show_codes = FALSE))
+  on.exit(unlink(path2), add = TRUE)
+  text2 <- q_paras(q_parts(path2)$doc)
+  num <- grep("^[0-9]+\t", text2)
+  opts <- function(k) text2[num[k] + 1:2]
+  q_no <- function(code) {
+    numbers <- lss_item_numbers(lss_model(lss))
+    numbers$no[numbers$code == code]
+  }
+  expect_identical(opts(q_no("democonsent")), c("Ja", "Nein"))
+  expect_identical(opts(q_no("gender")), c("Weiblich", "M\u00E4nnlich"))
+  expect_false(any(grepl("^(Y|N|F|M)\t", text2)))
+  expect_true("Pour chaque ligne\u00A0: choix sur 5 points (1 \u00E0 5)" %in% text2)
 })
 
 test_that("a survey in one language has no language line, a lone group no TOC", {
