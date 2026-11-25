@@ -70,8 +70,8 @@
 #'   survey has fewer than two groups). For per-variable navigation,
 #'   use `show_index`.
 #' @param show_index Logical. If `TRUE` (default), append a variable
-#'   index at the end of the document listing every item code with
-#'   its number, sorted alphabetically.
+#'   index at the end of the document listing every variable with the
+#'   number of the card or row that holds it, sorted alphabetically.
 #' @param show_quotas Logical. If `TRUE` (default), append a quotas
 #'   section (after the end text, before the variable index) listing
 #'   each sampling quota: its localized name, status (active, limit and
@@ -88,8 +88,10 @@
 #'   without exposing the LimeSurvey internals).
 #' @param show_item_heading Logical. If `FALSE` (the default), the
 #'   meta table starts each item directly, for a compact layout. If
-#'   `TRUE`, a bold `"N. variable"` heading is added above each item
-#'   for scroll-time navigation.
+#'   `TRUE`, a bold `"N. variable"` heading (`"28. variable"`, or
+#'   `"28.1. variable"` for a subquestion) is added above each item
+#'   for scroll-time navigation. An unnumbered item shows its variable
+#'   alone.
 #' @param show_raw_filter Logical. If `FALSE` (the default), the
 #'   Filter cell shows only the human-readable form (e.g.
 #'   `Q1 = 1`) -- editorial style, matching ESS / MOSAiCH /
@@ -228,6 +230,23 @@
 #'   offsets. Useful for a roomier single-language render (e.g. `12`). The
 #'   cover title and subtitle keep their fixed title-page sizes. Accepted
 #'   range: 7 to 16.
+#'
+#' @section Question numbers:
+#' LimeSurvey stores no question numbers, only the order of the groups and
+#' of the questions within each group. The document numbers the questions
+#' put to the respondent from 1 to n in that order. Text displays,
+#' equations and questions hidden from respondents (attribute `hidden`
+#' set to 1) keep their place but get no number: their `No` cell shows an
+#' en dash, and a hidden question says so on its card or row. When the
+#' document gives a question several cards or rows, each one that stands
+#' for a subquestion (an array row, one field of a multiple short text or
+#' multiple numerical input, and in the `"table"` template an option or a
+#' rank position) is numbered `28.1`, `28.2` and so on, while the "Other"
+#' and comment fields carry the question's own number `28`. The numbers
+#' depend on the survey alone: `languages`, `show_groups` and `template`
+#' never change them. The cover counts the numbered questions, so the
+#' count equals the last number, and lists the text displays, equations
+#' and hidden questions next to it.
 #'
 #' @section "LimeSurvey last save" date on the cover:
 #' The cover metadata table carries a row labelled

@@ -1,6 +1,23 @@
 # lssdoc (development version)
 
+## Breaking changes
+
+* `render_questionnaire()` now numbers the questions, not the cards (#10).
+  A question has one number, whatever the number of cards or rows it takes.
+  The rows of an array are numbered `28.1`, `28.2` and so on, as are the
+  options of a multiple choice and the positions of a ranking in the table
+  layout. An "Other" or comment field carries the number of its question.
+  A text display, an equation and a question hidden from respondents get
+  no number: their `No` cell shows an en dash, and the cover counts them
+  apart. The last number is the number of questions asked, which is the
+  count the cover prints under "Questions". A document rendered with an
+  earlier version carries other numbers.
+
 ## Minor improvements and bug fixes
+
+* A question hidden from respondents (LimeSurvey attribute `hidden` at 1)
+  now says so on its card or row. It used to be rendered like any other
+  question.
 
 * The document rendered by `render_questionnaire()` now gives its section
   and group headings an outline level: Word lists them in its navigation

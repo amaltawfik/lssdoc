@@ -59,10 +59,12 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       df$Value[i] <- as.character(r$code)
       # Labels per language composed via flextable::compose() below.
     } else if (identical(r$kind, "mc_option")) {
-      # Multiple-choice option: the option's full variable code in the
+      # Multiple-choice option (or ranking position): its sub-item number
+      # (`28.1`) in the No column, the option's full variable code in the
       # Variable column and its binary coding token in the Value column,
       # so the row is a self-contained dictionary entry. The option
       # label per language is composed below.
+      df$No[i]       <- lss_table_no_cell(r$no)
       df$Variable[i] <- r$variable
       df$Value[i]    <- r$value_token
     } else if (identical(r$kind, "mc_exclusive")) {
@@ -77,7 +79,7 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     } else {
       # Question row (leaf / subq / other).
       df$Field[i]     <- chrome$item_question
-      df$No[i]        <- as.character(r$no)
+      df$No[i]        <- lss_table_no_cell(r$no)
       df$Variable[i]  <- r$variable
       df$Type[i]      <- r$type_label
       df$Mandatory[i] <- r$mandatory_label
@@ -322,15 +324,22 @@ lss_table_text_row <- function(lss, langs, field, kind) {
 #' renderer never has to look at the question structure again:
 #' `no`, `variable` (the LimeSurvey data column, `parent_subq` for
 #' compound subqs), `type_label`, `mandatory_label`, `relevance`,
-#' plus pre-extracted texts per language (`parent_text`, `subq_text`,
-#' `help`) and the question/subquestion model objects so the cell
-#' composer can pull the answer scale or the implicit-coding
+#' `hidden`, plus pre-extracted texts per language (`parent_text`,
+#' `subq_text`, `help`) and the question/subquestion model objects so
+#' the cell composer can pull the answer scale or the implicit-coding
 #' descriptor at render time.
 #'
-#' Also advances `state$item_no`, `state$group_index` and
-#' `state$index_entries` so the rest of the document (TOC, Variable
-#' index, navigation) stays consistent with the table layout. The
-#' progress bar is updated at each group boundary.
+#' `no` is the number label read from `state$numbers` (see
+#' `lss_item_label()`): the question's number on a leaf row, on the
+#' parent row of a multiple choice or a ranking and on an "Other" or
+#' comment row; `<question>.<k>` on the k-th row standing for one
+#' subquestion (array row, option, rank position); an en dash throughout
+#' an unnumbered question.
+#'
+#' Also advances `state$group_index` and `state$index_entries` so the
+#' rest of the document (TOC, Variable index, navigation) stays
+#' consistent with the table layout. The progress bar is updated at each
+#' group boundary.
 #'
 #' @keywords internal
 #' @noRd
@@ -385,6 +394,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
                                 other_q = NULL) {
     list(
       kind = kind, no = no, variable = variable,
+      hidden = lss_question_hidden(q$attributes),
       type_label = if (identical(kind, "other")) chrome$type_text_other
                    else lss_localized_type_label(q, theme),
       mandatory_label = lss_yes_no(
@@ -487,13 +497,13 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   # "Y/blank" coding in the Value cell) followed by one row per option
   # carrying that option's FULL variable code -- so the dense table
   # keeps every exported variable on its own findable row -- with the
-  # option label in the language columns. Options are not numbered
-  # individually (one No for the question), but each option variable is
-  # registered in the variable index.
+  # option label in the language columns. The parent row carries the
+  # question's number (`28`), each option row its sub-item number
+  # (`28.1`, `28.2`, ...), and each option variable is registered in the
+  # variable index under that sub-item number.
   emit_multiple_choice <- function(q) {
     out <- list()
-    state$item_no <- state$item_no + 1L
-    parent_no <- state$item_no
+    parent_no <- lss_item_label(state$numbers, q$qid)
     # The parent row is a pure question header: stem, type, filter, but
     # NO variable code and NO value. In this dense table every option
     # row below is a real variable that carries its own name AND its own
@@ -508,14 +518,17 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     # Documented per option, in the Value column, so every variable row
     # is a self-contained dictionary entry (name | value domain | label).
     value_token <- "Y/blank"
-    for (sq in q$subquestions) {
+    for (k in seq_along(q$subquestions)) {
+      sq <- q$subquestions[[k]]
       item_code <- lss_variable_name(q$code, sq$code,
                                      style = theme$variable_names)
+      option_no <- lss_item_label(state$numbers, q$qid, k)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
-        code = item_code, no = parent_no
+        code = item_code, no = option_no
       )
       out[[length(out) + 1L]] <- list(
         kind = "mc_option",
+        no = option_no,
         variable = item_code,
         value_token = value_token,
         labels = stats::setNames(
@@ -533,36 +546,38 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     onr <- order_note_row(q, "subquestion_order", chrome$item_order)
     if (!is.null(onr)) out[[length(out) + 1L]] <- onr
     if (identical(q$other, "Y")) {
-      state$item_no <- state$item_no + 1L
       item_code <- lss_other_variable(q, theme$variable_names)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
-        code = item_code, no = state$item_no
+        code = item_code, no = parent_no
       )
       out[[length(out) + 1L]] <- emit_question_row(
-        "other", state$item_no, item_code, q = q, other_q = q
+        "other", parent_no, item_code, q = q, other_q = q
       )
     }
     out
   }
 
-  # One grouped block for a ranking question: a parent stem row, one
-  # position column per item (named by the item's answer id, the CSV form
-  # `code[aid]`, carrying its rank), then the rankable items as value rows
-  # (the codes that can appear as a cell's value).
+  # One grouped block for a ranking question: a parent stem row (the
+  # question's number), one position column per item (named by the
+  # item's answer id, the CSV form `code[aid]`, carrying its rank and its
+  # sub-item number `28.1`, `28.2`, ...), then the rankable items as value
+  # rows (the codes that can appear as a cell's value).
   emit_ranking <- function(q) {
     out <- list()
-    state$item_no <- state$item_no + 1L
-    prow <- emit_question_row("leaf", state$item_no, "", q = q)
+    parent_no <- lss_item_label(state$numbers, q$qid)
+    prow <- emit_question_row("leaf", parent_no, "", q = q)
     prow$mc_parent <- TRUE
     out[[length(out) + 1L]] <- prow
     for (i in seq_along(q$answers)) {
       a <- q$answers[[i]]
       item_code <- lss_variable_name(q$code, a$aid, style = theme$variable_names)
+      position_no <- lss_item_label(state$numbers, q$qid, i)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
-        code = item_code, no = state$item_no
+        code = item_code, no = position_no
       )
       out[[length(out) + 1L]] <- list(
-        kind = "mc_option", variable = item_code, value_token = "",
+        kind = "mc_option", no = position_no,
+        variable = item_code, value_token = "",
         labels = stats::setNames(
           rep(list(sprintf(chrome$item_rank_fmt, i)), length(langs)), langs
         )
@@ -576,6 +591,11 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
 
   for (q in g$questions) {
       info <- lss_type_info(q$type)
+      # The question's own number: leaf row, parent row, "Other" and
+      # comment rows. A row standing for one subquestion gets the sub-item
+      # number `<question>.<k>`, k counting the question's sub-item rows in
+      # the order they are emitted.
+      q_no <- lss_item_label(state$numbers, q$qid)
       if (identical(info$family, "multiple") &&
           length(q$subquestions) > 0L) {
         rows <- c(rows, emit_multiple_choice(q))
@@ -599,6 +619,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         }
         two_d <- !dual_scale &&
           length(unique(vapply(q$subquestions, sq_scale, character(1)))) > 1L
+        k <- 0L
         if (two_d) {
           # Two-dimensional array: rows (scale 0) x columns (scale 1) ->
           # one variable per cell, `parent[row_col]`, with the column label
@@ -606,15 +627,16 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           rows_sq <- Filter(function(s) sq_scale(s) == "0", q$subquestions)
           cols_sq <- Filter(function(s) sq_scale(s) != "0", q$subquestions)
           for (rsq in rows_sq) for (csq in cols_sq) {
-            state$item_no <- state$item_no + 1L
+            k <- k + 1L
+            sub_no <- lss_item_label(state$numbers, q$qid, k)
             item_code <- lss_variable_name(
               q$code, paste0(rsq$code, "_", csq$code),
               style = theme$variable_names
             )
             state$index_entries[[length(state$index_entries) + 1L]] <- list(
-              code = item_code, no = state$item_no
+              code = item_code, no = sub_no
             )
-            qr <- emit_question_row("subq", state$item_no, item_code,
+            qr <- emit_question_row("subq", sub_no, item_code,
                                     q = q, sq = rsq)
             qr$scale_header <- stats::setNames(
               lapply(langs, function(lg) csq$texts[[lg]]$question), langs
@@ -626,13 +648,14 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         for (sq in q$subquestions) {
           if (dual_scale) {
             for (si in seq_along(q$scales)) {
-              state$item_no <- state$item_no + 1L
+              k <- k + 1L
+              sub_no <- lss_item_label(state$numbers, q$qid, k)
               item_code <- lss_variable_name(q$code, sq$code, si,
                                              theme$variable_names)
               state$index_entries[[length(state$index_entries) + 1L]] <- list(
-                code = item_code, no = state$item_no
+                code = item_code, no = sub_no
               )
-              qr <- emit_question_row("subq", state$item_no, item_code,
+              qr <- emit_question_row("subq", sub_no, item_code,
                                       q = q, sq = sq)
               hdr <- lss_dualscale_header(q, si, langs)
               qr$scale_header <- if (!is.null(hdr)) {
@@ -646,60 +669,57 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
               rows <- c(rows, emit_values(q$scales[[si]]))
             }
           } else {
-            state$item_no <- state$item_no + 1L
+            k <- k + 1L
+            sub_no <- lss_item_label(state$numbers, q$qid, k)
             item_code <- lss_variable_name(q$code, sq$code,
                                            style = theme$variable_names)
             state$index_entries[[length(state$index_entries) + 1L]] <- list(
-              code = item_code, no = state$item_no
+              code = item_code, no = sub_no
             )
             rows[[length(rows) + 1L]] <- emit_question_row(
-              "subq", state$item_no, item_code, q = q, sq = sq
+              "subq", sub_no, item_code, q = q, sq = sq
             )
             rows <- c(rows, emit_value_rows_for(q))
           }
         }
         }
         if (identical(q$other, "Y")) {
-          state$item_no <- state$item_no + 1L
           item_code <- lss_other_variable(q, theme$variable_names)
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
-            code = item_code, no = state$item_no
+            code = item_code, no = q_no
           )
           rows[[length(rows) + 1L]] <- emit_question_row(
-            "other", state$item_no, item_code, q = q, other_q = q
+            "other", q_no, item_code, q = q, other_q = q
           )
         }
       } else {
-        state$item_no <- state$item_no + 1L
         state$index_entries[[length(state$index_entries) + 1L]] <- list(
-          code = q$code, no = state$item_no
+          code = q$code, no = q_no
         )
         rows[[length(rows) + 1L]] <- emit_question_row(
-          "leaf", state$item_no, q$code, q = q
+          "leaf", q_no, q$code, q = q
         )
         rows <- c(rows, emit_value_rows_for(q))
         onr <- order_note_row(q, "answer_order", chrome$item_order)
         if (!is.null(onr)) rows[[length(rows) + 1L]] <- onr
         # Single-choice "Other" free-text column.
         if (identical(q$other, "Y")) {
-          state$item_no <- state$item_no + 1L
           item_code <- lss_other_variable(q, theme$variable_names)
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
-            code = item_code, no = state$item_no
+            code = item_code, no = q_no
           )
           rows[[length(rows) + 1L]] <- emit_question_row(
-            "other", state$item_no, item_code, q = q, other_q = q
+            "other", q_no, item_code, q = q, other_q = q
           )
         }
         # List-with-comment (type O) free-text comment column.
         if (identical(q$type, "O")) {
-          state$item_no <- state$item_no + 1L
           item_code <- lss_variable_name(q$code, "_Ccomment",
                                          style = theme$variable_names)
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
-            code = item_code, no = state$item_no
+            code = item_code, no = q_no
           )
-          cr <- emit_question_row("leaf", state$item_no, item_code, q = q)
+          cr <- emit_question_row("leaf", q_no, item_code, q = q)
           cr$q$type <- "S"
           cr$type_label <- chrome$type_text_short
           rows[[length(rows) + 1L]] <- cr
@@ -937,7 +957,22 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
       props = plain(color = theme$color_muted)
     ))
   }
+
+  # A question hidden from respondents says so on a last muted italic
+  # line of the cell, in the chrome language, like the help line above.
+  if (isTRUE(row$hidden)) {
+    add_line(theme$chrome$item_hidden,
+             plain(color = theme$color_muted, italic = TRUE))
+  }
   do.call(flextable::as_paragraph, chunks)
+}
+
+#' Text of the No cell of a table row: the number label, or empty when
+#' the row carries none (`NULL` or `NA`)
+#' @keywords internal
+#' @noRd
+lss_table_no_cell <- function(no) {
+  if (is.null(no) || length(no) == 0L || is.na(no[1])) "" else as.character(no[1])
 }
 
 #' Resolve the customized prompt of the LimeSurvey "Other:" input
@@ -1081,7 +1116,11 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   #   Field     0.62  - "Welcome" (7) and "Question" (8) fit on
   #                     one line; longer localized labels
   #                     ("Description", 11) wrap.
-  #   No        0.30  - 3 digits in 11 pt body font ("999" max).
+  #   No        0.30  - the minimum. Wider when the widest label of this
+  #                     table needs it (lss_no_width() at the body size,
+  #                     with the 3 pt padding on each side); meta_w grows
+  #                     by the same amount, taken from the language
+  #                     columns.
   #   Variable  1.30  - common `parent_subq` codes fit on a single
   #                     11 pt Consolas line; codes >14 chars wrap.
   #   Type      0.62  - one-word labels ("Computed", "Number",
@@ -1110,11 +1149,13 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # 0.40 in floor is a hard legibility minimum (the body font already steps
   # down to 7 pt from three languages on); if it binds, the page format is
   # too narrow for that many languages and landscape is the fix.
-  meta_w <- 0.62 + 0.30 + 1.30 + 0.62 + 0.50 + 0.58 + 0.55
+  no_labels <- vapply(rows, function(r) lss_table_no_cell(r$no), character(1L))
+  no_w <- max(0.30, lss_no_width(no_labels, body_size, 6))
+  meta_w <- 0.62 + no_w + 1.30 + 0.62 + 0.50 + 0.58 + 0.55
   total_w <- theme$content_width_in
   lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 0.40)
   ft <- flextable::width(ft, j = "Field",     width = 0.62, unit = "in")
-  ft <- flextable::width(ft, j = "No",        width = 0.30, unit = "in")
+  ft <- flextable::width(ft, j = "No",        width = no_w, unit = "in")
   ft <- flextable::width(ft, j = "Variable",  width = 1.30, unit = "in")
   ft <- flextable::width(ft, j = "Type",      width = 0.62, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.50, unit = "in")

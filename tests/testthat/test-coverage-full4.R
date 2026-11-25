@@ -246,7 +246,8 @@ test_that("ranking item shows the audit marker and a Help row (render_item 292, 
       audit_idx = ri_audit("devicerank", "error"), state = st)
   )
   expect_s3_class(doc, "rdocx")
-  expect_identical(st$item_no, 1L)
+  # One card, its two position variables registered in the index.
+  expect_length(st$index_entries, 2L)
 })
 
 test_that("multiple-choice item shows the audit marker on its heading (render_item 401)", {

@@ -9,8 +9,10 @@
 #' under the level-1 section headings, so Word's navigation pane lists it.
 #' Items are not headings and have no outline level: each one starts with
 #' its meta table (or with the bold "N. variable" line when
-#' `show_item_heading = TRUE`), and its number is a running counter across
-#' the whole document, shown in the "No" column of the meta table.
+#' `show_item_heading = TRUE`). Its number, shown in the "No" column of
+#' the meta table, is the question's number from `lss_item_numbers()`
+#' (`"28"`, `"28.1"` for a sub-item, an en dash when the question is not
+#' numbered), read from `state$numbers` and never counted here.
 #'
 #' @keywords internal
 #' @noRd
@@ -207,11 +209,15 @@ lss_render_compound_question <- function(doc, q, langs, theme,
   }
   two_d <- !dual_scale &&
     length(unique(vapply(q$subquestions, sq_scale, character(1)))) > 1L
+  # `k` is the rank of each block among the question's sub-items, in
+  # rendering order; the block is numbered `<question>.<k>`.
+  k <- 0L
   if (two_d) {
     rows_sq <- Filter(function(s) sq_scale(s) == "0", q$subquestions)
     cols_sq <- Filter(function(s) sq_scale(s) != "0", q$subquestions)
     for (rsq in rows_sq) {
       for (csq in cols_sq) {
+        k <- k + 1L
         item_code <- lss_variable_name(
           q$code, paste0(rsq$code, "_", csq$code),
           style = theme$variable_names
@@ -223,7 +229,8 @@ lss_render_compound_question <- function(doc, q, langs, theme,
           show_attrs = show_attrs,
           audit_idx = audit_idx,
           state = state,
-          column = csq
+          column = csq,
+          k = k
         )
       }
     }
@@ -232,6 +239,7 @@ lss_render_compound_question <- function(doc, q, langs, theme,
   for (sq in q$subquestions) {
     if (dual_scale) {
       for (si in seq_along(q$scales)) {
+        k <- k + 1L
         item_code <- lss_variable_name(q$code, sq$code, si,
                                        theme$variable_names)
         doc <- lss_render_subq_item(
@@ -245,10 +253,12 @@ lss_render_compound_question <- function(doc, q, langs, theme,
             answers = q$scales[[si]],
             header = lss_dualscale_header(q, si, langs),
             index = si
-          )
+          ),
+          k = k
         )
       }
     } else {
+      k <- k + 1L
       doc <- lss_render_subq_item(
         doc, q, sq, langs, theme,
         item_code = lss_variable_name(q$code, sq$code,
@@ -256,7 +266,8 @@ lss_render_compound_question <- function(doc, q, langs, theme,
         show_help = show_help,
         show_attrs = show_attrs,
         audit_idx = audit_idx,
-        state = state
+        state = state,
+        k = k
       )
     }
   }
@@ -279,8 +290,7 @@ lss_render_compound_question <- function(doc, q, langs, theme,
 lss_render_ranking_item <- function(doc, q, langs, theme,
                                     show_help, show_attrs, audit_idx, state) {
   chrome <- theme$chrome
-  state$item_no <- state$item_no + 1L
-  item_no <- state$item_no
+  item_no <- lss_item_label(state$numbers, q$qid)
   n <- length(q$answers)
   for (a in q$answers) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -291,7 +301,7 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
     audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
-    heading_text <- sprintf("%d. %s", item_no, q$code)
+    heading_text <- lss_item_heading_text(item_no, q$code)
     if (!is.null(audit_marker)) {
       heading_text <- paste0(heading_text, "  ", audit_marker$text)
     }
@@ -314,7 +324,8 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
     variable = lss_variable_name(q$code, "*", style = theme$variable_names),
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
+    show_raw_filter = isTRUE(state$show_raw_filter),
+    hidden = lss_question_hidden(q$attributes)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -387,8 +398,9 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
 #' @noRd
 lss_render_multiple_choice <- function(doc, q, langs, theme,
                                        show_help, show_attrs, audit_idx, state) {
-  state$item_no <- state$item_no + 1L
-  item_no <- state$item_no
+  # One card for the whole question, so it carries the question's own
+  # number; every option variable points to it in the index.
+  item_no <- lss_item_label(state$numbers, q$qid)
   # Register every option variable in the index (lookup preserved).
   for (sq in q$subquestions) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -400,7 +412,7 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
     audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
-    heading_text <- sprintf("%d. %s", item_no, q$code)
+    heading_text <- lss_item_heading_text(item_no, q$code)
     if (!is.null(audit_marker)) {
       heading_text <- paste0(heading_text, "  ", audit_marker$text)
     }
@@ -427,7 +439,8 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
     variable = lss_variable_name(q$code, "*", style = theme$variable_names),
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
+    show_raw_filter = isTRUE(state$show_raw_filter),
+    hidden = lss_question_hidden(q$attributes)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -523,16 +536,18 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
 #' free text the respondent typed in the "Other:" field. The prompt
 #' shown next to that input can be customized via the
 #' `other_replace_text` attribute (per language). We surface this as
-#' its own numbered item so the reader sees the variable code in the
-#' index and meta table, alongside any other items.
+#' its own card so the reader sees the variable code in the index and
+#' meta table, alongside any other items. The field belongs to its
+#' question, so the card carries the question's own number; the variable
+#' name tells it apart from the main card.
 #'
 #' @keywords internal
 #' @noRd
 lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
-  state$item_no <- state$item_no + 1L
+  item_no <- lss_item_label(state$numbers, q$qid)
   item_code <- lss_other_variable(q, theme$variable_names)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
-    code = item_code, no = state$item_no
+    code = item_code, no = item_no
   )
   doc <- lss_render_item_spacer(doc, theme)
 
@@ -551,7 +566,7 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
   texts_by_lang <- stats::setNames(lapply(langs, prompt_for_lang), langs)
 
   if (isTRUE(state$show_item_heading)) {
-    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    heading_text <- lss_item_heading_text(item_no, item_code)
     heading_prop <- officer::fp_text(
       font.family = theme$font_body, font.size = theme$size_heading2,
       bold = TRUE, color = theme$color_text
@@ -567,12 +582,13 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
 
   doc <- lss_render_question_meta_table(
     doc, theme,
-    item_no = state$item_no,
+    item_no = item_no,
     variable = item_code,
     type = "T", type_label = theme$chrome$type_text_other,
     mandatory = "N",
     relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
+    show_raw_filter = isTRUE(state$show_raw_filter),
+    hidden = lss_question_hidden(q$attributes)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
   rows <- list(list(
@@ -599,21 +615,22 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
 #'
 #' A list-with-comment question yields a second data column holding the
 #' respondent's free-text comment, which LimeSurvey names `<parent>[_Ccomment]`
-#' in its CSV/Excel export. We surface it as its own numbered item so the
-#' reader sees the variable in the index and meta table alongside the list.
+#' in its CSV/Excel export. We surface it as its own card so the reader
+#' sees the variable in the index and meta table alongside the list. Like
+#' the "Other" field, it carries the question's own number.
 #'
 #' @keywords internal
 #' @noRd
 lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
-  state$item_no <- state$item_no + 1L
+  item_no <- lss_item_label(state$numbers, q$qid)
   item_code <- lss_variable_name(q$code, "_Ccomment",
                                  style = theme$variable_names)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
-    code = item_code, no = state$item_no
+    code = item_code, no = item_no
   )
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
-    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    heading_text <- lss_item_heading_text(item_no, item_code)
     heading_prop <- officer::fp_text(
       font.family = theme$font_body, font.size = theme$size_heading2,
       bold = TRUE, color = theme$color_text
@@ -628,12 +645,13 @@ lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
   }
   doc <- lss_render_question_meta_table(
     doc, theme,
-    item_no = state$item_no,
+    item_no = item_no,
     variable = item_code,
     type = "S", type_label = theme$chrome$type_text_short,
     mandatory = "N",
     relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
+    show_raw_filter = isTRUE(state$show_raw_filter),
+    hidden = lss_question_hidden(q$attributes)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
   stem <- lapply(langs, function(lg) q$texts[[lg]]$question)
@@ -653,9 +671,9 @@ lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
   lss_render_item_table(doc, theme, langs, rows)
 }
 
-#' Render a subquestion as a fully self-contained numbered item
+#' Render a subquestion as a fully self-contained sub-item
 #'
-#' Each subquestion of a compound question (array, multiple choice,
+#' Each subquestion of a compound question (array, multiple short text,
 #' multiple numerical, dual-scale array) is rendered as its own block
 #' with the same shape as a leaf item:
 #'
@@ -666,20 +684,23 @@ lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
 #'   then -- for types that carry an enumerated scale -- the parent's
 #'   answer modalities repeated as a "Value" section + value rows.
 #'
+#' `k` is the block's rank among the question's sub-items, in rendering
+#' order: the block is numbered `<question>.<k>` (see `lss_item_label()`).
+#'
 #' @keywords internal
 #' @noRd
 lss_render_subq_item <- function(doc, q, sq, langs, theme,
                                  item_code, show_help, show_attrs,
                                  audit_idx, state, scale = NULL,
-                                 column = NULL) {
-  state$item_no <- state$item_no + 1L
+                                 column = NULL, k = NULL) {
+  item_no <- lss_item_label(state$numbers, q$qid, k)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
-    code = item_code, no = state$item_no
+    code = item_code, no = item_no
   )
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
     audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
-    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    heading_text <- lss_item_heading_text(item_no, item_code)
     if (!is.null(audit_marker)) {
       heading_text <- paste0(heading_text, "  ", audit_marker$text)
     }
@@ -698,11 +719,12 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   }
   doc <- lss_render_question_meta_table(
     doc, theme,
-    item_no = state$item_no,
+    item_no = item_no,
     variable = item_code,
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
+    show_raw_filter = isTRUE(state$show_raw_filter),
+    hidden = lss_question_hidden(q$attributes)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -781,21 +803,25 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   doc
 }
 
-#' Render a leaf question (no subquestions) as a numbered item
+#' Render a leaf question (no subquestions) as one card
+#'
+#' The card carries the question's number, or an en dash for a text
+#' display, an equation or a hidden question (see `lss_item_numbers()`).
+#'
 #' @keywords internal
 #' @noRd
 lss_render_leaf_item <- function(doc, q, langs, theme,
                                  show_help, show_attrs, show_technical_attrs,
                                  audit_idx, item_code,
                                  texts_by_lang, help_by_lang, state) {
-  state$item_no <- state$item_no + 1L
+  item_no <- lss_item_label(state$numbers, q$qid)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
-    code = item_code, no = state$item_no
+    code = item_code, no = item_no
   )
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
     audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
-    heading_text <- sprintf("%d. %s", state$item_no, item_code)
+    heading_text <- lss_item_heading_text(item_no, item_code)
     if (!is.null(audit_marker)) {
       heading_text <- paste0(heading_text, "  ", audit_marker$text)
     }
@@ -816,11 +842,12 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   # Structured meta table: No | Variable | Type | Mandatory | Filter
   doc <- lss_render_question_meta_table(
     doc, theme,
-    item_no = state$item_no,
+    item_no = item_no,
     variable = q$code,
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
-    show_raw_filter = isTRUE(state$show_raw_filter)
+    show_raw_filter = isTRUE(state$show_raw_filter),
+    hidden = lss_question_hidden(q$attributes)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -1462,8 +1489,8 @@ lss_render_lang_block <- function(doc, texts_by_lang, langs, theme,
 #' table (Prefix, Suffix, Validation, ...), in italic muted gray so it
 #' stays visually distinct from the question text and the answer
 #' values. Attributes that are empty in every language are skipped.
-#' `other_replace_text` is omitted because it is documented as its own
-#' numbered item via `lss_render_other_item()`.
+#' `other_replace_text` is omitted because it is documented on its own
+#' card via `lss_render_other_item()`.
 #'
 #' @keywords internal
 #' @noRd

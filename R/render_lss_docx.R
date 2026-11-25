@@ -153,6 +153,12 @@
     NULL
   }
   state <- lss_render_state(model)
+  # Cards: every meta table of the document shares one No width, 0.35 in
+  # at least, wide enough for the widest label the cards print (2 pt of
+  # padding on each side of the band's No cell).
+  theme$meta_no_width_in <- max(0.35, lss_no_width(
+    lss_cards_widest_label(model, state$numbers), theme$size_question, 4
+  ))
   state$show_raw_filter <- isTRUE(show_raw_filter)
   state$show_item_heading <- isTRUE(show_item_heading)
   state$show_attrs <- show_attrs

@@ -84,9 +84,19 @@ lss_render_cover <- function(doc, lss, model, theme,
   doc <- lss_render_authors_block(doc, authors, theme)
   doc <- lss_render_description_block(doc, description, theme)
 
-  # Metadata table.
+  # Metadata table. "Questions" counts the questions put to the
+  # respondent, so it equals the last question number; the unnumbered
+  # elements follow it, each kind on its own row when present: text
+  # displays and equations under their type labels, then the hidden
+  # questions (a hidden display or equation counts once, under its type).
   n_groups <- length(model$groups)
-  n_q <- sum(vapply(model$groups, function(g) length(g$questions), integer(1)))
+  numbers <- lss_item_numbers(model)
+  n_q <- sum(numbers$status == "asked")
+  n_unnumbered <- c(
+    display  = sum(numbers$status == "display"),
+    equation = sum(numbers$status == "equation"),
+    hidden   = sum(numbers$status == "hidden")
+  )
   n_subq <- if (is.null(lss$subquestions)) 0L else nrow(lss$subquestions)
   n_ans  <- if (is.null(lss$answers)) 0L else nrow(lss$answers)
   sid <- if (!is.null(lss$surveys) && "sid" %in% names(lss$surveys)) {
@@ -110,6 +120,18 @@ lss_render_cover <- function(doc, lss, model, theme,
   field_pairs[[chrome$cover_languages]]      <- paste(langs, collapse = ", ")
   field_pairs[[chrome$cover_groups]]         <- as.character(n_groups)
   field_pairs[[chrome$cover_questions]]      <- as.character(n_q)
+  unnumbered_labels <- c(
+    display  = chrome$type_display,
+    equation = chrome$type_computed,
+    hidden   = chrome$cover_hidden_questions
+  )
+  for (kind in names(n_unnumbered)) {
+    if (n_unnumbered[[kind]] > 0L) {
+      field_pairs[[unnumbered_labels[[kind]]]] <- sprintf(
+        chrome$cover_unnumbered_fmt, n_unnumbered[[kind]]
+      )
+    }
+  }
   field_pairs[[chrome$cover_subquestions]]   <- as.character(n_subq)
   field_pairs[[chrome$cover_answer_options]] <- as.character(n_ans)
   field_pairs[[chrome$cover_last_modified]]  <- if (is.na(last_mod) || !nzchar(last_mod)) none else last_mod

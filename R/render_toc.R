@@ -4,10 +4,11 @@
 
 #' Render the variable index at the end of the document
 #'
-#' One row per item with its variable code and item number, sorted
-#' alphabetically (case-insensitive). The numbers match the `No` column
-#' of each item's meta table and the visible numeric prefix on the item
-#' heading, so the reader can use them as cross-references.
+#' One row per item with its variable code and number label, sorted
+#' alphabetically (case-insensitive). The labels are the ones the renderer
+#' printed in the `No` column of the card or row holding the variable and
+#' on the item heading (`"28"`, `"28.1"`, an en dash for an unnumbered
+#' question), so the reader can use them as cross-references.
 #'
 #' @keywords internal
 #' @noRd
@@ -18,7 +19,10 @@ lss_render_index <- function(doc, entries, theme) {
     lss_section_bookmark("index")
   )
   codes <- vapply(entries, function(e) e$code, character(1))
-  nos <- vapply(entries, function(e) as.integer(e$no), integer(1))
+  nos <- vapply(entries, function(e) {
+    v <- e$no
+    if (is.null(v) || length(v) == 0L || is.na(v[1])) "" else as.character(v[1])
+  }, character(1))
   ord <- order(tolower(codes))
   df <- data.frame(
     Variable = codes[ord],

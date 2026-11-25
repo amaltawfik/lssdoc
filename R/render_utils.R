@@ -7,16 +7,18 @@
 
 #' Mutable state passed through the render functions
 #'
-#' Holds the running item counter so the "No" column of each item's meta
-#' table matches Word's Heading 1 auto-numbering of the same paragraph.
+#' Holds the question numbers, computed once from the model by
+#' `lss_item_numbers()` (no renderer counts items itself), the running
+#' group index the group bookmarks and the table of contents rely on, and
+#' the variable-index entries collected while rendering.
 #'
 #' @keywords internal
 #' @noRd
 lss_render_state <- function(model) {
   state <- new.env(parent = emptyenv())
-  state$item_no <- 0L
   state$group_index <- 0L
   state$model <- model
+  state$numbers <- lss_item_numbers(model)
   state$index_entries <- list()
   state
 }

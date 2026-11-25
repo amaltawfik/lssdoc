@@ -117,8 +117,8 @@ survey has fewer than two groups). For per-variable navigation,
 use \code{show_index}.}
 
 \item{show_index}{Logical. If \code{TRUE} (default), append a variable
-index at the end of the document listing every item code with
-its number, sorted alphabetically.}
+index at the end of the document listing every variable with the
+number of the card or row that holds it, sorted alphabetically.}
 
 \item{show_quotas}{Logical. If \code{TRUE} (default), append a quotas
 section (after the end text, before the variable index) listing
@@ -139,8 +139,10 @@ without exposing the LimeSurvey internals).}
 
 \item{show_item_heading}{Logical. If \code{FALSE} (the default), the
 meta table starts each item directly, for a compact layout. If
-\code{TRUE}, a bold \code{"N. variable"} heading is added above each item
-for scroll-time navigation.}
+\code{TRUE}, a bold \code{"N. variable"} heading (\code{"28. variable"}, or
+\code{"28.1. variable"} for a subquestion) is added above each item
+for scroll-time navigation. An unnumbered item shows its variable
+alone.}
 
 \item{show_raw_filter}{Logical. If \code{FALSE} (the default), the
 Filter cell shows only the human-readable form (e.g.
@@ -315,6 +317,25 @@ cover page, an optional table of contents, and an optional audit summary
 tie the document together. Rendering uses the suggested packages
 \pkg{officer} and \pkg{flextable}; both must be installed.
 }
+\section{Question numbers}{
+
+LimeSurvey stores no question numbers, only the order of the groups and
+of the questions within each group. The document numbers the questions
+put to the respondent from 1 to n in that order. Text displays,
+equations and questions hidden from respondents (attribute \code{hidden}
+set to 1) keep their place but get no number: their \code{No} cell shows an
+en dash, and a hidden question says so on its card or row. When the
+document gives a question several cards or rows, each one that stands
+for a subquestion (an array row, one field of a multiple short text or
+multiple numerical input, and in the \code{"table"} template an option or a
+rank position) is numbered \code{28.1}, \code{28.2} and so on, while the "Other"
+and comment fields carry the question's own number \code{28}. The numbers
+depend on the survey alone: \code{languages}, \code{show_groups} and \code{template}
+never change them. The cover counts the numbered questions, so the
+count equals the last number, and lists the text displays, equations
+and hidden questions next to it.
+}
+
 \section{"LimeSurvey last save" date on the cover}{
 
 The cover metadata table carries a row labelled

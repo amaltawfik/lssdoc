@@ -89,18 +89,20 @@ lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
 
 #' Render the 5-column structured meta table for an item
 #'
-#' Columns: `No` (item number; empty for compound-parent banners since
-#' those are not numbered items themselves), `Variable` (the LimeSurvey
-#' variable code, `parent_subq` for subquestion items), `Type` (legacy
-#' code + label), `Mand.` (mandatory: `yes`, `no`, `soft`), `Filter`.
-#' The Filter cell shows the plain English form on top with the raw
-#' LimeSurvey expression beneath (small italic gray) when `show_raw_filter`
-#' is `TRUE`.
+#' Columns: `No` (the number label from `lss_item_label()`: `"28"` for a
+#' question, `"28.1"` for a sub-item, an en dash for an unnumbered
+#' question, empty when `NA`), `Variable` (the LimeSurvey variable code,
+#' `parent_subq` for subquestion items), `Type` (legacy code + label),
+#' `Mand.` (mandatory: `yes`, `no`, `soft`), `Filter`. The Filter cell
+#' shows the plain English form on top with the raw LimeSurvey expression
+#' beneath (small italic gray) when `show_raw_filter` is `TRUE`.
 #'
 #' Takes the fields explicitly rather than a `q` object so subquestion
 #' items can pass their composite variable code with the parent's type /
 #' mandatory / relevance (those are inherited from the parent in
 #' LimeSurvey -- subquestions do not carry their own type or relevance).
+#' `hidden = TRUE` adds a muted footer line under the band saying the
+#' question is hidden from respondents.
 #'
 #' @keywords internal
 #' @noRd
@@ -111,7 +113,8 @@ lss_render_question_meta_table <- function(doc, theme,
                                            type_label,
                                            mandatory,
                                            relevance,
-                                           show_raw_filter = FALSE) {
+                                           show_raw_filter = FALSE,
+                                           hidden = FALSE) {
   filter_raw <- if (is.null(relevance) || is.na(relevance) ||
                     !nzchar(relevance)) {
     "1"
@@ -235,7 +238,11 @@ lss_render_question_meta_table <- function(doc, theme,
   # Column widths sum to theme$content_width_in (6.30 in). Calibrated at
   # the uniform 10 pt band font (~0.083 in/char Consolas for Variable,
   # ~0.066 in/char Calibri for the others):
-  #   No        0.35  - holds up to 3 digits in 10 pt body font (max #999).
+  #   No        0.35  - the minimum, which holds "28.1" at 10 pt. One width
+  #                     per document, theme$meta_no_width_in, set from the
+  #                     widest label the cards print (lss_no_width(), with
+  #                     the 2 pt padding on each side used here); the
+  #                     extra comes out of Filter.
   #   Variable  2.30  - holds identifiers up to ~27 chars in 10 pt
   #                     Consolas (e.g. `trustinstitutions[PARL][1]`) on
   #                     one line; longer codes wrap. Widened from 2.05
@@ -255,14 +262,36 @@ lss_render_question_meta_table <- function(doc, theme,
   #   Filter    1.60  - the human-readable form on top and the raw
   #                     LimeSurvey expression in smaller italic mono
   #                     below; 2-3 chained conditions fit on a line.
-  ft <- flextable::width(ft, j = "No", width = 0.35, unit = "in")
+  no_w <- if (is.null(theme$meta_no_width_in)) 0.35 else theme$meta_no_width_in
+  ft <- flextable::width(ft, j = "No", width = no_w, unit = "in")
   ft <- flextable::width(ft, j = "Variable", width = 2.30, unit = "in")
   ft <- flextable::width(ft, j = "Type", width = 1.10, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.95, unit = "in")
   # Filter absorbs the surplus so the band always spans the full body
-  # width: 1.60 in in portrait (6.30 total), wider in landscape / A3.
+  # width: 1.60 in in portrait (6.30 total), wider in landscape / A3,
+  # narrower by whatever No takes beyond its 0.35 in.
   ft <- flextable::width(ft, j = "Filter",
-                         width = theme$content_width_in - 4.70, unit = "in")
+                         width = theme$content_width_in - 4.70 - (no_w - 0.35),
+                         unit = "in")
+  # A question hidden from respondents says so on a footer line of the
+  # band: one cell spanning the five columns (their widths are unchanged),
+  # on the band's cream tint, in the muted italic of the raw filter line,
+  # one point below the band body.
+  if (isTRUE(hidden)) {
+    ft <- flextable::add_footer_lines(ft, values = theme$chrome$item_hidden)
+    ft <- flextable::font(ft, fontname = theme$font_body, part = "footer")
+    ft <- flextable::fontsize(ft, size = theme$size_question - 1L,
+                              part = "footer")
+    ft <- flextable::italic(ft, part = "footer")
+    ft <- flextable::color(ft, color = theme$color_muted, part = "footer")
+    ft <- flextable::bg(ft, bg = theme$color_zebra, part = "footer")
+    ft <- flextable::align(ft, align = "left", part = "footer")
+    ft <- flextable::padding(ft, padding = 2, part = "footer")
+    thin <- officer::fp_border(color = theme$color_grid, width = 0.5)
+    ft <- flextable::hline_bottom(ft, border = thin, part = "footer")
+    ft <- flextable::vline_left(ft, border = thin, part = "footer")
+    ft <- flextable::vline_right(ft, border = thin, part = "footer")
+  }
   # keepnext: the meta table is a header for the item table that
   # follows; Word must keep them on the same page so the dark band
   # never floats orphaned at the bottom.
