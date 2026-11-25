@@ -429,7 +429,8 @@ render_documentation(
 }
 }
 \seealso{
-\code{\link[=render_audit]{render_audit()}} for the audit-only document;
+\code{\link[=render_questionnaire]{render_questionnaire()}} for the questionnaire as it reads, in
+one language; \code{\link[=render_audit]{render_audit()}} for the audit-only document;
 \code{\link[=audit_lss]{audit_lss()}} to inspect findings in the console without
 rendering; \code{\link[=read_lss]{read_lss()}} to pre-parse a \code{.lss} file once and
 render multiple variants.

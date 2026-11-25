@@ -46,7 +46,8 @@
 #' @return The `output` path, invisibly.
 #'
 #' @seealso [audit_lss()] to inspect the same findings in the console;
-#'   [render_documentation()] for the full questionnaire document.
+#'   [render_documentation()] for the full questionnaire document;
+#'   [render_questionnaire()] for the questionnaire as it reads.
 #'
 #' @examples
 #' \dontrun{

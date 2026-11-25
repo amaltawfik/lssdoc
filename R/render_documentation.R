@@ -300,7 +300,8 @@
 #'
 #' @return The `output` path, invisibly.
 #'
-#' @seealso [render_audit()] for the audit-only document;
+#' @seealso [render_questionnaire()] for the questionnaire as it reads, in
+#'   one language; [render_audit()] for the audit-only document;
 #'   [audit_lss()] to inspect findings in the console without
 #'   rendering; [read_lss()] to pre-parse a `.lss` file once and
 #'   render multiple variants.

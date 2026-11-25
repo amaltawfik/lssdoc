@@ -91,5 +91,6 @@ render_audit("survey.lss", "qa.pdf")
 }
 \seealso{
 \code{\link[=audit_lss]{audit_lss()}} to inspect the same findings in the console;
-\code{\link[=render_documentation]{render_documentation()}} for the full questionnaire document.
+\code{\link[=render_documentation]{render_documentation()}} for the full questionnaire document;
+\code{\link[=render_questionnaire]{render_questionnaire()}} for the questionnaire as it reads.
 }

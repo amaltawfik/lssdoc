@@ -43,7 +43,24 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "form_yes_no_hint", "form_hint_type", "form_hint_languages",
     "form_hint_filter", "form_hint_options", "form_hint_rows",
     "form_hint_columns", "form_hint_exclusive", "form_hint_answers",
-    "form_hint_other_position", "form_hint_limit", "form_hint_condition"
+    "form_hint_other_position", "form_hint_limit", "form_hint_condition",
+    # Readable questionnaire, render_questionnaire() (0.4.0)
+    "q_section_welcome", "q_section_end",
+    "q_n_question_1", "q_n_question_n", "q_n_group_1", "q_n_group_n",
+    "q_n_display_1", "q_n_display_n", "q_n_computed_1", "q_n_computed_n",
+    "q_n_hidden_1", "q_n_hidden_n",
+    "q_legend_in_fmt", "q_and", "q_legend_codes", "q_legend_mandatory",
+    "q_legend_soft", "q_legend_language_fmt",
+    "q_toc_question_fmt", "q_toc_questions_fmt",
+    "q_tag_text", "q_tag_computed", "q_tag_hidden",
+    "q_equation_hidden", "q_equation_shown", "q_several_answers",
+    "q_several_comment", "q_ranking", "q_for_each_row", "q_answer",
+    "q_options_total_fmt", "q_no_label", "q_other", "q_free_text",
+    "q_filter_if_fmt", "q_filtered", "q_not_translated",
+    "q_open_number", "q_open_short_text", "q_open_long_text", "q_open_date",
+    "q_open_numbers", "q_open_short_texts", "q_open_yes_no", "q_open_gender",
+    "q_open_five_point", "q_open_ten_point", "q_open_file",
+    "q_open_language", "q_open_free"
   )
   for (lang in c("en", "fr", "de", "es", "it")) {
     pack <- lss_chrome_strings(lang)

@@ -232,6 +232,24 @@ lss_validate_colors <- function(colors) {
   stats::setNames(colors, paste0("color_", names(colors)))
 }
 
+#' Validate the `base_size` argument and return it as an integer
+#'
+#' Shared by [render_documentation()] and [render_questionnaire()]: a single
+#' number of points between 7 and 16, rounded to the nearest integer.
+#' @keywords internal
+#' @noRd
+lss_validate_base_size <- function(base_size, call = rlang::caller_env()) {
+  if (!is.numeric(base_size) || length(base_size) != 1L || is.na(base_size) ||
+      base_size < 7L || base_size > 16L) {
+    lssdoc_abort(
+      "{.arg base_size} must be a single number between 7 and 16 (points).",
+      class = "lssdoc_bad_base_size",
+      call = call
+    )
+  }
+  as.integer(round(base_size))
+}
+
 #' Validate the optional logo argument: NULL or an existing image path
 #' @keywords internal
 #' @noRd

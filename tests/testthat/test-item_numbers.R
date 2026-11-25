@@ -451,7 +451,7 @@ test_that("show_groups, languages and the chrome language move no number", {
   rows <- docx_rows(s)
   cards <- card_numbers(rows, no = "N\u00B0")
   expect_identical(cards$meta, cards_expected)
-  expect_true(all(cards$footer == "Question masqu\u00E9e aux r\u00E9pondants"))
+  expect_true(all(cards$footer == "Question masqu\u00E9e aux r\u00E9pondant\u00B7es"))
   cover <- cover_fields(rows)
   expect_identical(
     unname(cover[c(

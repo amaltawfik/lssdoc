@@ -4,7 +4,10 @@
 
 * `render_questionnaire()` is renamed `render_documentation()` (#9). A call
   only needs the new name. The cover of the document now says
-  "Questionnaire documentation".
+  "Questionnaire documentation". The name `render_questionnaire()` goes to
+  the new document described below. A call written for an earlier version
+  that passes `languages`, `template` or another of the former arguments
+  stops with an error that names `render_documentation()`.
 
 * `render_documentation()` now numbers the questions, not the cards (#10).
   A question has one number, whatever the number of cards or rows it takes.
@@ -16,6 +19,16 @@
   apart. The last number is the number of questions asked, which is the
   count the cover prints under "Questions". A document rendered with an
   earlier version carries other numbers.
+
+## New features
+
+* `render_questionnaire()` now renders the questionnaire as it reads, in
+  one language (#9). Each question has its number and its text, then its
+  subquestions and its answer options, one per line. The codes of
+  LimeSurvey are printed in small grey type, and `show_codes = FALSE`
+  removes them. The numbers are those of `render_documentation()`. The
+  document declares its language to Word (`proofing_lang`), so the spelling
+  checker and the hyphenation follow the questionnaire.
 
 ## Minor improvements and bug fixes
 

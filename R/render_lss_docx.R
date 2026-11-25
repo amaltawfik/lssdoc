@@ -61,14 +61,7 @@
   layout <- rlang::arg_match(layout)
   page_format <- rlang::arg_match(page_format)
   variable_names <- rlang::arg_match(variable_names)
-  if (!is.numeric(base_size) || length(base_size) != 1L || is.na(base_size) ||
-      base_size < 7L || base_size > 16L) {
-    lssdoc_abort(
-      "{.arg base_size} must be a single number between 7 and 16 (points).",
-      class = "lssdoc_bad_base_size"
-    )
-  }
-  base_size <- as.integer(round(base_size))
+  base_size <- lss_validate_base_size(base_size)
   # "auto" is template-aware: the dense "table" layout is too wide to
   # read in portrait, so it defaults to A4 landscape; the spacious "cards"
   # layout stacks comfortably in portrait. An explicit page_format is always
