@@ -801,15 +801,11 @@ lss_table_filter_paragraph <- function(relevance, theme,
 #' reviewer can scan the codes column without reading the Question
 #' columns. Conventions:
 #'
-#' * Enumerated answers with sequential integer codes (`1..N`) ->
-#'   the range `1-N` in mono primary (e.g. "1-5", "1-7").
-#' * Enumerated with non-sequential codes -> the codes joined by
-#'   commas in mono primary (e.g. "1, 2, 99").
-#' * Dual-scale arrays -> per-scale summary on its own line
-#'   ("Scale 1: 1-5", "Scale 2: 1-3").
-#' * Implicit codings (multi-choice, yes/no, gender, 5-point) ->
-#'   short fixed token in mono primary ("Y/blank", "Y/N", "M/F",
-#'   "1-5").
+#' * Enumerated answers, and the labelled predefined scales (yes/no,
+#'   gender, the arrays C and E) -> empty cell: each code has its own
+#'   Value row below.
+#' * Implicit codings (multiple choice, 5-point and 10-point scales) ->
+#'   short fixed token in mono primary ("Y/blank", "1-5", "1-10").
 #' * Open-ended types -> descriptor in italic muted ("[num]",
 #'   "[text]", "[date]", "[file]", "[calc]", "[rank]").
 #' * Other item and section rows -> empty cell.
