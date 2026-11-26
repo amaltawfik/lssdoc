@@ -475,7 +475,12 @@ test_that("table: the Filter column widens for its level labels only", {
   skip_if_not_installed("flextable")
   th <- lss_render_theme()
   cond <- cond_table_grid(cond_render(cond_lss(), template = "table"))
-  plain <- cond_table_grid(cond_render(demo_lss(), template = "table"))
+  # The demo survey without any condition on a group or a subquestion: its
+  # Filter cells print no level label.
+  bare <- demo_lss()
+  bare$groups$grelevance <- "1"
+  bare$subquestions$relevance <- "1"
+  plain <- cond_table_grid(cond_render(bare, template = "table"))
   # Column 6 is Filter. One language: the label is at theme$size_meta, the
   # size of the label chunk; 3 pt of padding on each side and 1 pt of air.
   need <- (lss_q_text_width("Subquestion:", th$font_body, th$size_meta) + 7) / 72

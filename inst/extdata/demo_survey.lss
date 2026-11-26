@@ -2106,7 +2106,7 @@
     <sid><![CDATA[354814]]></sid>
     <group_order><![CDATA[2]]></group_order>
     <randomization_group/>
-    <grelevance><![CDATA[1]]></grelevance>
+    <grelevance><![CDATA[age >= 18]]></grelevance>
    </row>
    <row>
     <gid><![CDATA[2360]]></gid>
@@ -3756,7 +3756,7 @@
     <question_order><![CDATA[0]]></question_order>
     <scale_id><![CDATA[0]]></scale_id>
     <same_default><![CDATA[0]]></same_default>
-    <relevance><![CDATA[1]]></relevance>
+    <relevance><![CDATA[workstatus == "1"]]></relevance>
     <modulename/>
     <encrypted><![CDATA[N]]></encrypted>
     <same_script><![CDATA[0]]></same_script>
@@ -3774,7 +3774,7 @@
     <question_order><![CDATA[1]]></question_order>
     <scale_id><![CDATA[0]]></scale_id>
     <same_default><![CDATA[0]]></same_default>
-    <relevance><![CDATA[1]]></relevance>
+    <relevance><![CDATA[workstatus == "3"]]></relevance>
     <modulename/>
     <encrypted><![CDATA[N]]></encrypted>
     <same_script><![CDATA[0]]></same_script>

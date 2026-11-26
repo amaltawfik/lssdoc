@@ -51,6 +51,10 @@
   reads `workstatus = 1`, where it kept its quotes. The operators `and`
   and `or` are read like `&&` and `||`.
 
+* The demo survey `demo_survey.lss` now has a condition on a group and on
+  two subquestions, besides the one it had on a question, so a render of
+  it shows the three levels.
+
 * `render_documentation()` now prints the formula of a computed question
   by default: `"equation"` joins the default of `show_attrs`.
   `render_questionnaire()` prints it after the code of the question.

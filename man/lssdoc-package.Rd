@@ -18,7 +18,8 @@ the \emph{Get started} vignette without supplying their own LimeSurvey
 export:
 \itemize{
 \item \code{demo_survey.lss} -- a clean, synthetic four-language survey
-(English, French, German, Spanish) with quotas and a consent block:
+(English, French, German, Spanish) with quotas, a consent block and
+conditions on a group, a question and subquestions:
 \code{system.file("extdata", "demo_survey.lss", package = "lssdoc")}.
 \item \code{audit_demo.lss} -- a deliberately flawed survey seeded with every
 anomaly \code{\link[=audit_lss]{audit_lss()}} detects:

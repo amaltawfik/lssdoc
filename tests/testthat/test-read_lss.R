@@ -261,3 +261,23 @@ test_that("a parser that fails or returns no document is refused, not trusted", 
     expect_error(read_lss(f), class = "lssdoc_invalid_xml")
   })
 })
+
+test_that("the demo survey has a condition on a group, a question and subquestions", {
+  lss <- read_lss(system.file("extdata", "demo_survey.lss", package = "lssdoc"))
+  set <- function(x) !is.na(x) & nzchar(trimws(x)) & trimws(x) != "1"
+  # Group 3, in the order of the groups.
+  g <- lss$groups[order(as.integer(lss$groups$group_order)), , drop = FALSE]
+  expect_identical(which(set(g$grelevance)), 3L)
+  expect_identical(g$grelevance[3], "age >= 18")
+  # The question workhours.
+  q <- lss$questions
+  expect_identical(q$title[set(q$relevance)], "workhours")
+  expect_identical(q$relevance[q$title == "workhours"], "workstatus == \"1\"")
+  # The subquestions WORK and STUD of weeklyhours.
+  s <- lss$subquestions
+  hit <- s[set(s$relevance), , drop = FALSE]
+  expect_identical(unique(hit$parent_qid),
+                   q$qid[q$title == "weeklyhours"])
+  expect_identical(stats::setNames(hit$relevance, hit$title),
+                   c(WORK = "workstatus == \"1\"", STUD = "workstatus == \"3\""))
+})

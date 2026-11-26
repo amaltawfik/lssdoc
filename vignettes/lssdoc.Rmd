@@ -33,7 +33,8 @@ This vignette covers five functions:
 
 This vignette uses the demo survey that ships with the package -- a
 synthetic four-language questionnaire (English, French, German, Spanish)
-with quotas and a consent block.
+with quotas, a consent block and conditions on a group, a question and
+subquestions.
 
 ```{r}
 demo <- system.file("extdata", "demo_survey.lss", package = "lssdoc")

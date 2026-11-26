@@ -7,7 +7,8 @@
 #' export:
 #'
 #' * `demo_survey.lss` -- a clean, synthetic four-language survey
-#'   (English, French, German, Spanish) with quotas and a consent block:
+#'   (English, French, German, Spanish) with quotas, a consent block and
+#'   conditions on a group, a question and subquestions:
 #'   `system.file("extdata", "demo_survey.lss", package = "lssdoc")`.
 #' * `audit_demo.lss` -- a deliberately flawed survey seeded with every
 #'   anomaly [audit_lss()] detects:
