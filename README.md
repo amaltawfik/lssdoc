@@ -42,7 +42,7 @@ templates:
   table), stacked vertically. Closest to the printed questionnaire a
   respondent would see.
 
-  <img src="man/figures/template_cards.png" alt="Cards layout: one card per question stacked vertically, English and French side by side -- a free-text Other field, a single-choice-with-comment question showing its labelled answer scale and paired comment row, then a new section heading and the next single-choice question" width="100%" />
+  <img src="man/figures/template_cards.png" alt="Cards layout: one card per question stacked vertically, English and French side by side -- the end of a yes/no question, a group heading with the condition set on the group, then two single-choice questions with their answer options; the Filter cell of each card repeats that condition" width="100%" />
 
 - **`"table"`** – one dense table covering the whole document: every
   variable is one tinted *Question* row carrying its metadata, followed
@@ -52,7 +52,7 @@ templates:
   labelled rows of the same table so the document reads as a single
   artifact.
 
-  <img src="man/figures/template_table.png" alt="Table layout: one variable per row with English and French columns -- a yes/no single choice, two Number variables, a computed variable, a display item, a multiple-choice question expanded into one row per option with its free-text Other, and a single-choice answer scale; the column header repeats automatically at the top of each new page" width="100%" />
+  <img src="man/figures/template_table.png" alt="Table layout: one variable per row with English and French columns -- a yes/no single choice, two Number variables, a computed variable with its formula, a display item, a multiple-choice question expanded into one numbered row per option with its free-text Other, and a single-choice answer scale; the column header repeats automatically at the top of each new page" width="100%" />
 
 lssdoc also works the other way around. Write a questionnaire in a Word
 form, or describe it in R, and lssdoc writes the `.lss` file you import
