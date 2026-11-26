@@ -25,16 +25,33 @@
 * `render_questionnaire()` now renders the questionnaire as it reads, in
   one language (#9). Each question has its number and its text, then its
   subquestions and its answer options, one per line. The codes of
-  LimeSurvey are printed in small gray type, and `show_codes = FALSE`
-  removes them. The numbers are those of `render_documentation()`. The
-  document declares its language to Word (`proofing_lang`), so the spelling
-  checker and the hyphenation follow the questionnaire.
+  LimeSurvey and the conditions written with them are printed in small
+  gray type, and `show_codes = FALSE` removes both. The numbers are those
+  of `render_documentation()`. The document declares its language to Word
+  (`proofing_lang`), so the spelling checker and the hyphenation follow
+  the questionnaire.
 
 ## Minor improvements and bug fixes
 
 * `render_documentation()` gains `show_group_description`. `FALSE` leaves
   out the description of a group, the text LimeSurvey shows respondents
   under the group title.
+
+* `render_documentation()` now prints the conditions set on a group and on
+  a subquestion (the row of an array, the option of a multiple choice). It
+  printed the condition of the question only, so a question whose group
+  alone carried a condition showed `All`. When a group or a subquestion has
+  a condition, the Filter cell gives each one on its own line after the
+  name of its level (`Group: Q1 = 1`), and the condition of a group follows
+  its heading.
+
+* The table of contents of `render_documentation()` now gives the numbers
+  of the questions of each group (`questions 1 to 10`). In the table layout
+  its group entries lead to the group rows, where they led nowhere. With
+  `show_groups = FALSE` it lists no group.
+
+* A gender question now lists Female before Male, the order LimeSurvey
+  shows.
 
 * A question hidden from respondents (LimeSurvey attribute `hidden` at 1)
   now says so on its card or row. It used to be rendered like any other

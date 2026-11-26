@@ -51,8 +51,9 @@ as not translated, and a warning lists the elements concerned.}
 \item{show_codes}{Logical. If \code{TRUE} (default), print the codes of
 LimeSurvey in small gray type: the code of each question, which is
 the name of its variable, the code of each subquestion and of each
-answer option, and the filter of a question, which is written with
-those codes (\verb{if Q11 = 2}). \code{FALSE} removes them all.}
+answer option, and the conditions under which a group, a question or
+a subquestion is shown, which are written with those codes
+(\verb{if Q11 = 2}). \code{FALSE} removes them all.}
 
 \item{show_hidden}{Logical. Whether to print the questions that
 LimeSurvey hides from respondents (attribute \code{hidden}). Each takes
@@ -149,10 +150,19 @@ carries an asterisk after its text.
 
 The answer options come below the question, one per line. A multiple
 choice lists its options and says that several answers are possible. An
-array lists its rows, then the options that apply to each row. A
-question without options says what it expects, for instance
+array lists its rows, then the options that apply to each row. A yes/no
+question and a gender question list the two options LimeSurvey builds
+in. A question without options says what it expects, for instance
 "Answer: number", with the prefix and the suffix of the input field
-when it has them.
+when it has them. A numeric scale without labels gives its range:
+"Answer: 5-point choice (1 to 5)".
+
+The conditions set in LimeSurvey are printed with the codes, in the
+same gray type: after the code of a question ("if Q11 = 2"), after the
+label of a subquestion and under the title of a group ("Group shown if
+Q11 = 2"). A condition that cannot be put in that plain form shows as
+"filtered", or "Group with a filter" for a group:
+\code{\link[=render_documentation]{render_documentation()}} prints its expression.
 
 What the respondent only reads (the welcome text, the privacy notice,
 the text displays, the group descriptions) is set in gray and

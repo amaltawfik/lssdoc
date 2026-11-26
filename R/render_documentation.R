@@ -66,9 +66,10 @@
 #'   and the dense table) expand automatically to fill the
 #'   content width, in both templates.
 #' @param show_toc Logical. If `TRUE` (default), include a table of
-#'   contents listing the groups (skipped automatically when the
-#'   survey has fewer than two groups). For per-variable navigation,
-#'   use `show_index`.
+#'   contents: the sections of the document and the groups, each group
+#'   with the numbers of its questions. It is skipped when the survey has
+#'   fewer than two groups and lists no group when `show_groups` is
+#'   `FALSE`. For per-variable navigation, use `show_index`.
 #' @param show_index Logical. If `TRUE` (default), append a variable
 #'   index at the end of the document listing every variable with the
 #'   number of the card or row that holds it, sorted alphabetically.
@@ -104,7 +105,7 @@
 #'   banners (cards layout) or group rows (table layout). Pass
 #'   `FALSE` to flatten the document into a single sequence of items
 #'   with no section breaks (useful when groups exist only as
-#'   internal organization).
+#'   internal organization). The table of contents then lists no group.
 #' @param show_group_description Logical. If `TRUE` (default), the
 #'   description of a group is printed under its heading: it is the text
 #'   LimeSurvey shows respondents under the group title. `FALSE` leaves
@@ -252,6 +253,30 @@
 #' never change them. The cover counts the numbered questions, so the
 #' count equals the last number, and lists the text displays, equations
 #' and hidden questions next to it.
+#'
+#' @section Filters:
+#' LimeSurvey can set a condition at three levels: on a group, on a
+#' question and on a subquestion (the row of an array, the option of a
+#' multiple choice, one field of a multiple input). A question is put to
+#' the respondent when the condition of its group and its own both hold,
+#' and a subquestion is shown when its own holds as well. The Filter cell
+#' prints them all. When the question alone has a condition, or when no
+#' level has one (`All`), the cell holds one line. When the group or the
+#' subquestion has a condition, each one takes its own line after the name
+#' of its level: `Group: Q1 = 1`, then `Question: Q5 = 2`. A level without
+#' a condition gives no line.
+#'
+#' The condition of a group is also printed under the group heading, or
+#' in a row under the group row in the `"table"` template. A multiple
+#' choice has one card for all its options in the `"cards"` template: the
+#' conditions of its options are listed in a `Filter` row under them, each
+#' after the code of its option. In the `"table"` template each option has
+#' its row, which carries its condition. With `show_raw_filter = TRUE`
+#' every condition is followed by its raw expression.
+#'
+#' Array filters (the attributes `array_filter` and
+#' `array_filter_exclude`) are not read as conditions: the Filter cell
+#' does not show them.
 #'
 #' @section "LimeSurvey last save" date on the cover:
 #' The cover metadata table carries a row labelled

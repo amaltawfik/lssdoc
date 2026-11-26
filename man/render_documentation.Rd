@@ -113,9 +113,10 @@ and the dense table) expand automatically to fill the
 content width, in both templates.}
 
 \item{show_toc}{Logical. If \code{TRUE} (default), include a table of
-contents listing the groups (skipped automatically when the
-survey has fewer than two groups). For per-variable navigation,
-use \code{show_index}.}
+contents: the sections of the document and the groups, each group
+with the numbers of its questions. It is skipped when the survey has
+fewer than two groups and lists no group when \code{show_groups} is
+\code{FALSE}. For per-variable navigation, use \code{show_index}.}
 
 \item{show_index}{Logical. If \code{TRUE} (default), append a variable
 index at the end of the document listing every variable with the
@@ -158,7 +159,7 @@ form could not be simplified.}
 banners (cards layout) or group rows (table layout). Pass
 \code{FALSE} to flatten the document into a single sequence of items
 with no section breaks (useful when groups exist only as
-internal organization).}
+internal organization). The table of contents then lists no group.}
 
 \item{show_group_description}{Logical. If \code{TRUE} (default), the
 description of a group is printed under its heading: it is the text
@@ -341,6 +342,32 @@ depend on the survey alone: \code{languages}, \code{show_groups} and \code{templ
 never change them. The cover counts the numbered questions, so the
 count equals the last number, and lists the text displays, equations
 and hidden questions next to it.
+}
+
+\section{Filters}{
+
+LimeSurvey can set a condition at three levels: on a group, on a
+question and on a subquestion (the row of an array, the option of a
+multiple choice, one field of a multiple input). A question is put to
+the respondent when the condition of its group and its own both hold,
+and a subquestion is shown when its own holds as well. The Filter cell
+prints them all. When the question alone has a condition, or when no
+level has one (\code{All}), the cell holds one line. When the group or the
+subquestion has a condition, each one takes its own line after the name
+of its level: \code{Group: Q1 = 1}, then \code{Question: Q5 = 2}. A level without
+a condition gives no line.
+
+The condition of a group is also printed under the group heading, or
+in a row under the group row in the \code{"table"} template. A multiple
+choice has one card for all its options in the \code{"cards"} template: the
+conditions of its options are listed in a \code{Filter} row under them, each
+after the code of its option. In the \code{"table"} template each option has
+its row, which carries its condition. With \code{show_raw_filter = TRUE}
+every condition is followed by its raw expression.
+
+Array filters (the attributes \code{array_filter} and
+\code{array_filter_exclude}) are not read as conditions: the Filter cell
+does not show them.
 }
 
 \section{"LimeSurvey last save" date on the cover}{
