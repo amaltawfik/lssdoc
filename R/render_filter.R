@@ -58,7 +58,10 @@ lss_humanize_relevance <- function(x, theme = NULL) {
   # - `strlen(X.NAOK) > 0` is the LimeSurvey idiom for "answered";
   #   `strlen(X.NAOK) == 0` for "empty". Map both to the same chrome
   #   strings as `is_empty()`.
+  # - A condition typed by hand (`workstatus == "1" and age > 25`) is
+  #   read as its `.NAOK` form: see lss_canonical_relevance().
   s <- gsub("\\bthat\\.([A-Za-z0-9_]+)", "\\1", s, perl = TRUE)
+  s <- lss_canonical_relevance(s)
   s <- gsub("\\bintval\\s*\\(\\s*([A-Za-z0-9_]+\\.NAOK)\\s*\\)", "\\1",
             s, perl = TRUE)
   s <- gsub("\\bregexMatch\\s*\\(\\s*\"([^\"]*)\"\\s*,\\s*([A-Za-z0-9_]+)\\.NAOK\\s*\\)",
@@ -132,6 +135,39 @@ lss_humanize_relevance <- function(x, theme = NULL) {
   s <- gsub("\\s*==\\s*", " = ", s)
   s <- lss_strip_outer_parens(s)
   trimws(s)
+}
+
+#' Read a condition typed by hand as its `.NAOK` form
+#'
+#' Outside double-quoted strings only: the words `and` / `or` (any case,
+#' between spaces) become `&&` / `||`, and a bare variable name directly
+#' followed by a comparison operator (`==`, `!=`, `>=`, `<=`, `>`, `<`)
+#' becomes `X.NAOK`. A name inside a function call, a literal on the left
+#' of the operator and the textual operators (`eq`, `lt`, ...) are left
+#' as they are.
+#'
+#' @param s A relevance expression.
+#' @return The expression, with the strings untouched.
+#' @keywords internal
+#' @noRd
+lss_canonical_relevance <- function(s) {
+  # The strings are set aside, their quotes kept, so that nothing inside
+  # them is read and a name next to a quote is still seen as such.
+  str_re <- "\"(?:[^\"\\\\]|\\\\.)*\""
+  strings <- regmatches(s, gregexpr(str_re, s, perl = TRUE))[[1]]
+  if (length(strings)) {
+    s <- gsub(str_re, "\"\001\"", s, perl = TRUE)
+  }
+  s <- gsub(" (?i:and) ", " && ", s, perl = TRUE)
+  s <- gsub(" (?i:or) ", " || ", s, perl = TRUE)
+  s <- gsub("(?<![.\\w\"'])([A-Za-z][A-Za-z0-9_]*)(?=\\s*(?:==|!=|>=|<=|>|<))",
+            "\\1.NAOK", s, perl = TRUE)
+  if (length(strings)) {
+    parts <- strsplit(s, "\001", fixed = TRUE)[[1]]
+    inner <- substr(strings, 2L, nchar(strings) - 1L)
+    s <- paste0(parts[1], paste0(inner, parts[-1], collapse = ""))
+  }
+  s
 }
 
 #' Localized filter token chrome with English fallback

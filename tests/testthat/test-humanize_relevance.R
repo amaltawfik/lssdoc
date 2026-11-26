@@ -231,3 +231,53 @@ test_that("AND, OR, is answered, is empty localize via theme$chrome", {
     "Toutes"
   )
 })
+
+test_that("a condition typed without .NAOK reads like its .NAOK form", {
+  en <- list(chrome = lssdoc:::lss_chrome_strings("en"))
+  fr <- list(chrome = lssdoc:::lss_chrome_strings("fr"))
+  h <- function(x, theme = en) lssdoc:::lss_humanize_relevance(x, theme)
+  expect_identical(h('workstatus == "1"'), "workstatus = 1")
+  expect_identical(h("age >= 18"), "age \u2265 18")
+  # The words and / or are read like && / ||: the chrome prints them.
+  expect_identical(h('gender == "F" and age > 25'), "gender = F AND age > 25")
+  expect_identical(h('gender == "F" and age > 25'),
+                   h('gender.NAOK == "F" && age.NAOK > 25'))
+  expect_identical(h('gender == "F" AND age > 25', fr),
+                   "gender = F ET age > 25")
+  expect_identical(h('workstatus == "1" or workstatus == "2"'),
+                   h('workstatus.NAOK == "1" || workstatus.NAOK == "2"'))
+  expect_identical(h('a == "x y"'), "a = \"x y\"")
+  expect_identical(h('a.NAOK == "x y"'), "a = \"x y\"")
+  # Every operator; a name glued to the operator.
+  expect_identical(h("a!=1 Or b < 2 or c<=3 or d > 4"),
+                   "a \u2260 1 OR b < 2 OR c \u2264 3 OR d > 4")
+  # Nothing inside a string is read, a quote next to a name included.
+  expect_identical(h('note == "black and white"'),
+                   "note = \"black and white\"")
+  expect_identical(h('note == "x or y > 2" and n > 1'),
+                   "note = \"x or y > 2\" AND n > 1")
+  expect_identical(lssdoc:::lss_canonical_relevance('"a" == b'),
+                   '"a" == b')
+  expect_identical(
+    lssdoc:::lss_canonical_relevance('a == "\\"q\\" and" or b == 1'),
+    'a.NAOK == "\\"q\\" and" || b.NAOK == 1'
+  )
+  # Not a name in a function call, a literal on the left, a textual
+  # operator, a name already in its .NAOK form.
+  expect_identical(lssdoc:::lss_canonical_relevance("count(a, b) > 1"),
+                   "count(a, b) > 1")
+  expect_identical(lssdoc:::lss_canonical_relevance("1 == a"), "1 == a")
+  expect_identical(lssdoc:::lss_canonical_relevance("a eq 1"), "a eq 1")
+  expect_identical(lssdoc:::lss_canonical_relevance("a.NAOK == 1"),
+                   "a.NAOK == 1")
+  expect_identical(lssdoc:::lss_canonical_relevance("Q1_SQ001 > 2"),
+                   "Q1_SQ001.NAOK > 2")
+  expect_identical(h("count(a.NAOK, b.NAOK) > 1"), "count(a, b) > 1")
+  # The readable questionnaire prints it, simplified.
+  expect_identical(lssdoc:::lss_q_filter('((workstatus == "1"))', en),
+                   "if workstatus = 1")
+  expect_identical(
+    lssdoc:::lss_q_filter('gender == "F" and age > 25', en),
+    "if gender = F AND age > 25"
+  )
+})

@@ -213,7 +213,7 @@ test_that("cards: the Filter cell carries the group and subquestion lines", {
                    "Subquestion: age > 20\nSubquestion: age < 60")
   # Outside the group, nothing changes.
   expect_identical(filter_of("age"), "All")
-  expect_identical(filter_of("workhours"), "workstatus = \"1\"")
+  expect_identical(filter_of("workhours"), "workstatus = 1")
 
   # The family card of the multiple choice: the note row, before nothing
   # else of its kind, holding the option code.

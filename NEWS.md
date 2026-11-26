@@ -45,6 +45,11 @@
   name of its level (`Group: Q1 = 1`), and the condition of a group follows
   its heading.
 
+* A condition typed by hand, without the `.NAOK` suffix, is now simplified
+  like one written by LimeSurvey's condition editor: `workstatus == "1"`
+  reads `workstatus = 1`, where it kept its quotes. The operators `and`
+  and `or` are read like `&&` and `||`.
+
 * The table of contents of `render_documentation()` now gives the numbers
   of the questions of each group (`questions 1 to 10`). In the table layout
   its group entries lead to the group rows, where they led nowhere. With
