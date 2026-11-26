@@ -12,11 +12,18 @@ outline_document_xml <- function(lss, ...) {
   xml2::read_xml(file.path(dir, "word", "document.xml"))
 }
 
-# The w:val of the outline level of every paragraph carrying a bookmark
-# that starts with `prefix`, named by the rest of the bookmark name.
+# The w:val of the outline level of every heading carrying a bookmark that
+# starts with `prefix`, named by the rest of the bookmark name. A heading
+# is a paragraph of the body. The table layout also puts a bookmark on each
+# of its group rows, for the table of contents: those sit inside a table
+# and are not read here.
 outline_levels <- function(x, prefix) {
   bm <- xml2::xml_find_all(
-    x, sprintf("//w:p/w:bookmarkStart[starts-with(@w:name, '%s')]", prefix),
+    x,
+    sprintf(
+      "//w:p[not(ancestor::w:tbl)]/w:bookmarkStart[starts-with(@w:name, '%s')]",
+      prefix
+    ),
     w_ns
   )
   lvl <- xml2::xml_find_first(xml2::xml_parent(bm), "w:pPr/w:outlineLvl", w_ns)
