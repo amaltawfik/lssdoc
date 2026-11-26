@@ -47,6 +47,11 @@
 #'   question and after the last one: the description of the survey, its
 #'   welcome text, its privacy notice with the label of the consent
 #'   checkbox, and its end text.
+#' @param show_quotas Logical. Whether to end the document with the quotas
+#'   of the survey: for each quota its condition, its limit, what happens
+#'   when it is full and the message the respondent then reads. Defaults to
+#'   `show_codes`, because a quota is written with the codes. A survey
+#'   without quota gets no section.
 #' @param max_options Number of answer options a long list is cut down to,
 #'   `12` by default, which keeps a scale from 0 to 10 with a "does not
 #'   apply" option complete. An abridged list keeps half of these options
@@ -117,8 +122,11 @@
 #' the text displays, the group descriptions) is set in gray and
 #' justified. What is asked is left-aligned.
 #'
-#' The type of a question, its attributes, the audit, the variable index
-#' and the quotas belong to [render_documentation()].
+#' The quotas of the survey close the document, each with its condition,
+#' its limit and the message shown when it is full.
+#'
+#' The type of a question, its attributes, the audit and the variable
+#' index belong to [render_documentation()].
 #'
 #' @section Change in lssdoc 0.4.0:
 #' Before 0.4.0, `render_questionnaire()` rendered the full documentation
@@ -166,6 +174,7 @@ render_questionnaire <- function(
   show_welcome = TRUE,
   show_consent = TRUE,
   show_endtext = TRUE,
+  show_quotas = show_codes,
   max_options = 12L,
   title = NULL,
   subtitle = NULL,
@@ -256,7 +265,8 @@ render_questionnaire <- function(
     show_codes = show_codes, show_hidden = show_hidden, show_help = show_help,
     show_group_description = show_group_description, show_toc = show_toc,
     show_description = show_description, show_welcome = show_welcome,
-    show_consent = show_consent, show_endtext = show_endtext
+    show_consent = show_consent, show_endtext = show_endtext,
+    show_quotas = show_quotas
   )
   for (flag in names(flags)) {
     value <- flags[[flag]]
@@ -336,6 +346,7 @@ render_questionnaire <- function(
     show_group_description = show_group_description, show_toc = show_toc,
     show_description = show_description, show_welcome = show_welcome,
     show_consent = show_consent, show_endtext = show_endtext,
+    show_quotas = show_quotas,
     max_options = max_options, title = title, subtitle = subtitle,
     logo = logo, logo_width = logo_width, logo_height = logo_height,
     font = font, font_code = font_code, colors = colors,

@@ -64,6 +64,63 @@ lss_render_index <- function(doc, entries, theme) {
   flextable::body_add_flextable(doc, ft, align = "left")
 }
 
+#' The membership condition of a quota, as plain text
+#'
+#' The members are grouped by question, in the order of their first
+#' member, each question named by its code. One answer reads `Q = a`;
+#' several answers of the same question are alternatives and read as a
+#' set, `Q \u2208 {a, b}`, as lss_humanize_relevance() writes one. With
+#' `label_lang`, each code is followed by its answer label in that
+#' language, in parentheses, when it has one. The questions are joined by
+#' the localized AND. A question that is not in the survey is named by its
+#' id; an answer without a label shows its code alone.
+#'
+#' @param lss An `lss` object.
+#' @param quota_id The `id` of the quota.
+#' @param theme Optional theme, for the localized AND.
+#' @param label_lang `NULL`, or the language of the answer labels.
+#' @return A string, `""` for a quota without member.
+#' @keywords internal
+#' @noRd
+lss_quota_condition <- function(lss, quota_id, theme = NULL,
+                                label_lang = NULL) {
+  members <- lss$quota_members
+  if (is.null(members) || nrow(members) == 0L) return("")
+  mem <- members[members$quota_id == quota_id, , drop = FALSE]
+  if (nrow(mem) == 0L) return("")
+  chrome <- lss_filter_chrome(theme)
+  q_title <- function(qid) {
+    i <- which(lss$questions$qid == qid)
+    if (length(i)) lss$questions$title[i[1]] else qid
+  }
+  ans_label <- function(qid, code) {
+    if (is.null(label_lang) || is.null(lss$answers) ||
+        is.null(lss$answer_l10ns)) {
+      return(NA_character_)
+    }
+    ai <- which(lss$answers$qid == qid & lss$answers$code == code)
+    if (!length(ai)) return(NA_character_)
+    aid <- lss$answers$aid[ai[1]]
+    li <- which(lss$answer_l10ns$aid == aid &
+                  lss$answer_l10ns$language == label_lang)
+    if (length(li)) lss$answer_l10ns$answer[li[1]] else NA_character_
+  }
+  parts <- vapply(unique(mem$qid), function(qid) {
+    codes <- unique(mem$code[mem$qid == qid])
+    vals <- vapply(codes, function(code) {
+      lbl <- ans_label(qid, code)
+      if (!is.na(lbl) && nzchar(lbl)) sprintf("%s (%s)", code, lbl) else code
+    }, character(1), USE.NAMES = FALSE)
+    if (length(vals) == 1L) {
+      sprintf("%s = %s", q_title(qid), vals)
+    } else {
+      sprintf("%s %s {%s}", q_title(qid), chrome$inset,
+              paste(vals, collapse = ", "))
+    }
+  }, character(1), USE.NAMES = FALSE)
+  paste(parts, collapse = sprintf(" %s ", chrome$and))
+}
+
 #' Render the quotas section (sampling caps) as back matter
 #'
 #' One block per quota: the localized name, a status line (active /
@@ -78,22 +135,8 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
   quotas <- lss$quotas
   if (is.null(quotas) || nrow(quotas) == 0L) return(doc)
   chrome <- theme$chrome
-  members <- lss$quota_members
   qls <- lss$quota_languagesettings
 
-  # qid -> question code; (qid, code) -> localized answer label.
-  q_title <- function(qid) {
-    i <- which(lss$questions$qid == qid)
-    if (length(i)) lss$questions$title[i[1]] else qid
-  }
-  ans_label <- function(qid, code, lang) {
-    if (is.null(lss$answers) || is.null(lss$answer_l10ns)) return(NA_character_)
-    ai <- which(lss$answers$qid == qid & lss$answers$code == code)
-    if (!length(ai)) return(NA_character_)
-    aid <- lss$answers$aid[ai[1]]
-    li <- which(lss$answer_l10ns$aid == aid & lss$answer_l10ns$language == lang)
-    if (length(li)) lss$answer_l10ns$answer[li[1]] else NA_character_
-  }
   qls_field <- function(quota_id, lang, field) {
     if (is.null(qls)) return(NA_character_)
     li <- which(qls$quotals_quota_id == quota_id & qls$quotals_language == lang)
@@ -140,21 +183,9 @@ lss_render_quotas <- function(doc, lss, langs, theme) {
                            "2" = chrome$quota_action_confirm,
                            as.character(qrow$action))
 
-    mem <- if (!is.null(members)) members[members$quota_id == qid_q, , drop = FALSE] else NULL
-    if (!is.null(mem) && nrow(mem) > 0L) {
-      conds <- vapply(seq_len(nrow(mem)), function(mi) {
-        qc <- q_title(mem$qid[mi]); code <- mem$code[mi]
-        lbl <- ans_label(mem$qid[mi], code, langs[1])
-        if (!is.na(lbl) && nzchar(lbl)) {
-          sprintf("%s = %s (%s)", qc, code, lbl)
-        } else {
-          sprintf("%s = %s", qc, code)
-        }
-      }, character(1))
-      cond_v[qi] <- paste(conds, collapse = sprintf(" %s ", chrome$filter_and))
-    } else {
-      cond_v[qi] <- theme$empty_marker
-    }
+    # The condition, with the answer labels of the first language.
+    cond <- lss_quota_condition(lss, qid_q, theme, label_lang = langs[1])
+    cond_v[qi] <- if (nzchar(cond)) cond else theme$empty_marker
 
     # Message cell: one line per language that carries a message.
     chunks <- list()

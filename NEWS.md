@@ -29,7 +29,8 @@
   gray type, and `show_codes = FALSE` removes both. The numbers are those
   of `render_documentation()`. The document declares its language to Word
   (`proofing_lang`), so the spelling checker and the hyphenation follow
-  the questionnaire.
+  the questionnaire. The quotas of the survey come at the end
+  (`show_quotas`).
 
 ## Minor improvements and bug fixes
 
@@ -53,6 +54,10 @@
 * `render_documentation()` now prints the formula of a computed question
   by default: `"equation"` joins the default of `show_attrs`.
   `render_questionnaire()` prints it after the code of the question.
+
+* The quotas table of `render_documentation()` joined two answers of the
+  same question with `AND`. They are alternatives and now read
+  `Q1 ∈ {1, 2}`.
 
 * The table of contents of `render_documentation()` now gives the numbers
   of the questions of each group (`questions 1 to 10`). In the table layout

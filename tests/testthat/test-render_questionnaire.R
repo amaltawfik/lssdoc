@@ -347,7 +347,8 @@ test_that("old arguments name render_documentation(), others are refused", {
                class = "lssdoc_unknown_argument")
   expect_error(
     render_questionnaire(lss, out, "fr", TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
-                         TRUE, TRUE, TRUE, 12L, NULL, NULL, NULL, 1.5, 0.75,
+                         TRUE, TRUE, TRUE, TRUE, 12L, NULL, NULL, NULL, 1.5,
+                         0.75,
                          NULL, NULL, NULL, NULL, NULL, 10L, "extra"),
     class = "lssdoc_unknown_argument"
   )
@@ -717,6 +718,104 @@ test_that("a computed question gives its formula after its code", {
   expect_identical(plan_text(lss_q_question(bare, q(), num)), shown)
 })
 
+test_that("the quotas close the questionnaire, with the codes", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  lss <- demo_lss()
+  en <- q_paras(q_parts(q_render(lss, language = "en"))$doc)
+  k <- which(en == "Quotas")
+  expect_length(k, 2L)
+  # In the table of contents, without a range, after the end text.
+  expect_identical(en[k[1] - 1L], "End of the questionnaire")
+  # The section ends the document.
+  expect_identical(
+    en[k[2]:length(en)],
+    c("Quotas",
+      "\tfin2  if gender = M \u00B7 Limit: 10",
+      "When full: terminate survey",
+      "\tSorry your responses have exceeded a quota on this survey.",
+      "\tfin  if respondentrole = ST AND education = 3 \u00B7 Limit: 0",
+      "When full: terminate survey",
+      "\tSorry your responses have exceeded a quota on this survey.")
+  )
+  fr <- q_paras(q_parts(q_render(lss, language = "fr"))$doc)
+  k <- which(fr == "Quotas")
+  expect_length(k, 2L)
+  expect_identical(
+    fr[k[2] + 0:3],
+    c("Quotas",
+      "\tfin2  si gender = M \u00B7 Limite\u00A0: 10",
+      "Quand atteint\u00A0: terminer le questionnaire",
+      "\tD\u00E9sol\u00E9 vos r\u00E9ponses d\u00E9passent un quota d\u00E9fini pour ce questionnaire")
+  )
+  # The heading is a heading: it has its bookmark.
+  doc <- q_parts(q_render(lss, language = "en"))$doc
+  expect_length(xml2::xml_find_all(
+    doc, "//w:bookmarkStart[@w:name='lssdoc_section_quotas']", W
+  ), 1L)
+  # Its default follows show_codes; show_quotas decides.
+  none <- q_paras(q_parts(q_render(lss, language = "en",
+                                   show_codes = FALSE))$doc)
+  expect_false("Quotas" %in% none)
+  only <- q_paras(q_parts(q_render(lss, language = "en", show_codes = FALSE,
+                                   show_quotas = TRUE))$doc)
+  expect_true("\tfin2  if gender = M \u00B7 Limit: 10" %in% only)
+  off <- q_paras(q_parts(q_render(lss, language = "en",
+                                  show_quotas = FALSE))$doc)
+  expect_false("Quotas" %in% off)
+  expect_error(q_render(lss, show_quotas = NA), class = "lssdoc_bad_flag")
+})
+
+test_that("each quota: inactive, its action, its message, its members", {
+  skip_if_not_installed("officer")
+  lss <- demo_lss()
+  q <- lss$quotas
+  q$active[q$name == "fin2"] <- "0"
+  q$action[q$name == "fin2"] <- "2"
+  q$action[q$name == "fin"] <- "9"
+  lss$quotas <- q
+  ls <- lss$quota_languagesettings
+  # In German (French is the base language): fin2 has no German message,
+  # fin no message at all and a German name; fin loses its members.
+  ls$quotals_message[ls$quotals_quota_id == "53" &
+                       ls$quotals_language == "de"] <- ""
+  ls$quotals_message[ls$quotals_quota_id == "52"] <- ""
+  ls$quotals_name[ls$quotals_quota_id == "52" &
+                    ls$quotals_language == "de"] <- "Ende <b>der Feldzeit</b>"
+  lss$quota_languagesettings <- ls
+  lss$quota_members <- lss$quota_members[lss$quota_members$quota_id != "52", ,
+                                         drop = FALSE]
+  ctx <- lss_q_context(lss, "de", chrome_lang = "fr", measure = FALSE)
+  text <- plan_text(lss_q_quota_paras(ctx))
+  expect_identical(text, c(
+    "Quotas",
+    "\tfin2  si gender = M \u00B7 Limite\u00A0: 10 \u00B7 inactif",
+    "Quand atteint\u00A0: laisser le r\u00E9pondant modifier",
+    paste0("\tD\u00E9sol\u00E9 vos r\u00E9ponses d\u00E9passent un quota ",
+           "d\u00E9fini pour ce questionnaire (non traduit)"),
+    "\tEnde der Feldzeit  Limite\u00A0: 0",
+    "Quand atteint\u00A0: 9"
+  ))
+  expect_true("quota \"fin2\" (message)" %in% ctx$missing)
+  # Without language settings: the structural names, no message.
+  lss$quota_languagesettings <- NULL
+  ctx <- lss_q_context(lss, "de", chrome_lang = "fr", measure = FALSE)
+  text <- plan_text(lss_q_quota_paras(ctx))
+  expect_identical(text[c(2L, 4L)],
+                   c("\tfin2  si gender = M \u00B7 Limite\u00A0: 10 \u00B7 inactif",
+                     "\tfin  Limite\u00A0: 0"))
+  expect_length(text, 5L)
+  # A survey without quota: no section.
+  lss$quotas <- lss$quotas[0, , drop = FALSE]
+  ctx <- lss_q_context(lss, "fr", chrome_lang = "fr", measure = FALSE)
+  expect_identical(lss_q_quota_paras(ctx), list())
+  body <- lss_q_plan_body(ctx, show_quotas = TRUE)
+  expect_false("Quotas" %in% vapply(body$toc, `[[`, "", "name"))
+  lss$quotas <- NULL
+  ctx <- lss_q_context(lss, "fr", chrome_lang = "fr", measure = FALSE)
+  expect_identical(lss_q_quota_paras(ctx), list())
+})
+
 test_that("a language without chrome takes the built-in labels in English", {
   skip_if_not_installed("officer")
   lss <- q_fixture_lss()
@@ -825,12 +924,14 @@ test_that("the fixture renders in French with the defaults", {
   expect_identical(q_numbered(doc),
                    stats::setNames(asked$code, as.character(asked$no)))
 
-  # Headings with an outline level: two sections, two groups, the end.
+  # Headings with an outline level: a section, two groups, the end, the
+  # quotas (the example survey has one).
   lvl <- xml2::xml_find_all(doc, "//w:body/w:p[w:pPr/w:outlineLvl[@w:val='0']]", W)
   expect_identical(
     vapply(lvl, xml2::xml_text, ""),
     c("Accueil", "Questions fermees",
-      "Saisie libre, echelles simples et texte affiche", "Fin du questionnaire")
+      "Saisie libre, echelles simples et texte affiche", "Fin du questionnaire",
+      "Quotas")
   )
   expect_true(all(xml2::xml_attr(
     xml2::xml_find_first(lvl, "w:pPr/w:pStyle", W), "w:val", W

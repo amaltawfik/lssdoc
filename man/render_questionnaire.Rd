@@ -17,6 +17,7 @@ render_questionnaire(
   show_welcome = TRUE,
   show_consent = TRUE,
   show_endtext = TRUE,
+  show_quotas = show_codes,
   max_options = 12L,
   title = NULL,
   subtitle = NULL,
@@ -76,6 +77,12 @@ all \code{TRUE} by default. The texts a respondent reads before the first
 question and after the last one: the description of the survey, its
 welcome text, its privacy notice with the label of the consent
 checkbox, and its end text.}
+
+\item{show_quotas}{Logical. Whether to end the document with the quotas
+of the survey: for each quota its condition, its limit, what happens
+when it is full and the message the respondent then reads. Defaults to
+\code{show_codes}, because a quota is written with the codes. A survey
+without quota gets no section.}
 
 \item{max_options}{Number of answer options a long list is cut down to,
 \code{12} by default, which keeps a scale from 0 to 10 with a "does not
@@ -174,8 +181,11 @@ What the respondent only reads (the welcome text, the privacy notice,
 the text displays, the group descriptions) is set in gray and
 justified. What is asked is left-aligned.
 
-The type of a question, its attributes, the audit, the variable index
-and the quotas belong to \code{\link[=render_documentation]{render_documentation()}}.
+The quotas of the survey close the document, each with its condition,
+its limit and the message shown when it is full.
+
+The type of a question, its attributes, the audit and the variable
+index belong to \code{\link[=render_documentation]{render_documentation()}}.
 }
 
 \section{Change in lssdoc 0.4.0}{

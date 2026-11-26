@@ -23,6 +23,7 @@
                                        show_welcome = TRUE,
                                        show_consent = TRUE,
                                        show_endtext = TRUE,
+                                       show_quotas = show_codes,
                                        max_options = 12L,
                                        title = NULL, subtitle = NULL,
                                        logo = NULL, logo_width = 1.5,
@@ -41,7 +42,8 @@
     ctx,
     show_group_description = show_group_description,
     show_description = show_description, show_welcome = show_welcome,
-    show_consent = show_consent, show_endtext = show_endtext
+    show_consent = show_consent, show_endtext = show_endtext,
+    show_quotas = show_quotas
   )
   doc_title <- lss_q_title(ctx, title)
   top <- lss_q_plan_top(
@@ -348,7 +350,8 @@ lss_q_missing_run <- function(ctx) {
 #' @noRd
 lss_q_plan_body <- function(ctx, show_group_description = TRUE,
                             show_description = TRUE, show_welcome = TRUE,
-                            show_consent = TRUE, show_endtext = TRUE) {
+                            show_consent = TRUE, show_endtext = TRUE,
+                            show_quotas = FALSE) {
   ch <- ctx$chrome
   P <- ctx$props
   langs <- unique(c(ctx$language, ctx$base))
@@ -450,7 +453,89 @@ lss_q_plan_body <- function(ctx, show_group_description = TRUE,
                                     bookmark = section_end$bookmark,
                                     range = "", chrome = TRUE)
   }
+  quotas <- if (isTRUE(show_quotas)) lss_q_quota_paras(ctx) else list()
+  if (length(quotas)) {
+    paras <- c(paras, quotas)
+    toc[[length(toc) + 1L]] <- list(name = ch$quotas_title,
+                                    bookmark = lss_section_bookmark("quotas"),
+                                    range = "", chrome = TRUE)
+  }
   list(paras = paras, toc = toc)
+}
+
+#' The quotas section, last of the document
+#'
+#' A heading, then one block per quota in the order of the file: a line
+#' like that of an unnumbered item, its left column empty, with the name
+#' of the quota (its name in the language of the document, else its
+#' structural name) and, in the code style, its condition, its limit and
+#' "inactive" when it is; a line with what happens when it is full; the
+#' message the respondent then reads, when there is one (the base
+#' language, marked as not translated, when the language of the document
+#' has none). Empty when the survey has no quota.
+#'
+#' @keywords internal
+#' @noRd
+lss_q_quota_paras <- function(ctx) {
+  quotas <- ctx$lss$quotas
+  if (is.null(quotas) || nrow(quotas) == 0L) return(list())
+  ch <- ctx$chrome
+  P <- ctx$props
+  qls <- ctx$lss$quota_languagesettings
+  field <- function(id, lang, name) {
+    if (is.null(qls) || !name %in% names(qls)) return(NA_character_)
+    v <- qls[[name]][qls$quotals_quota_id == id & qls$quotals_language == lang]
+    if (length(v)) v[1] else NA_character_
+  }
+  langs <- unique(c(ctx$language, ctx$base))
+  out <- list(lss_q_para(
+    list(lss_q_run(ctx, ch$quotas_title, P$group, chrome = TRUE)),
+    "heading", bookmark = lss_section_bookmark("quotas"),
+    text = ch$quotas_title
+  ))
+  for (k in seq_len(nrow(quotas))) {
+    qr <- quotas[k, , drop = FALSE]
+    id <- as.character(qr$id)
+    name <- lss_q_clean(field(id, ctx$language, "quotals_name"), ctx$french)
+    if (!nzchar(name)) name <- as.character(qr$name)
+    cond <- lss_quota_condition(ctx$lss, id, ctx$theme)
+    details <- c(
+      if (nzchar(cond)) sprintf(ch$q_filter_if_fmt, cond),
+      sprintf(ch$filter_level_fmt, ch$quota_limit, as.character(qr$qlimit)),
+      if (!identical(as.character(qr$active), "1")) ch$quota_inactive
+    )
+    action <- switch(as.character(qr$action),
+                     "1" = ch$quota_action_terminate,
+                     "2" = ch$quota_action_confirm,
+                     as.character(qr$action))
+    block <- list(
+      lss_q_para(list(
+        officer::run_tab(), lss_q_run(ctx, name, P$q),
+        lss_q_run(ctx, paste0("  ", paste(details, collapse = " \u00B7 ")),
+                  P$code, chrome = TRUE)
+      ), "q"),
+      lss_q_para(list(lss_q_run(
+        ctx, sprintf(ch$filter_level_fmt, ch$quota_when_full, action),
+        P$hint, chrome = TRUE
+      )), "hint")
+    )
+    msg <- lss_q_pick(
+      ctx,
+      stats::setNames(lapply(langs, function(lg) {
+        field(id, lg, "quotals_message")
+      }), langs),
+      sprintf("quota \"%s\" (message)", as.character(qr$name))
+    )
+    if (nzchar(msg$text)) {
+      block[[3L]] <- lss_q_para(
+        c(list(officer::run_tab(), lss_q_run(ctx, msg$text, P$shown)),
+          if (msg$missing) list(lss_q_missing_run(ctx))),
+        "q", top = 3, justify = TRUE
+      )
+    }
+    out <- c(out, lss_q_keep_chain(block))
+  }
+  out
 }
 
 #' A front or end matter section: its heading, then its blocks
