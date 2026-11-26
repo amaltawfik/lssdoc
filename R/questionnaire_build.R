@@ -679,8 +679,8 @@ lss_q_other_item <- function(ctx, q, code) {
 #'
 #' The labelled scales of the full document (`lss_predefined_labelled()`):
 #' the arrays C and E, the yes/no question (Y) and the gender question (G).
-#' A and B arrays print one line instead ("For each row: 5-point choice
-#' (1 to 5)").
+#' A and B arrays print their positions on one line instead
+#' (`lss_q_points_para()`).
 #'
 #' @keywords internal
 #' @noRd
@@ -758,12 +758,17 @@ lss_q_option_paras <- function(ctx, items, abridge = TRUE, tail = list()) {
 }
 
 #' The "For each row:" line, set off by 4 points, with what follows it
+#'
+#' `label` gives another line of the same form: "Columns:" or "For each
+#' row and each column:" in a two-dimensional array.
+#'
 #' @keywords internal
 #' @noRd
-lss_q_row_prefix <- function(ctx, after = list()) {
+lss_q_row_prefix <- function(ctx, after = list(),
+                             label = ctx$chrome$q_for_each_row) {
   P <- ctx$props
   lss_q_para(
-    c(list(lss_q_run(ctx, ctx$chrome$q_for_each_row, P$hint, chrome = TRUE)),
+    c(list(lss_q_run(ctx, label, P$hint, chrome = TRUE)),
       if (length(after)) c(list(lss_q_run(ctx, " ", P$hint)), after)),
     "hint", top = 4
   )
@@ -789,6 +794,71 @@ lss_q_open_runs <- function(ctx, q, key) {
   runs
 }
 
+#' The positions of an N-point choice, on one line
+#'
+#' Laid out like an option line without code, in the style of an option
+#' label: "1", "2", ... joined by an em space and an en space. The same
+#' with and without the codes.
+#'
+#' @keywords internal
+#' @noRd
+lss_q_points_para <- function(ctx, n) {
+  text <- paste(seq_len(n), collapse = "\u2003\u2002")
+  lss_q_para(list(lss_q_run(ctx, text, ctx$props$opt)), "line", w = 0)
+}
+
+#' What a cell of a two-dimensional array takes
+#'
+#' A short text for an array of texts (`;`). For an array of numbers
+#' (`:`), LimeSurvey's own rule: a checkbox when `multiflexible_checkbox`
+#' is set, else a number field when `input_boxes` is set, else a dropdown
+#' of numbers from `multiflexible_min` to `multiflexible_max` (1 and 10 by
+#' default; the minimum plus 10 when only the minimum is set; 1 and 10
+#' again when the minimum is not below the maximum), in steps of
+#' `multiflexible_step` (1 unless above 0). A value that is not a number
+#' counts as not set; `reverse` changes only the order and is ignored.
+#'
+#' @keywords internal
+#' @noRd
+lss_q_cell_text <- function(ctx, q) {
+  ch <- ctx$chrome
+  if (!identical(as.character(q$type), ":")) return(ch$q_open_short_text)
+  num <- function(name) {
+    v <- lss_q_attr(ctx, q$attributes, name, q$code)$html
+    suppressWarnings(as.numeric(trimws(v)))
+  }
+  on <- function(name) {
+    v <- num(name)
+    !is.na(v) && v != 0
+  }
+  if (on("multiflexible_checkbox")) return(ch$q_open_checkbox)
+  if (on("input_boxes")) return(ch$q_open_number)
+  lo <- num("multiflexible_min")
+  hi <- num("multiflexible_max")
+  if (is.na(lo) && is.na(hi)) {
+    lo <- 1
+    hi <- 10
+  } else if (is.na(lo)) {
+    lo <- 1
+  } else if (is.na(hi)) {
+    hi <- lo + 10
+  } else if (lo >= hi) {
+    lo <- 1
+    hi <- 10
+  }
+  step <- num("multiflexible_step")
+  if (is.na(step) || step <= 0) step <- 1
+  fmt <- function(x) {
+    format(x, scientific = FALSE, trim = TRUE, drop0trailing = TRUE,
+           digits = 15)
+  }
+  if (step == 1) {
+    sprintf(ch$q_open_number_range_fmt, fmt(lo), fmt(hi))
+  } else {
+    sprintf(ch$q_open_number_step_fmt, fmt(lo), fmt(hi), fmt(step))
+  }
+}
+
 #' The key of the string that follows "Answer:" for a type
 #' @keywords internal
 #' @noRd
@@ -798,7 +868,7 @@ lss_q_open_key <- function(type) {
     "N" = "q_open_number", "K" = "q_open_numbers",
     "S" = "q_open_short_text", "Q" = "q_open_short_texts",
     "T" = "q_open_long_text", "U" = "q_open_long_text",
-    "D" = "q_open_date", "5" = "q_open_five_point",
+    "D" = "q_open_date",
     "|" = "q_open_file", "I" = "q_open_language",
     "q_open_free"
   )
@@ -840,11 +910,11 @@ lss_q_body <- function(ctx, q) {
   } else if (type %in% c("F", "H")) {
     c(rows(), list(lss_q_row_prefix(ctx)),
       lss_q_option_paras(ctx, lss_q_answer_items(ctx, q, "0")))
+  } else if (identical(type, "5")) {
+    list(lss_q_points_para(ctx, 5L))
   } else if (type %in% c("A", "B")) {
-    key <- if (identical(type, "B")) "q_open_ten_point" else "q_open_five_point"
-    c(rows(), list(lss_q_row_prefix(
-      ctx, list(lss_q_run(ctx, ch[[key]], P$hint, chrome = TRUE))
-    )))
+    c(rows(), list(lss_q_row_prefix(ctx)),
+      list(lss_q_points_para(ctx, if (identical(type, "B")) 10L else 5L)))
   } else if (type %in% c("C", "E")) {
     c(rows(), list(lss_q_row_prefix(ctx)),
       lss_q_option_paras(ctx, lss_q_builtin_items(ctx, type)))
@@ -868,29 +938,16 @@ lss_q_body <- function(ctx, q) {
     }
     out
   } else if (type %in% c(";", ":")) {
-    cols <- lss_q_subq_items(ctx, q, "1")
-    labels <- vapply(cols, function(it) it$label, character(1))
-    filtered <- vapply(cols, function(it) !is.null(it$filter), logical(1))
-    label_runs <- if (any(filtered)) {
-      # A column with a condition of its own reads `label (filter)`.
-      unlist(lapply(seq_along(cols), function(k) {
-        c(if (k > 1L) list(lss_q_run(ctx, ", ", P$hint)),
-          list(lss_q_run(ctx, labels[k], P$hint)),
-          if (filtered[k]) {
-            list(lss_q_run(ctx, paste0(" (", cols[[k]]$filter, ")"), P$code,
-                           chrome = TRUE))
-          })
-      }), recursive = FALSE)
+    # The rows, the columns listed like the rows, then what a cell takes.
+    cols <- lss_q_option_paras(ctx, lss_q_subq_items(ctx, q, "1"),
+                               abridge = FALSE)
+    what <- list(lss_q_run(ctx, lss_q_cell_text(ctx, q), P$hint, chrome = TRUE))
+    if (length(cols)) {
+      c(rows(), list(lss_q_row_prefix(ctx, label = ch$q_columns)), cols,
+        list(lss_q_row_prefix(ctx, what, label = ch$q_for_each_cell)))
     } else {
-      list(lss_q_run(ctx, paste(labels, collapse = ", "), P$hint))
+      c(rows(), list(lss_q_row_prefix(ctx, what)))
     }
-    after <- if (length(labels)) {
-      c(label_runs,
-        if (any(vapply(cols, function(it) it$missing, logical(1)))) {
-          list(lss_q_missing_run(ctx))
-        })
-    }
-    c(rows(), list(lss_q_row_prefix(ctx, after)))
   } else if (type %in% c("K", "Q")) {
     sub <- rows()
     if (length(sub)) {

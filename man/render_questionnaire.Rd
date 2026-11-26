@@ -152,10 +152,13 @@ The answer options come below the question, one per line. A multiple
 choice lists its options and says that several answers are possible. An
 array lists its rows, then the options that apply to each row. A yes/no
 question and a gender question list the two options LimeSurvey builds
-in. A question without options says what it expects, for instance
+in. A 5-point choice gives its positions on one line, "1 2 3 4 5", and
+an array of 5-point or 10-point choices does the same under its rows.
+An array of numbers or of texts lists its rows, then its columns, then
+what each cell takes: "For each row and each column: number from 0 to
+10". A question without options says what it expects, for instance
 "Answer: number", with the prefix and the suffix of the input field
-when it has them. A numeric scale without labels gives its range:
-"Answer: 5-point choice (1 to 5)".
+when it has them.
 
 The conditions set in LimeSurvey are printed with the codes, in the
 same gray type: after the code of a question ("if Q11 = 2"), after the

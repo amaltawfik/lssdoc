@@ -156,8 +156,9 @@ test_that("the chrome of the readable questionnaire exists in five languages", {
     "q_options_total_fmt", "q_no_label", "q_other", "q_free_text",
     "q_filter_if_fmt", "q_filtered", "q_not_translated",
     "q_open_number", "q_open_short_text", "q_open_long_text", "q_open_date",
-    "q_open_numbers", "q_open_short_texts", "q_open_five_point",
-    "q_open_ten_point", "q_open_file",
+    "q_open_numbers", "q_open_short_texts", "q_open_number_range_fmt",
+    "q_open_number_step_fmt", "q_open_checkbox", "q_columns",
+    "q_for_each_cell", "q_open_file",
     "q_open_language", "q_open_free"
   )
   for (lg in c("en", "fr", "de", "es", "it")) {
@@ -166,6 +167,9 @@ test_that("the chrome of the readable questionnaire exists in five languages", {
     expect_true(all(vapply(pack[keys], function(v) {
       is.character(v) && length(v) == 1L && nzchar(v)
     }, logical(1))), info = lg)
+    # The N-point choices print their positions, no longer a phrase.
+    expect_false(any(c("q_open_five_point", "q_open_ten_point") %in%
+                       names(pack)), info = lg)
   }
   fr <- lss_chrome_strings("fr")
   expect_identical(fr$q_answer, "R\u00E9ponse\u00A0:")
@@ -523,28 +527,40 @@ test_that("each type says what it asks, in the edge cases too", {
     c("A\tOui", "Pour chaque ligne\u00A0: Trust (non traduit)", "1\tUn",
       "Pour chaque ligne\u00A0:", "1\tBas")
   )
-  # Array of texts: the columns, one missing in French.
+  # Array of texts: the columns listed like the rows, one missing in
+  # French, then what a cell takes.
   col <- list(code = "C1", scale_id = "1", texts = tx("", "Today"))
+  cell <- "Pour chaque ligne et chaque colonne\u00A0: "
   expect_identical(
     body(";", subquestions = list(sq, col)),
-    c("A\tOui", "Pour chaque ligne\u00A0: Today (non traduit)")
+    c("A\tOui", "Colonnes\u00A0:", "C1\tToday (non traduit)",
+      paste0(cell, "texte court"))
   )
+  # Without any column: no "Columns:" line, "For each row:" says it.
+  expect_identical(body(";", subquestions = list(sq)),
+                   c("A\tOui", "Pour chaque ligne\u00A0: texte court"))
+  expect_identical(body(":", subquestions = list(sq)),
+                   c("A\tOui", "Pour chaque ligne\u00A0: nombre de 1 \u00E0 10"))
   # Every type has its "Answer:" string.
   expect_identical(
-    vapply(c("N", "K", "S", "Q", "T", "U", "D", "5", "|", "I", "?"),
+    vapply(c("N", "K", "S", "Q", "T", "U", "D", "|", "I", "5", "?"),
            lss_q_open_key, "", USE.NAMES = FALSE),
     c("q_open_number", "q_open_numbers", "q_open_short_text",
       "q_open_short_texts", "q_open_long_text", "q_open_long_text",
-      "q_open_date", "q_open_five_point", "q_open_file", "q_open_language",
+      "q_open_date", "q_open_file", "q_open_language", "q_open_free",
       "q_open_free")
   )
   expect_identical(lss_q_item(NA, "x")$code, "")
   expect_length(lss_q_builtin_items(ctx, "C"), 3L)
+  # The N-point choices: their positions on one line, under the rows and
+  # "For each row:" in an array.
+  five <- "1\u2003\u20022\u2003\u20023\u2003\u20024\u2003\u20025"
+  ten <- paste(1:10, collapse = "\u2003\u2002")
   expect_identical(body("A", subquestions = list(sq)),
-                   c("A\tOui", "Pour chaque ligne\u00A0: choix sur 5 points (1 \u00E0 5)"))
+                   c("A\tOui", "Pour chaque ligne\u00A0:", five))
   expect_identical(body("B", subquestions = list(sq)),
-                   c("A\tOui", "Pour chaque ligne\u00A0: choix sur 10 points (1 \u00E0 10)"))
-  expect_identical(body("5"), "R\u00E9ponse\u00A0: choix sur 5 points (1 \u00E0 5)")
+                   c("A\tOui", "Pour chaque ligne\u00A0:", ten))
+  expect_identical(body("5"), five)
   # Yes/no and gender list their built-in options, female first.
   expect_identical(body("Y"), c("Y\tOui", "N\tNon"))
   expect_identical(body("G"), c("F\tFemme", "M\tHomme"))
@@ -558,6 +574,90 @@ test_that("each type says what it asks, in the edge cases too", {
   expect_identical(plan_text(lss_q_question(ctx, helped, num)),
                    c("3\tQ\u00A0?  QX", "Help (non traduit)",
                      "R\u00E9ponse\u00A0: texte court"))
+})
+
+test_that("the positions of an N-point choice read the same with and without codes", {
+  skip_if_not_installed("officer")
+  lss <- q_fixture_lss()
+  five <- "1\u2003\u20022\u2003\u20023\u2003\u20024\u2003\u20025"
+  for (codes in c(TRUE, FALSE)) {
+    ctx <- lss_q_context(lss, "fr", chrome_lang = "fr", show_codes = codes,
+                         measure = FALSE)
+    p <- lss_q_points_para(ctx, 5L)
+    expect_identical(p$kind, "line")
+    expect_identical(p$w, 0)
+    expect_length(p$runs, 1L)
+    expect_identical(plan_text(list(p)), five)
+    expect_identical(plan_text(list(lss_q_points_para(ctx, 10L))),
+                     paste(1:10, collapse = "\u2003\u2002"))
+    q5 <- list(qid = "0", code = "QX", type = "5", texts = NULL,
+               answers = NULL, subquestions = NULL, attributes = NULL)
+    expect_identical(plan_text(lss_q_body(ctx, q5)), five)
+  }
+})
+
+test_that("a cell of an array of numbers says what it takes, by LimeSurvey's rule", {
+  skip_if_not_installed("officer")
+  ctx <- lss_q_context(q_fixture_lss(), "fr", chrome_lang = "fr",
+                       measure = FALSE)
+  cell <- function(..., type = ":") {
+    a <- c(...)
+    attrs <- if (length(a)) {
+      data.frame(qid = "0", attribute = names(a), value = unname(a),
+                 language = "", stringsAsFactors = FALSE)
+    }
+    lss_q_cell_text(ctx, list(code = "QX", type = type, attributes = attrs))
+  }
+  # An array of texts.
+  expect_identical(cell(type = ";"), "texte court")
+  # The dropdown: 1 to 10 by default, the maximum alone, the minimum alone.
+  expect_identical(cell(), "nombre de 1 \u00E0 10")
+  expect_identical(cell(multiflexible_max = "5"), "nombre de 1 \u00E0 5")
+  expect_identical(cell(multiflexible_min = "3"), "nombre de 3 \u00E0 13")
+  expect_identical(cell(multiflexible_min = "0", multiflexible_max = "10"),
+                   "nombre de 0 \u00E0 10")
+  # A minimum not below the maximum: back to 1 to 10.
+  expect_identical(cell(multiflexible_min = "10", multiflexible_max = "5"),
+                   "nombre de 1 \u00E0 10")
+  expect_identical(cell(multiflexible_min = "5", multiflexible_max = "5"),
+                   "nombre de 1 \u00E0 10")
+  # A step other than 1; a step of 0 or below counts as 1.
+  expect_identical(
+    cell(multiflexible_min = "0", multiflexible_max = "1",
+         multiflexible_step = "0.5"),
+    "nombre de 0 \u00E0 1, par pas de 0.5"
+  )
+  expect_identical(cell(multiflexible_step = "0"), "nombre de 1 \u00E0 10")
+  expect_identical(cell(multiflexible_step = "-2"), "nombre de 1 \u00E0 10")
+  # A value that is not a number counts as not set.
+  expect_identical(cell(multiflexible_min = "x", multiflexible_max = "5"),
+                   "nombre de 1 \u00E0 5")
+  expect_identical(cell(multiflexible_step = "two"), "nombre de 1 \u00E0 10")
+  expect_identical(cell(multiflexible_max = ""), "nombre de 1 \u00E0 10")
+  # No scientific notation, no trailing zero; reverse changes nothing.
+  expect_identical(
+    cell(multiflexible_min = "0.50", multiflexible_max = "1000000",
+         multiflexible_step = "100000", reverse = "1"),
+    "nombre de 0.5 \u00E0 1000000, par pas de 100000"
+  )
+  # A checkbox, then input boxes, before the dropdown.
+  expect_identical(cell(multiflexible_checkbox = "1", input_boxes = "1",
+                        multiflexible_max = "5"),
+                   "case \u00E0 cocher")
+  expect_identical(cell(multiflexible_checkbox = "0", input_boxes = "1"),
+                   "nombre")
+  expect_identical(cell(input_boxes = "0", multiflexible_max = "4"),
+                   "nombre de 1 \u00E0 4")
+  # The same rule in English.
+  en <- lss_q_context(q_fixture_lss(), "en", chrome_lang = "en",
+                      measure = FALSE)
+  q <- list(code = "QX", type = ":", attributes = data.frame(
+    qid = "0", attribute = "multiflexible_step", value = "2", language = "",
+    stringsAsFactors = FALSE
+  ))
+  expect_identical(lss_q_cell_text(en, q), "number from 1 to 10, in steps of 2")
+  expect_identical(lss_q_cell_text(en, list(code = "QX", type = ":")),
+                   "number from 1 to 10")
 })
 
 test_that("a language without chrome takes the built-in labels in English", {
@@ -756,8 +856,11 @@ test_that("the fixture renders in French with the defaults", {
   expect_true("Y\tOui" %in% text)
   expect_true("I\tAugmenter" %in% text)
   expect_false("10\t10" %in% text)
-  expect_true("Pour chaque ligne\u00A0: choix sur 10 points (1 \u00E0 10)" %in% text)
-  expect_true("Pour chaque ligne\u00A0: choix sur 5 points (1 \u00E0 5)" %in% text)
+  five <- paste(1:5, collapse = "\u2003\u2002")
+  ten <- paste(1:10, collapse = "\u2003\u2002")
+  rows <- which(text == "Pour chaque ligne\u00A0:")
+  expect_true(five %in% text[rows + 1L])
+  expect_true(ten %in% text[rows + 1L])
 })
 
 test_that("show_codes = FALSE leaves no code, show_hidden follows it", {
@@ -863,9 +966,22 @@ test_that("yes/no and gender list their options, the N-point scales their range"
   expect_identical(after(text, "democonsent"), c("Y\tYes", "N\tNo"))
   expect_identical(after(text, "gender"), c("F\tFemale", "M\tMale"))
   expect_false(any(grepl("^Answer: (yes or no|gender)", text)))
-  expect_true(any(grepl("^Answer: 5-point choice \\(1 to 5\\)$", text)))
-  expect_true("For each row: 5-point choice (1 to 5)" %in% text)
-  expect_true("For each row: 10-point choice (1 to 10)" %in% text)
+  five <- paste(1:5, collapse = "\u2003\u2002")
+  ten <- paste(1:10, collapse = "\u2003\u2002")
+  # After its help text.
+  expect_identical(after(text, "lifesatisfaction5pt", 2L)[[2]], five)
+  expect_false(any(grepl("^Answer: .*choice", text)))
+  rows <- which(text == "For each row:")
+  expect_true(five %in% text[rows + 1L])
+  expect_true(ten %in% text[rows + 1L])
+  # The two-dimensional arrays: the columns, then what a cell takes.
+  expect_identical(
+    after(text, "adaptability", 7L)[4:7],
+    c("Columns:", "NOW\tToday", "PAST\tFive years ago",
+      "For each row and each column: number from 0 to 10")
+  )
+  expect_identical(after(text, "mediaquality", 6L)[[6]],
+                   "For each row and each column: short text")
 
   # Without codes the labels remain; in German they are German even when
   # the chrome is French: they belong to the questionnaire.
@@ -882,7 +998,8 @@ test_that("yes/no and gender list their options, the N-point scales their range"
   expect_identical(opts(q_no("democonsent")), c("Ja", "Nein"))
   expect_identical(opts(q_no("gender")), c("Weiblich", "M\u00E4nnlich"))
   expect_false(any(grepl("^(Y|N|F|M)\t", text2)))
-  expect_true("Pour chaque ligne\u00A0: choix sur 5 points (1 \u00E0 5)" %in% text2)
+  expect_true(five %in% text2)
+  expect_true("Colonnes\u00A0:" %in% text2)
 })
 
 test_that("a survey in one language has no language line, a lone group no TOC", {
@@ -919,7 +1036,9 @@ test_that("the demo survey numbers its questions as the full document", {
   text <- q_paras(doc)
   # Dual scale (one block per scale), array of texts and of numbers.
   expect_gte(sum(grepl("^F\u00FCr jede Zeile:", text)), 8L)
-  expect_true(any(grepl("^F\u00FCr jede Zeile: .+, .+", text)))
+  expect_identical(sum(text == "Spalten:"), 2L)
+  expect_true("F\u00FCr jede Zeile und jede Spalte: Zahl von 0 bis 10" %in% text)
+  expect_true(any(grepl("^F\u00FCr jede Zeile und jede Spalte: Kurztext", text)))
 })
 
 test_that("a .pdf output goes through the .docx builder", {

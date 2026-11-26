@@ -521,13 +521,14 @@ test_that("questionnaire: the group paragraph and the filters of subquestions", 
   expect_true(any(grepl("\u00B7 if gender = F$", paras)))
   # The rows without a condition print no filter.
   expect_identical(sum(grepl("\u00B7 if age > 25", paras)), 1L)
-  # A column of a ";" array: "label (filter)" after "For each row:".
+  # A column of a ";" array, listed like the rows: its filter after its
+  # label.
   m <- lss_model(lss, "en")
   mq <- Filter(function(q) identical(q$code, "mediaquality"),
                unlist(lapply(m$groups, `[[`, "questions"), recursive = FALSE))[[1]]
   col <- Filter(function(s) identical(s$scale_id, "1"), mq$subquestions)[[1]]
   lab <- lss_q_clean(col$texts$en$question)
-  expect_true(any(grepl(paste0(lab, " (if age < 30)"), paras, fixed = TRUE)))
+  expect_true(paste0(col$code, lab, " \u00B7 if age < 30") %in% paras)
 
   # Nothing of this without the codes.
   out2 <- tempfile(fileext = ".docx")
