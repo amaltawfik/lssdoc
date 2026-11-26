@@ -94,13 +94,21 @@ lss_table_polish <- function(ft, theme, lang_cols, meta_header = FALSE,
 #' question, empty when `NA`), `Variable` (the LimeSurvey variable code,
 #' `parent_subq` for subquestion items), `Type` (legacy code + label),
 #' `Mand.` (mandatory: `yes`, `no`, `soft`), `Filter`. The Filter cell
-#' shows the plain English form on top with the raw LimeSurvey expression
-#' beneath (small italic gray) when `show_raw_filter` is `TRUE`.
+#' prints the lines of `lss_filter_lines()`, one under the other: the
+#' question's own filter alone and unlabelled when neither its group
+#' (`group_relevance`) nor the subquestion(s) the card stands for
+#' (`subq_relevance`) carry a condition; otherwise one labelled line per
+#' level that has one. Each line shows the plain form with the raw
+#' LimeSurvey expression beneath (small italic gray) when
+#' `show_raw_filter` is `TRUE`.
 #'
 #' Takes the fields explicitly rather than a `q` object so subquestion
 #' items can pass their composite variable code with the parent's type /
-#' mandatory / relevance (those are inherited from the parent in
-#' LimeSurvey -- subquestions do not carry their own type or relevance).
+#' mandatory / relevance (inherited from the parent in LimeSurvey).
+#' A subquestion has no type of its own, but it may carry its own
+#' relevance, which the card of that subquestion passes as
+#' `subq_relevance` (the row and the column for a cell of a
+#' two-dimensional array).
 #' `hidden = TRUE` adds a muted footer line under the band saying the
 #' question is hidden from respondents.
 #'
@@ -114,17 +122,14 @@ lss_render_question_meta_table <- function(doc, theme,
                                            mandatory,
                                            relevance,
                                            show_raw_filter = FALSE,
-                                           hidden = FALSE) {
-  filter_raw <- if (is.null(relevance) || is.na(relevance) ||
-                    !nzchar(relevance)) {
-    "1"
-  } else {
-    # Strip the layers of decorative outer parentheses that LimeSurvey
-    # adds around every relevance expression. The inner parens that
-    # actually group conditions are preserved.
-    lss_strip_outer_parens(relevance)
-  }
-  filter_plain <- lss_humanize_relevance(filter_raw, theme)
+                                           hidden = FALSE,
+                                           group_relevance = NULL,
+                                           subq_relevance = NULL) {
+  # The decorative outer parentheses LimeSurvey adds around every
+  # relevance expression are stripped there; the inner parens that
+  # actually group conditions are preserved.
+  filter_lines <- lss_filter_lines(relevance, group_relevance,
+                                   subq_relevance, theme)
   # The legacy type code (L, M, F, ...) is implicit in the variable's
   # data and meaningful only to LimeSurvey insiders. The descriptive
   # label is what reviewers read; drop the code prefix to avoid the
@@ -167,15 +172,16 @@ lss_render_question_meta_table <- function(doc, theme,
     font.family = theme$font_code, font.size = theme$size_question - 2L,
     color = theme$color_muted, italic = TRUE
   )
-  filter_chunks <- list(flextable::as_chunk(filter_plain, props = plain_props))
-  show_raw <- isTRUE(show_raw_filter) && !identical(filter_plain, filter_raw)
-  if (show_raw) {
-    filter_chunks <- c(
-      filter_chunks,
-      list(flextable::as_chunk("\n", props = plain_props)),
-      list(flextable::as_chunk(filter_raw, props = raw_props))
-    )
-  }
+  # The label of a level (Group, Question, Subquestion) in the muted
+  # colour, so the expressions stay the anchor of the cell.
+  label_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_muted
+  )
+  filter_chunks <- lss_filter_chunks(
+    filter_lines, theme, plain_props = plain_props, raw_props = raw_props,
+    label_props = label_props, show_raw = isTRUE(show_raw_filter)
+  )
   ft <- flextable::compose(
     ft, i = 1L, j = "Filter",
     value = do.call(flextable::as_paragraph, filter_chunks)

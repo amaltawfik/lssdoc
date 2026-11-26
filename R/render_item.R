@@ -69,6 +69,13 @@ lss_render_group <- function(doc, group, langs, theme,
     # Anchor the group heading with a bookmark so the manual TOC entries
     # can hyperlink to it.
     doc <- officer::body_bookmark(doc, lss_group_bookmark(state$group_index))
+    # The group's own condition, right under the heading: the whole group
+    # is shown only when it holds. Without a heading (show_groups = FALSE)
+    # the Filter cell of each card still carries it.
+    if (lss_has_condition(group$relevance)) {
+      doc <- lss_render_group_filter(doc, group$relevance, theme,
+                                     show_raw = isTRUE(state$show_raw_filter))
+    }
   }
   any_desc <- any(vapply(
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
@@ -326,7 +333,8 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
-    hidden = lss_question_hidden(q$attributes)
+    hidden = lss_question_hidden(q$attributes),
+    group_relevance = q$group_relevance
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -441,7 +449,8 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
-    hidden = lss_question_hidden(q$attributes)
+    hidden = lss_question_hidden(q$attributes),
+    group_relevance = q$group_relevance
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -502,6 +511,11 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
       code_row = TRUE
     )
   }
+  # Options shown only under a condition of their own: one note row, in
+  # the look of the "Exclusive" row, one line per conditional option.
+  frow <- lss_option_filter_row(q$subquestions, langs, theme,
+                                show_raw = isTRUE(state$show_raw_filter))
+  if (!is.null(frow)) rows[[length(rows) + 1L]] <- frow
   # Exclusive option(s): a subquestion flagged `exclude_all_others`
   # (e.g. "None of the above") clears every other selection when
   # checked. Surface it once, naming the option suffix(es) -- the same
@@ -589,7 +603,8 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
     mandatory = "N",
     relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
-    hidden = lss_question_hidden(q$attributes)
+    hidden = lss_question_hidden(q$attributes),
+    group_relevance = q$group_relevance
   )
   doc <- lss_render_intra_item_gap(doc, theme)
   rows <- list(list(
@@ -652,7 +667,8 @@ lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
     mandatory = "N",
     relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
-    hidden = lss_question_hidden(q$attributes)
+    hidden = lss_question_hidden(q$attributes),
+    group_relevance = q$group_relevance
   )
   doc <- lss_render_intra_item_gap(doc, theme)
   stem <- lapply(langs, function(lg) q$texts[[lg]]$question)
@@ -725,7 +741,12 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
-    hidden = lss_question_hidden(q$attributes)
+    hidden = lss_question_hidden(q$attributes),
+    group_relevance = q$group_relevance,
+    # The card stands for one subquestion (one cell of a two-dimensional
+    # array: its row and its column), whose own condition joins the
+    # question's.
+    subq_relevance = c(sq$relevance, column$relevance)
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -848,7 +869,8 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
     type = q$type, type_label = lss_localized_type_label(q, theme),
     mandatory = q$mandatory, relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
-    hidden = lss_question_hidden(q$attributes)
+    hidden = lss_question_hidden(q$attributes),
+    group_relevance = q$group_relevance
   )
   doc <- lss_render_intra_item_gap(doc, theme)
 
@@ -1040,7 +1062,9 @@ lss_answer_rows <- function(q, langs, theme) {
 #'   font size for that row (defaults to `theme$size_question` when
 #'   omitted). Rows missing or empty across every language are kept
 #'   (we never silently drop content), with cells filled by the muted
-#'   em-dash placeholder.
+#'   em-dash placeholder. A row may bring its own composed `paragraph`
+#'   (a flextable paragraph), printed in every language column instead of
+#'   `texts`.
 #' @keywords internal
 #' @noRd
 lss_render_item_table <- function(doc, theme, langs, rows) {
@@ -1074,7 +1098,12 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
     section_with_text <- isTRUE(rows[[i]]$section_with_text)
     is_blank <- isTRUE(rows[[i]]$blank)
     for (lg in langs) {
-      if ((is_section && !section_with_text) || is_blank) {
+      if (!is.null(rows[[i]]$paragraph)) {
+        # A row that brings its own composed paragraph (the filter note
+        # of a multiple choice: several lines, the raw forms in the
+        # monospace face).
+        ft <- flextable::compose(ft, i = i, j = lg, value = rows[[i]]$paragraph)
+      } else if ((is_section && !section_with_text) || is_blank) {
         # Section header row, or a value row with no stored label (an
         # N-point numeric scale): language cells stay truly blank (no
         # em-dash placeholder), so the absent label is not mistaken for
@@ -1611,3 +1640,84 @@ lss_exclusive_row <- function(q, sq, langs, theme) {
   )
 }
 
+
+#' The paragraph of a group's condition, under the group heading
+#'
+#' `sprintf(filter_level_fmt, chrome$meta_filter, plain)`: the label in the
+#' muted colour, the expression in the text colour, body font at the card
+#' body size, kept with the next paragraph. With `show_raw`, the raw
+#' expression follows on its own line (the monospace muted italic of the
+#' raw line of the meta band) when it differs from the plain form.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_group_filter <- function(doc, relevance, theme, show_raw = FALSE) {
+  ln <- lss_filter_lines(NA_character_, relevance, NULL, theme)[[1L]]
+  label_prop <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_muted
+  )
+  text_prop <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_text
+  )
+  runs <- list(
+    officer::ftext(sprintf(theme$chrome$filter_level_fmt,
+                           theme$chrome$meta_filter, ""), prop = label_prop),
+    officer::ftext(ln$plain, prop = text_prop)
+  )
+  if (isTRUE(show_raw) && !identical(ln$plain, ln$raw)) {
+    raw_prop <- officer::fp_text(
+      font.family = theme$font_code, font.size = theme$size_question - 2L,
+      color = theme$color_muted, italic = TRUE
+    )
+    runs <- c(runs, list(officer::run_linebreak(),
+                         officer::ftext(ln$raw, prop = raw_prop)))
+  }
+  officer::body_add_fpar(
+    doc,
+    do.call(officer::fpar, c(runs, list(fp_p = officer::fp_par(
+      padding.top = 0, padding.bottom = 4, keep_with_next = TRUE
+    ))))
+  )
+}
+
+#' The note row of the options that carry a condition of their own
+#'
+#' For the card of a multiple choice, which lists its options as rows: one
+#' row labelled with `chrome$meta_filter`, in the look of the "Exclusive"
+#' row (muted, italic, spanning the language columns), holding one line per
+#' conditional option, `sprintf(filter_level_fmt, <option code>, plain)`,
+#' with the raw form under its line when `show_raw` and it differs.
+#' `NULL` when no option has a condition.
+#'
+#' @keywords internal
+#' @noRd
+lss_option_filter_row <- function(subquestions, langs, theme, show_raw = FALSE) {
+  cond <- Filter(function(s) lss_has_condition(s$relevance), subquestions)
+  if (length(cond) == 0L) return(NULL)
+  lines <- lapply(cond, function(s) {
+    ln <- lss_filter_lines(NA_character_, NULL, s$relevance, theme)[[1L]]
+    ln$label <- s$code
+    ln
+  })
+  note_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_question,
+    color = theme$color_muted, italic = TRUE
+  )
+  raw_props <- officer::fp_text(
+    font.family = theme$font_code, font.size = theme$size_question - 2L,
+    color = theme$color_muted, italic = TRUE
+  )
+  chunks <- lss_filter_chunks(lines, theme, plain_props = note_props,
+                              raw_props = raw_props, show_raw = show_raw)
+  list(
+    label = theme$chrome$meta_filter,
+    texts = stats::setNames(rep(list(""), length(langs)), langs),
+    size = theme$size_meta,
+    color = theme$color_muted,
+    italic = TRUE,
+    span_note = TRUE,
+    paragraph = do.call(flextable::as_paragraph, chunks)
+  )
+}

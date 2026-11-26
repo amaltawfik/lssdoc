@@ -415,6 +415,8 @@ lss_q_plan_body <- function(ctx, show_group_description = TRUE,
     if (gname$missing) runs <- c(runs, list(lss_q_missing_run(ctx)))
     paras[[length(paras) + 1L]] <- lss_q_para(runs, "heading",
                                               bookmark = bookmark, text = name)
+    gfilter <- lss_q_group_filter_para(ctx, g$relevance)
+    if (!is.null(gfilter)) paras[[length(paras) + 1L]] <- gfilter
     if (isTRUE(show_group_description)) {
       d <- lss_q_pick(ctx, g$descriptions,
                       sprintf("group \"%s\" (description)", base_name))
@@ -626,8 +628,36 @@ lss_q_subq_items <- function(ctx, q, scale = "0") {
   }, character(1))
   lapply(sqs[sid == scale], function(s) {
     x <- lss_q_pick(ctx, lapply(s$texts, function(t) t$question), q$code)
-    lss_q_item(s$code, x$text, x$missing)
+    it <- lss_q_item(s$code, x$text, x$missing)
+    # The subquestion's own condition, written with codes: printed only
+    # when the codes are.
+    if (ctx$show_codes) it$filter <- lss_q_filter(s$relevance, ctx$theme)
+    it
   })
+}
+
+#' The paragraph of a group's condition, under the group heading
+#'
+#' `NULL` when the codes are not shown or the group has no condition.
+#' Otherwise one run in the code style, `Group shown if <plain>`
+#' (`q_group_filter_fmt`), or `Group with a filter` (`q_group_filtered`)
+#' when the expression cannot be simplified, kept with what follows. A
+#' paragraph of its own layout, never the style of the group heading,
+#' which the running header reads through a STYLEREF field.
+#'
+#' @keywords internal
+#' @noRd
+lss_q_group_filter_para <- function(ctx, relevance) {
+  if (!ctx$show_codes || !lss_has_condition(relevance)) return(NULL)
+  raw <- trimws(lss_strip_outer_parens(trimws(as.character(relevance[1]))))
+  plain <- lss_humanize_relevance(raw, ctx$theme)
+  text <- if (lss_q_filter_unsimplified(plain)) {
+    ctx$chrome$q_group_filtered
+  } else {
+    sprintf(ctx$chrome$q_group_filter_fmt, plain)
+  }
+  lss_q_para(list(lss_q_run(ctx, text, ctx$props$code, chrome = TRUE)),
+             "hint", top = 3, keep = TRUE)
 }
 
 #' The "Other" option: its replacement text, else "Other", then
@@ -676,6 +706,10 @@ lss_q_item_runs <- function(ctx, it, w) {
       })
   }
   if (isTRUE(it$missing)) label <- c(label, list(lss_q_missing_run(ctx)))
+  if (!is.null(it$filter)) {
+    label <- c(label, list(lss_q_run(ctx, paste0(" \u00B7 ", it$filter),
+                                     P$code, chrome = TRUE)))
+  }
   if (w <= 0) return(label)
   c(if (nzchar(it$code)) list(lss_q_run(ctx, it$code, P$code)),
     list(officer::run_tab()), label)
@@ -836,8 +870,22 @@ lss_q_body <- function(ctx, q) {
   } else if (type %in% c(";", ":")) {
     cols <- lss_q_subq_items(ctx, q, "1")
     labels <- vapply(cols, function(it) it$label, character(1))
+    filtered <- vapply(cols, function(it) !is.null(it$filter), logical(1))
+    label_runs <- if (any(filtered)) {
+      # A column with a condition of its own reads `label (filter)`.
+      unlist(lapply(seq_along(cols), function(k) {
+        c(if (k > 1L) list(lss_q_run(ctx, ", ", P$hint)),
+          list(lss_q_run(ctx, labels[k], P$hint)),
+          if (filtered[k]) {
+            list(lss_q_run(ctx, paste0(" (", cols[[k]]$filter, ")"), P$code,
+                           chrome = TRUE))
+          })
+      }), recursive = FALSE)
+    } else {
+      list(lss_q_run(ctx, paste(labels, collapse = ", "), P$hint))
+    }
     after <- if (length(labels)) {
-      c(list(lss_q_run(ctx, paste(labels, collapse = ", "), P$hint)),
+      c(label_runs,
         if (any(vapply(cols, function(it) it$missing, logical(1)))) {
           list(lss_q_missing_run(ctx))
         })

@@ -269,3 +269,110 @@ lss_parens_balanced <- function(s) {
   depth == 0L
 }
 
+
+#' Does a relevance expression carry a condition?
+#'
+#' The one place that decides it, at every level (group, question,
+#' subquestion). `NULL`, `NA`, the empty string and `"1"` mean "always
+#' shown", once the expression is trimmed and stripped of its outer
+#' parentheses (LimeSurvey writes `((1))` as often as `1`).
+#'
+#' @param x A relevance expression (only its first element is read).
+#' @return `TRUE` or `FALSE`.
+#' @keywords internal
+#' @noRd
+lss_has_condition <- function(x) {
+  if (is.null(x) || length(x) == 0L || is.na(x[1])) return(FALSE)
+  s <- trimws(lss_strip_outer_parens(trimws(as.character(x[1]))))
+  nzchar(s) && !identical(s, "1")
+}
+
+#' The lines of a Filter cell, from the three levels of condition
+#'
+#' A question is asked when its group, itself and, for one subquestion,
+#' that subquestion are all relevant. When neither the group nor a
+#' subquestion has a condition, the cell prints the question's own filter
+#' on one unlabelled line, exactly as before the group and subquestion
+#' levels were read: the "All" token when it has none. Otherwise one
+#' labelled line per level that has a condition, in the order group,
+#' question, subquestion(s); `subq_relevance` may hold several
+#' expressions (the row and the column of a two-dimensional array).
+#'
+#' @param relevance The question's relevance.
+#' @param group_relevance The relevance of its group, or `NULL`.
+#' @param subq_relevance The relevance of the subquestion(s) the item
+#'   stands for, or `NULL`.
+#' @param theme Optional theme list; its chrome gives the labels and the
+#'   plain tokens. English when `NULL`.
+#' @return A list of lines, each a list with `label` (`NULL` for the
+#'   unlabelled line), `plain` (through `lss_humanize_relevance()`) and
+#'   `raw` (outer parentheses stripped).
+#' @keywords internal
+#' @noRd
+lss_filter_lines <- function(relevance, group_relevance = NULL,
+                             subq_relevance = NULL, theme = NULL) {
+  subq <- Filter(lss_has_condition, as.list(as.character(subq_relevance)))
+  if (!lss_has_condition(group_relevance) && length(subq) == 0L) {
+    raw <- if (is.null(relevance) || is.na(relevance) ||
+               !nzchar(relevance)) {
+      "1"
+    } else {
+      lss_strip_outer_parens(relevance)
+    }
+    return(list(list(label = NULL,
+                     plain = lss_humanize_relevance(raw, theme),
+                     raw = raw)))
+  }
+  chrome <- if (is.null(theme) || is.null(theme$chrome)) {
+    lss_chrome_strings("en")
+  } else {
+    theme$chrome
+  }
+  line <- function(label, x) {
+    raw <- trimws(lss_strip_outer_parens(trimws(as.character(x[1]))))
+    list(label = label, plain = lss_humanize_relevance(raw, theme), raw = raw)
+  }
+  out <- list()
+  if (lss_has_condition(group_relevance)) {
+    out[[length(out) + 1L]] <- line(chrome$item_group, group_relevance)
+  }
+  if (lss_has_condition(relevance)) {
+    out[[length(out) + 1L]] <- line(chrome$item_question, relevance)
+  }
+  for (s in subq) {
+    out[[length(out) + 1L]] <- line(chrome$item_subquestion, s)
+  }
+  out
+}
+
+#' The flextable chunks of filter lines, one line under the other
+#'
+#' A labelled line is `sprintf(filter_level_fmt, label, plain)`, the label
+#' and its separator in `label_props`, the expression in `plain_props`.
+#' With `show_raw`, the raw expression of a line follows that line, in
+#' `raw_props`, when it differs from the plain form.
+#'
+#' @keywords internal
+#' @noRd
+lss_filter_chunks <- function(lines, theme, plain_props, raw_props,
+                              label_props = plain_props, show_raw = FALSE) {
+  fmt <- theme$chrome$filter_level_fmt
+  chunks <- list()
+  for (k in seq_along(lines)) {
+    ln <- lines[[k]]
+    if (k > 1L) {
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk("\n", props = plain_props)
+    }
+    if (!is.null(ln$label)) {
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
+        sprintf(fmt, ln$label, ""), props = label_props
+      )
+    }
+    chunks[[length(chunks) + 1L]] <- flextable::as_chunk(ln$plain, props = plain_props)
+    if (isTRUE(show_raw) && !identical(ln$plain, ln$raw)) {
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk("\n", props = plain_props)
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk(ln$raw, props = raw_props)
+    }
+  }
+  chunks
+}

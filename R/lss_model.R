@@ -14,10 +14,14 @@
 #'
 #' @return An object of class `lss_model`: a list with `file`, `languages`,
 #'   `base_language`, and `groups`. Each group has `gid`, `order`, localized
-#'   `names`/`descriptions` (named by language), and `questions`. Each
+#'   `names`/`descriptions` (named by language), `questions`, and
+#'   `relevance` (the group's condition, `grelevance` in the `.lss`;
+#'   `NA_character_` when the `groups` table has no such column). Each
 #'   question has `qid`, `code`, `type`, `type_label`, `mandatory`,
 #'   `relevance`, localized `texts` (each language a list of `question` and
-#'   `help`), `answers`, `subquestions`, `scales`, and `attributes`.
+#'   `help`), `answers`, `subquestions` (each with its own `relevance`),
+#'   `scales`, `attributes`, and `group_relevance` (the `relevance` of its
+#'   group, so that a renderer finds the group's condition on the question).
 #'
 #' @keywords internal
 #' @noRd
@@ -53,6 +57,11 @@ lss_model <- function(lss, languages = NULL) {
       c("group_name", "description"), index = g_idx
     )
     gquestions <- questions[questions$gid == gid, , drop = FALSE]
+    grel <- if ("grelevance" %in% names(groups)) {
+      as.character(groups$grelevance[i])
+    } else {
+      NA_character_
+    }
     list(
       gid = gid,
       order = groups$group_order[i],
@@ -60,9 +69,14 @@ lss_model <- function(lss, languages = NULL) {
       descriptions = lapply(gtext, function(x) x$description),
       questions = lapply(
         seq_len(nrow(gquestions)),
-        function(j) lss_question_model(lss, gquestions[j, , drop = FALSE], langs,
-                                       q_idx = q_idx, a_idx = a_idx)
-      )
+        function(j) {
+          qm <- lss_question_model(lss, gquestions[j, , drop = FALSE], langs,
+                                   q_idx = q_idx, a_idx = a_idx)
+          qm$group_relevance <- grel
+          qm
+        }
+      ),
+      relevance = grel
     )
   })
 

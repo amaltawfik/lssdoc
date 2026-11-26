@@ -51,6 +51,9 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     } else if (identical(r$kind, "group_description")) {
       # Field stays blank: the row reads as the group banner's intro
       # text. The localized description is composed below.
+    } else if (identical(r$kind, "group_filter")) {
+      # Field stays blank: the group's condition is composed below,
+      # across the language columns.
     } else if (identical(r$kind, "scale_header")) {
       # Dual-scale separator: announce "Value (scale N)" on the
       # Value column. Lang cells stay empty.
@@ -168,6 +171,12 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     font.family = theme$font_body, font.size = body_size,
     color = theme$color_primary, bold = TRUE
   )
+  # The label of a level of condition (Group, Question, Subquestion) in a
+  # Filter cell, muted so the expression stays the anchor.
+  filter_label_props <- officer::fp_text(
+    font.family = theme$font_body, font.size = theme$size_meta,
+    color = theme$color_muted
+  )
 
   for (i in seq_along(rows)) {
     r <- rows[[i]]
@@ -189,6 +198,33 @@ lss_render_table_template <- function(doc, rows, langs, theme,
           ft, i = i, j = paste0("Q_", lg),
           value = lss_compose(r$text_by_lang[[lg]], theme,
                               size = body_size)
+        )
+      }
+      next
+    }
+
+    if (identical(kind, "group_filter")) {
+      # The group's condition, `Filter: <plain>`, upright, the label
+      # muted, at the body size; the raw form follows when asked. The
+      # same chrome sentence in every language column; polish merges them.
+      ln <- lss_filter_lines(NA_character_, r$relevance, NULL, theme)[[1L]]
+      ln$label <- chrome$meta_filter
+      gf_props <- officer::fp_text(
+        font.family = theme$font_body, font.size = body_size,
+        color = theme$color_text
+      )
+      gf_label_props <- officer::fp_text(
+        font.family = theme$font_body, font.size = body_size,
+        color = theme$color_muted
+      )
+      chunks <- lss_filter_chunks(
+        list(ln), theme, plain_props = gf_props, raw_props = filter_raw_props,
+        label_props = gf_label_props, show_raw = isTRUE(state$show_raw_filter)
+      )
+      for (lg in langs) {
+        ft <- flextable::compose(
+          ft, i = i, j = paste0("Q_", lg),
+          value = do.call(flextable::as_paragraph, chunks)
         )
       }
       next
@@ -233,6 +269,22 @@ lss_render_table_template <- function(doc, rows, langs, theme,
           )
         }
       }
+      # An option of a multiple choice with a condition of its own prints
+      # that one labelled line in its Filter cell; without one the cell
+      # stays empty (the parent row carries the group and question lines).
+      if (identical(kind, "mc_option") && lss_has_condition(r$relevance)) {
+        ft <- flextable::compose(
+          ft, i = i, j = "Filter",
+          value = lss_table_filter_paragraph(
+            NA_character_, theme,
+            plain_props = filter_plain_props,
+            raw_props = filter_raw_props,
+            show_raw = isTRUE(state$show_raw_filter),
+            subq_relevance = r$relevance,
+            label_props = filter_label_props
+          )
+        )
+      }
       next
     }
 
@@ -260,7 +312,10 @@ lss_render_table_template <- function(doc, rows, langs, theme,
         r$relevance, theme,
         plain_props = filter_plain_props,
         raw_props = filter_raw_props,
-        show_raw = isTRUE(state$show_raw_filter)
+        show_raw = isTRUE(state$show_raw_filter),
+        group_relevance = r$group_relevance,
+        subq_relevance = r$subq_relevance,
+        label_props = filter_label_props
       )
     )
     # For non-enumerated types (M/P/N/K/T/S/U/D/...), the implicit
@@ -360,8 +415,10 @@ lss_table_text_row <- function(lss, langs, field, kind) {
 #' renderer never has to look at the question structure again:
 #' `no`, `variable` (the LimeSurvey data column, `parent_subq` for
 #' compound subqs), `type_label`, `mandatory_label`, `relevance`,
-#' `hidden`, plus pre-extracted texts per language (`parent_text`,
-#' `subq_text`, `help`) and the question/subquestion model objects so
+#' `group_relevance`, `subq_relevance` (the condition of the
+#' subquestion(s) a row stands for), `hidden`, plus pre-extracted texts
+#' per language (`parent_text`, `subq_text`, `help`) and the
+#' question/subquestion model objects so
 #' the cell composer can pull the answer scale or the implicit-coding
 #' descriptor at render time.
 #'
@@ -407,6 +464,14 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
       name_by_lang = group_names,
       group_index = state$group_index
     )
+    # The group's condition, when it has one: a row right under the
+    # banner, before the description, drawn like the description row.
+    if (lss_has_condition(g$relevance)) {
+      rows[[length(rows) + 1L]] <- list(
+        kind = "group_filter",
+        relevance = g$relevance
+      )
+    }
     # Group description (when the author wrote one): a row right under
     # the banner carrying the localized intro text, mirroring what the
     # cards template renders below the group title. Skipped when every
@@ -440,6 +505,10 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         if (identical(kind, "other")) "N" else q$mandatory, theme
       ),
       relevance = q$relevance,
+      group_relevance = q$group_relevance,
+      # A row that stands for one subquestion carries its condition too
+      # (a cell of a two-dimensional array adds its column's below).
+      subq_relevance = if (!is.null(sq)) sq$relevance else NULL,
       parent_text = stats::setNames(
         lapply(langs, function(lg) q$texts[[lg]]$question), langs
       ),
@@ -570,6 +639,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         no = option_no,
         variable = item_code,
         value_token = value_token,
+        relevance = sq$relevance,
         labels = stats::setNames(
           lapply(langs, function(lg) sq$texts[[lg]]$question), langs
         )
@@ -677,6 +747,7 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
             )
             qr <- emit_question_row("subq", sub_no, item_code,
                                     q = q, sq = rsq)
+            qr$subq_relevance <- c(rsq$relevance, csq$relevance)
             qr$scale_header <- stats::setNames(
               lapply(langs, function(lg) csq$texts[[lg]]$question), langs
             )
@@ -770,28 +841,22 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
 
 #' Build the flextable paragraph for the Filter cell of a row (the
 #' table template). Mirrors the meta-table convention from the
-#' cards path: human-readable form on top, raw LimeSurvey expression
-#' beneath in a smaller italic mono.
+#' cards path: the lines of `lss_filter_lines()` one under the other
+#' (the group, question and subquestion levels), each human-readable
+#' form with its raw LimeSurvey expression beneath in a smaller italic
+#' mono when `show_raw`.
 #' @keywords internal
 #' @noRd
 lss_table_filter_paragraph <- function(relevance, theme,
                                        plain_props, raw_props,
-                                       show_raw = TRUE) {
-  filter_raw <- if (is.null(relevance) || is.na(relevance) ||
-                    !nzchar(relevance)) {
-    "1"
-  } else {
-    lss_strip_outer_parens(relevance)
-  }
-  filter_plain <- lss_humanize_relevance(filter_raw, theme)
-  chunks <- list(flextable::as_chunk(filter_plain, props = plain_props))
-  if (isTRUE(show_raw) && !identical(filter_plain, filter_raw)) {
-    chunks <- c(
-      chunks,
-      list(flextable::as_chunk("\n", props = plain_props)),
-      list(flextable::as_chunk(filter_raw, props = raw_props))
-    )
-  }
+                                       show_raw = TRUE,
+                                       group_relevance = NULL,
+                                       subq_relevance = NULL,
+                                       label_props = plain_props) {
+  lines <- lss_filter_lines(relevance, group_relevance, subq_relevance, theme)
+  chunks <- lss_filter_chunks(lines, theme, plain_props = plain_props,
+                              raw_props = raw_props, label_props = label_props,
+                              show_raw = show_raw)
   do.call(flextable::as_paragraph, chunks)
 }
 
@@ -1206,6 +1271,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   kinds <- vapply(rows, function(r) as.character(r$kind), character(1L))
   group_idx        <- which(kinds == "group")
   group_desc_idx   <- which(kinds == "group_description")
+  group_filter_idx <- which(kinds == "group_filter")
   question_idx     <- which(kinds %in% c("leaf", "subq", "other"))
   scale_header_idx <- which(kinds == "scale_header")
   welcome_idx      <- which(kinds %in% c("welcome", "endtext", "description"))
@@ -1218,7 +1284,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # spanning cell -- the note shows once across the content width instead
   # of being repeated per language.
   if (n_lang > 1L) {
-    for (ei in c(exclusive_idx, order_note_idx)) {
+    for (ei in c(exclusive_idx, order_note_idx, group_filter_idx)) {
       ft <- flextable::merge_at(ft, i = ei, j = lang_j, part = "body")
     }
   }
@@ -1259,7 +1325,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # Group description rows: same band tint as the group banner above so
   # the two read as a single section block; lighter padding since the
   # intro text follows the title directly.
-  for (gd in group_desc_idx) {
+  for (gd in c(group_desc_idx, group_filter_idx)) {
     ft <- flextable::bg(ft, i = gd, bg = theme$color_band, part = "body")
     ft <- flextable::padding(ft, i = gd, padding.top = 4, padding.bottom = 6,
                              padding.left = 4, padding.right = 4,
