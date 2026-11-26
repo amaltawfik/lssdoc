@@ -265,3 +265,83 @@ test_that("the .pdf route renders a temporary .docx and converts it", {
   expect_match(seen[["docx"]], "[.]docx$")
   expect_identical(seen[["pdf"]], out)
 })
+
+test_that("the formula of a computed question: a row of the card and of the table", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  expect_true("equation" %in% eval(formals(render_documentation)$show_attrs))
+  expect_true("equation" %in% eval(formals(.render_documentation_docx)$show_attrs))
+  lss <- demo_lss()
+  lss$questions <- lss$questions[lss$questions$title == "imc", , drop = FALSE]
+  formula <- "round((weight / ((height/100)*(height/100))), 1)"
+  w <- c(w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
+  render_xml <- function(lss, ...) {
+    out <- tempfile(fileext = ".docx")
+    dir <- tempfile()
+    on.exit(unlink(c(out, dir), recursive = TRUE), add = TRUE)
+    suppressMessages(suppressWarnings(
+      render_documentation(lss, out, languages = c("en", "fr"),
+                           show_audit = FALSE, ...)
+    ))
+    utils::unzip(out, exdir = dir)
+    xml2::read_xml(file.path(dir, "word", "document.xml"))
+  }
+  # The rows of the tables: each its w:tr and the texts of its cells.
+  rows_of <- function(doc) {
+    lapply(xml2::xml_find_all(doc, "//w:tbl/w:tr", w), function(tr) {
+      tcs <- xml2::xml_find_all(tr, "w:tc", w)
+      list(tr = tr, tcs = tcs, cells = vapply(tcs, xml2::xml_text, ""))
+    })
+  }
+  with_formula <- function(rows) {
+    Filter(function(r) formula %in% r$cells, rows)
+  }
+  span <- function(tc) {
+    v <- xml2::xml_attr(xml2::xml_find_first(tc, "w:tcPr/w:gridSpan", w),
+                        "val")
+    if (is.na(v)) 1L else as.integer(v)
+  }
+
+  # Cards, chrome in French: the row carries the label of the chrome, and
+  # the formula without its braces.
+  doc <- render_xml(lss, chrome_lang = "fr")
+  hit <- with_formula(rows_of(doc))
+  expect_length(hit, 1L)
+  expect_true("\u00C9quation" %in% hit[[1]]$cells)
+  expect_false(grepl("{round(", xml2::xml_text(doc), fixed = TRUE))
+
+  # Table: one row right under the Question row of imc, the label in the
+  # Field column, the formula once across the two language columns in the
+  # code font, every other cell empty.
+  rows <- rows_of(render_xml(lss, template = "table", chrome_lang = "en"))
+  k <- which(vapply(rows, function(r) formula %in% r$cells, logical(1)))
+  expect_length(k, 1L)
+  expect_true("imc" %in% rows[[k - 1L]]$cells)
+  cells <- rows[[k]]$cells
+  expect_identical(cells[[1]], "Equation")
+  j <- which(cells == formula)
+  expect_length(j, 1L)
+  expect_identical(span(rows[[k]]$tcs[[j]]), 2L)
+  expect_identical(length(cells), 8L)
+  expect_true(all(cells[-c(1L, j)] == ""))
+  font <- xml2::xml_attr(
+    xml2::xml_find_first(rows[[k]]$tcs[[j]], ".//w:r/w:rPr/w:rFonts", w),
+    "ascii"
+  )
+  expect_identical(font, "Consolas")
+
+  # No row with show_attrs = character(0), in the cards or the table.
+  for (tpl in c("cards", "table")) {
+    none <- rows_of(render_xml(lss, template = tpl, chrome_lang = "en",
+                               show_attrs = character(0)))
+    expect_length(with_formula(none), 0L)
+  }
+  # No row for a computed question without the attribute.
+  bare <- lss
+  qa <- bare$question_attributes
+  bare$question_attributes <- qa[qa$attribute != "equation", , drop = FALSE]
+  rows <- rows_of(render_xml(bare, template = "table", chrome_lang = "en"))
+  expect_false(any(vapply(rows, function(r) "Equation" %in% r$cells,
+                          logical(1))))
+})

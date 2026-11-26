@@ -366,3 +366,51 @@ lss_strip_group_number_prefix <- function(name) {
   s
 }
 
+#' The formula of a computed question, as plain text
+#'
+#' The question attribute `equation` when it is not empty, else the
+#' question text in `language` (HTML stripped as the questionnaire does),
+#' trimmed. When the whole string is one `{...}` expression its outer
+#' braces are removed; nothing else is rewritten. Shared by
+#' render_questionnaire() and render_documentation().
+#'
+#' @param q A model question.
+#' @param language The language of the text to fall back on; `NULL` reads
+#'   the attribute only.
+#' @return A string, `""` when there is no formula.
+#' @keywords internal
+#' @noRd
+lss_equation_formula <- function(q, language = NULL) {
+  attrs <- q$attributes
+  s <- ""
+  if (is.data.frame(attrs) && all(c("attribute", "value") %in% names(attrs))) {
+    v <- attrs$value[attrs$attribute %in% "equation"]
+    v <- v[!is.na(v) & nzchar(trimws(v))]
+    if (length(v)) s <- trimws(v[1])
+  }
+  if (!nzchar(s) && !is.null(language)) {
+    s <- lss_q_clean(q$texts[[language]]$question)
+  }
+  lss_strip_outer_braces(s)
+}
+
+#' Remove the braces around a string that is one `{...}` expression
+#'
+#' `"{a + b}"` gives `"a + b"`; `"{a} + {b}"` and `"Total: {a} points"`
+#' are returned as they are.
+#'
+#' @keywords internal
+#' @noRd
+lss_strip_outer_braces <- function(s) {
+  n <- nchar(s)
+  if (n < 2L || !startsWith(s, "{") || !endsWith(s, "}")) {
+    return(s)
+  }
+  ch <- strsplit(s, "", fixed = TRUE)[[1]]
+  depth <- cumsum((ch == "{") - (ch == "}"))
+  if (any(depth[-n] <= 0L) || depth[n] != 0L) {
+    return(s)
+  }
+  trimws(substr(s, 2L, n - 1L))
+}
+

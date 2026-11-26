@@ -29,7 +29,8 @@
 #'   the name of its variable, the code of each subquestion and of each
 #'   answer option, and the conditions under which a group, a question or
 #'   a subquestion is shown, which are written with those codes
-#'   (`if Q11 = 2`). `FALSE` removes them all.
+#'   (`if Q11 = 2`). The formula of a computed question comes with them.
+#'   `FALSE` removes them all.
 #' @param show_hidden Logical. Whether to print the questions that
 #'   LimeSurvey hides from respondents (attribute `hidden`). Each takes
 #'   one line, without a number. Defaults to `show_codes`, so that
@@ -108,7 +109,9 @@
 #' label of a subquestion and under the title of a group ("Group shown if
 #' Q11 = 2"). A condition that cannot be put in that plain form shows as
 #' "filtered", or "Group with a filter" for a group:
-#' [render_documentation()] prints its expression.
+#' [render_documentation()] prints its expression. A computed question
+#' gives its formula after its code ("score = Q1 + Q2"), as LimeSurvey
+#' holds it.
 #'
 #' What the respondent only reads (the welcome text, the privacy notice,
 #' the text displays, the group descriptions) is set in gray and

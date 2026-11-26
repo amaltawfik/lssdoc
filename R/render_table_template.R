@@ -79,6 +79,11 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       # language columns (composed below), under a "Value" / "Options"
       # Field label carried on the row.
       df$Field[i] <- r$field_label
+    } else if (identical(r$kind, "equation")) {
+      # The formula of a computed question, under its Question row: the
+      # label in the Field column, the formula composed below across the
+      # language columns; the meta, Filter and Value cells stay empty.
+      df$Field[i] <- chrome$attr_equation
     } else {
       # Question row (leaf / subq / other).
       df$Field[i]     <- chrome$item_question
@@ -152,6 +157,11 @@ lss_render_table_template <- function(doc, rows, langs, theme,
 
   value_label_props <- officer::fp_text(
     font.family = theme$font_body, font.size = body_size,
+    color = theme$color_text
+  )
+  # The formula of a computed question: the code font, upright.
+  equation_props <- officer::fp_text(
+    font.family = theme$font_code, font.size = body_size,
     color = theme$color_text
   )
   empty_marker_props <- officer::fp_text(
@@ -284,6 +294,20 @@ lss_render_table_template <- function(doc, rows, langs, theme,
             label_props = filter_label_props,
             lines = filter_lines
           )
+        )
+      }
+      next
+    }
+
+    if (identical(kind, "equation")) {
+      # The formula once, in the code font, at the body size; polish
+      # merges the language columns.
+      for (lg in langs) {
+        ft <- flextable::compose(
+          ft, i = i, j = paste0("Q_", lg),
+          value = flextable::as_paragraph(flextable::as_chunk(
+            r$text, props = equation_props
+          ))
         )
       }
       next
@@ -590,6 +614,18 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out
   }
 
+  # The formula of a computed question, or NULL: only for a question of
+  # type "*" whose attribute `equation` is not empty, and when "equation"
+  # is among the attributes shown.
+  equation_row <- function(q) {
+    if (!"equation" %in% state$show_attrs || !identical(q$type, "*")) {
+      return(NULL)
+    }
+    formula <- lss_equation_formula(q)
+    if (!nzchar(formula)) return(NULL)
+    list(kind = "equation", text = formula)
+  }
+
   # An answer / option order annotation row, or NULL when the order is
   # the (silent) default. `attr` is answer_order (leaf single choice) or
   # subquestion_order (multiple choice); `field_label` is the row label
@@ -809,6 +845,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         rows[[length(rows) + 1L]] <- emit_question_row(
           "leaf", q_no, q$code, q = q
         )
+        eqr <- equation_row(q)
+        if (!is.null(eqr)) rows[[length(rows) + 1L]] <- eqr
         rows <- c(rows, emit_value_rows_for(q))
         onr <- order_note_row(q, "answer_order", chrome$item_order)
         if (!is.null(onr)) rows[[length(rows) + 1L]] <- onr
@@ -1328,6 +1366,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   welcome_idx      <- which(kinds %in% c("welcome", "endtext", "description"))
   exclusive_idx    <- which(kinds == "mc_exclusive")
   order_note_idx   <- which(kinds == "order_note")
+  equation_idx     <- which(kinds == "equation")
 
   # Annotation rows (exclusive-option note, answer / option order note)
   # carry the same chrome sentence in every language column (a structural
@@ -1335,7 +1374,8 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # spanning cell -- the note shows once across the content width instead
   # of being repeated per language.
   if (n_lang > 1L) {
-    for (ei in c(exclusive_idx, order_note_idx, group_filter_idx)) {
+    for (ei in c(exclusive_idx, order_note_idx, group_filter_idx,
+                 equation_idx)) {
       ft <- flextable::merge_at(ft, i = ei, j = lang_j, part = "body")
     }
   }

@@ -13,7 +13,7 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "meta_no", "meta_variable", "meta_type", "meta_mandatory", "meta_filter",
     "item_language", "item_question", "item_subquestion",
     "item_help", "item_value", "item_options", "item_value_scale_fmt",
-    "item_exclusive", "item_hidden",
+    "item_exclusive", "item_hidden", "attr_equation",
     "mandatory_yes", "mandatory_no", "mandatory_soft",
     "filter_all", "filter_and", "filter_or", "filter_answered",
     "filter_empty", "filter_in", "filter_matches",
@@ -220,4 +220,12 @@ test_that("the cover subtitle names the document in every chrome language", {
     "Documentaci\u00F3n del cuestionario",
     "Documentazione del questionario"
   ))
+})
+
+test_that("the label of the formula of a computed question in five languages", {
+  labels <- vapply(c("en", "fr", "de", "es", "it"), function(lg) {
+    lss_chrome_strings(lg)$attr_equation
+  }, character(1))
+  expect_identical(unname(labels), c("Equation", "\u00C9quation", "Gleichung",
+                                     "Ecuaci\u00F3n", "Equazione"))
 })

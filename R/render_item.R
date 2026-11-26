@@ -1542,6 +1542,10 @@ lss_attr_rows <- function(q, langs, theme, show_attrs) {
       ""
     }, character(1))
     if (!lss_any_present(as.list(per_lang))) next
+    # The formula of a computed question, its outer braces removed.
+    if (identical(attr_name, "equation")) {
+      per_lang[] <- lss_equation_formula(q)
+    }
 
     # Skip technical attributes when they hold their default/inactive
     # value (so a reviewer never sees a noisy row like
@@ -1550,6 +1554,10 @@ lss_attr_rows <- function(q, langs, theme, show_attrs) {
     # into a sentence a methodologist can act on.
     fmt <- lss_format_attr(attr_name, per_lang, langs)
     if (is.null(fmt)) next
+    # The label in the chrome when it has one (attr_equation), else the
+    # attribute name in title case.
+    label <- theme$chrome[[paste0("attr_", attr_name)]]
+    if (!is.null(label) && nzchar(label)) fmt$label <- label
 
     rows[[length(rows) + 1L]] <- list(
       label = fmt$label,

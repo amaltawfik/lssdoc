@@ -49,8 +49,9 @@
 #'   help texts under the question text.
 #' @param show_attrs Character vector of question attributes to surface
 #'   under the question text when present. Default keeps the attributes
-#'   that change how respondents see the item: `"prefix"`, `"suffix"`,
-#'   `"other_replace_text"`, `"validation"`. Add `"exclude_all_others"`
+#'   that change how respondents see the item (`"prefix"`, `"suffix"`,
+#'   `"other_replace_text"`, `"validation"`) and `"equation"`, the
+#'   formula of a computed question. Add `"exclude_all_others"`
 #'   or `"exclude_all_others_auto"` to also surface the row-level
 #'   exclusivity flags (debug-style). Pass `character(0)` to hide all.
 #' @param show_technical_attrs Logical. If `TRUE`, include technical
@@ -373,7 +374,8 @@ render_documentation <- function(
   layout = c("auto", "side-by-side", "stacked"),
   show_audit = TRUE,
   show_help = TRUE,
-  show_attrs = c("prefix", "suffix", "other_replace_text", "validation"),
+  show_attrs = c("prefix", "suffix", "other_replace_text", "validation",
+                 "equation"),
   show_technical_attrs = FALSE,
   page_format = c("auto", "A4-portrait", "A4-landscape", "A3"),
   show_toc = TRUE,

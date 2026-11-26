@@ -660,6 +660,63 @@ test_that("a cell of an array of numbers says what it takes, by LimeSurvey's rul
                    "number from 1 to 10")
 })
 
+test_that("the formula of a computed question: the attribute, else the text", {
+  eq <- function(value) {
+    data.frame(qid = "0", attribute = c("hidden", "equation"),
+               value = c("1", value), language = "", stringsAsFactors = FALSE)
+  }
+  tx <- list(en = list(question = "<p>{sum(a.NAOK, b.NAOK)}</p>"),
+             fr = list(question = ""))
+  # The attribute, its outer braces removed, before the text.
+  q <- list(attributes = eq(" {round(w / h, 1)} "), texts = tx)
+  expect_identical(lss_equation_formula(q, "en"), "round(w / h, 1)")
+  expect_identical(lss_equation_formula(q), "round(w / h, 1)")
+  # An empty attribute: the text in the language asked for, HTML stripped.
+  q$attributes <- eq("  ")
+  expect_identical(lss_equation_formula(q, "en"), "sum(a.NAOK, b.NAOK)")
+  expect_identical(lss_equation_formula(q, "fr"), "")
+  expect_identical(lss_equation_formula(q, "de"), "")
+  expect_identical(lss_equation_formula(q), "")
+  expect_identical(lss_equation_formula(list(attributes = NULL)), "")
+  # The braces go only when the whole string is one expression.
+  expect_identical(lss_strip_outer_braces("{a + b}"), "a + b")
+  expect_identical(lss_strip_outer_braces("{ {a} }"), "{a}")
+  expect_identical(lss_strip_outer_braces("Total: {sum(a,b)} points"),
+                   "Total: {sum(a,b)} points")
+  expect_identical(lss_strip_outer_braces("{a} + {b}"), "{a} + {b}")
+  expect_identical(lss_strip_outer_braces("{a}}"), "{a}}")
+  expect_identical(lss_strip_outer_braces("{a"), "{a")
+  expect_identical(lss_strip_outer_braces(""), "")
+})
+
+test_that("a computed question gives its formula after its code", {
+  skip_if_not_installed("officer")
+  lss <- q_fixture_lss()
+  attrs <- data.frame(qid = "0", attribute = "equation",
+                      value = "{weight / height}", language = "",
+                      stringsAsFactors = FALSE)
+  q <- function(...) {
+    utils::modifyList(list(qid = "0", code = "QX", type = "*", other = "N",
+                           mandatory = "N", relevance = "1",
+                           texts = list(fr = list(question = "", help = NA)),
+                           answers = NULL, subquestions = NULL,
+                           attributes = attrs), list(...))
+  }
+  num <- data.frame(status = "equation", hidden = FALSE, no = NA_integer_)
+  shown <- "calcul\taffich\u00E9 aux r\u00E9pondant\u00B7es"
+  ctx <- lss_q_context(lss, "fr", chrome_lang = "fr", measure = FALSE)
+  expect_identical(plan_text(lss_q_question(ctx, q(), num)),
+                   paste0(shown, "  QX = weight / height"))
+  # Without a formula, or without the codes: as before.
+  expect_identical(
+    plan_text(lss_q_question(ctx, q(attributes = NULL), num)),
+    paste0(shown, "  QX")
+  )
+  bare <- lss_q_context(lss, "fr", chrome_lang = "fr", show_codes = FALSE,
+                        measure = FALSE)
+  expect_identical(plan_text(lss_q_question(bare, q(), num)), shown)
+})
+
 test_that("a language without chrome takes the built-in labels in English", {
   skip_if_not_installed("officer")
   lss <- q_fixture_lss()
@@ -830,8 +887,9 @@ test_that("the fixture renders in French with the defaults", {
   expect_true(any(text == "texte\tListes, cases a cocher, classements et tableaux."))
 
   # Hidden and computed lines, without numbers.
-  expect_true(any(grepl("^calcul\taffich\u00E9 aux r\u00E9pondant\u00B7es  Q13Text$", text)))
-  expect_true(any(grepl("^calcul\tmasqu\u00E9 aux r\u00E9pondant\u00B7es  Q17Date$", text)))
+  # Their question text is their formula: they have no attribute equation.
+  expect_true(any(grepl("^calcul\taffich\u00E9 aux r\u00E9pondant\u00B7es  Q13Text = .+$", text)))
+  expect_true(any(grepl("^calcul\tmasqu\u00E9 aux r\u00E9pondant\u00B7es  Q17Date = .+$", text)))
   expect_true(any(grepl("^masqu\u00E9e\t.*  Q14Shorttext$", text)))
 
   # Lists: 12 and 13 in full, 14 abridged with its total.
@@ -982,6 +1040,11 @@ test_that("yes/no and gender list their options, the N-point scales their range"
   )
   expect_identical(after(text, "mediaquality", 6L)[[6]],
                    "For each row and each column: short text")
+  # The hidden equation imc, with its formula.
+  expect_true(any(grepl(
+    "  imc = round((weight / ((height/100)*(height/100))), 1)",
+    text, fixed = TRUE
+  )))
 
   # Without codes the labels remain; in German they are German even when
   # the chrome is French: they belong to the questionnaire.

@@ -581,7 +581,14 @@ lss_q_question <- function(ctx, q, num) {
     subs <- c(subs, lss_q_body(ctx, q))
   }
   if (ctx$show_codes) {
-    head <- c(head, list(lss_q_run(ctx, paste0("  ", q$code), P$var)))
+    # A computed question gives its formula after its code.
+    formula <- if (identical(status, "equation")) {
+      lss_equation_formula(q, ctx$language)
+    } else {
+      ""
+    }
+    code <- if (nzchar(formula)) paste0(q$code, " = ", formula) else q$code
+    head <- c(head, list(lss_q_run(ctx, paste0("  ", code), P$var)))
     filter <- lss_q_filter(q$relevance, ctx$theme)
     if (!is.null(filter)) {
       head <- c(head, list(lss_q_run(ctx, paste0(" \u00B7 ", filter), P$code,

@@ -53,7 +53,8 @@ LimeSurvey in small gray type: the code of each question, which is
 the name of its variable, the code of each subquestion and of each
 answer option, and the conditions under which a group, a question or
 a subquestion is shown, which are written with those codes
-(\verb{if Q11 = 2}). \code{FALSE} removes them all.}
+(\verb{if Q11 = 2}). The formula of a computed question comes with them.
+\code{FALSE} removes them all.}
 
 \item{show_hidden}{Logical. Whether to print the questions that
 LimeSurvey hides from respondents (attribute \code{hidden}). Each takes
@@ -165,7 +166,9 @@ same gray type: after the code of a question ("if Q11 = 2"), after the
 label of a subquestion and under the title of a group ("Group shown if
 Q11 = 2"). A condition that cannot be put in that plain form shows as
 "filtered", or "Group with a filter" for a group:
-\code{\link[=render_documentation]{render_documentation()}} prints its expression.
+\code{\link[=render_documentation]{render_documentation()}} prints its expression. A computed question
+gives its formula after its code ("score = Q1 + Q2"), as LimeSurvey
+holds it.
 
 What the respondent only reads (the welcome text, the privacy notice,
 the text displays, the group descriptions) is set in gray and

@@ -50,6 +50,10 @@
   reads `workstatus = 1`, where it kept its quotes. The operators `and`
   and `or` are read like `&&` and `||`.
 
+* `render_documentation()` now prints the formula of a computed question
+  by default: `"equation"` joins the default of `show_attrs`.
+  `render_questionnaire()` prints it after the code of the question.
+
 * The table of contents of `render_documentation()` now gives the numbers
   of the questions of each group (`questions 1 to 10`). In the table layout
   its group entries lead to the group rows, where they led nowhere. With
