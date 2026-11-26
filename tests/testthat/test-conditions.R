@@ -408,6 +408,85 @@ test_that("two languages: a condition prints once, across the language columns",
   expect_true(all(cells$text[cells$text != g_text] == ""))
 })
 
+# ---- Width of the Filter column of the table -------------------------------
+
+test_that("lss_filter_label_width() needs the widest part of a label", {
+  # The estimate: 0.56 em per character, + 6 pt of padding + 1 pt.
+  w <- function(x, size = 7) {
+    lss_filter_label_width(x, "Calibri", size, 6, measure = FALSE)
+  }
+  expect_identical(w(character(0)), 0)
+  expect_identical(w(c(NA, "")), 0)
+  # 12 x 0.56 x 7 = 47.04, + 7 = 54.04 pt = 0.7506 in.
+  expect_equal(w("Subquestion:"), 0.76)
+  # The label breaks after its hyphen: "question :" (10 characters),
+  # 39.2 + 7 = 46.2 pt = 0.6417 in.
+  expect_equal(w("Sous-question :"), 0.65)
+  # As the French chrome writes it, with a no-break space.
+  expect_equal(w("Sous-question\u00A0:"), 0.65)
+  expect_equal(w(c("Group:", "Subquestion:", NA)), 0.76)
+  measured <- lss_filter_label_width("Subquestion:", "Calibri", 8, 6)
+  expect_true(is.finite(measured) && measured > 0)
+})
+
+test_that("lss_table_filter_row_lines() is the rule of the Filter cell", {
+  skip_if_not_installed("flextable")
+  th <- lss_render_theme()
+  th$chrome <- lss_chrome_strings("en")
+  g <- "((age.NAOK >= 18))"
+  q <- "((x.NAOK == 1))"
+  expect_null(lss_table_filter_row_lines(list(kind = "group"), th))
+  expect_null(lss_table_filter_row_lines(
+    list(kind = "mc_option", relevance = "1"), th
+  ))
+  opt <- lss_table_filter_row_lines(
+    list(kind = "mc_option", relevance = "((gender.NAOK == \"F\"))"), th
+  )
+  expect_identical(vapply(opt, function(l) l$label, ""), "Subquestion")
+  row <- list(kind = "leaf", relevance = q, group_relevance = g,
+              subq_relevance = NULL)
+  lines <- lss_table_filter_row_lines(row, th)
+  expect_identical(vapply(lines, function(l) l$label, ""),
+                   c("Group", "Question"))
+  # The paragraph built from the relevance arguments, as before, and the
+  # one built from the lines of the row are the same.
+  pp <- officer::fp_text(font.size = 8)
+  rp <- officer::fp_text(font.size = 7, italic = TRUE)
+  expect_identical(
+    lss_table_filter_paragraph(q, th, pp, rp, group_relevance = g),
+    lss_table_filter_paragraph(NA_character_, th, pp, rp, lines = lines)
+  )
+})
+
+# The grid column widths (twips) of the big table of a one-language render.
+cond_table_grid <- function(doc) {
+  grids <- lapply(xml2::xml_find_all(doc, "//w:tblGrid", cond_w), function(g) {
+    as.numeric(xml2::xml_attr(xml2::xml_find_all(g, "w:gridCol", cond_w),
+                              "w:w", cond_w))
+  })
+  big <- Filter(function(g) length(g) == 8L, grids)
+  expect_length(big, 1L)
+  big[[1]]
+}
+
+test_that("table: the Filter column widens for its level labels only", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  th <- lss_render_theme()
+  cond <- cond_table_grid(cond_render(cond_lss(), template = "table"))
+  plain <- cond_table_grid(cond_render(demo_lss(), template = "table"))
+  # Column 6 is Filter. One language: the label is at theme$size_meta, the
+  # size of the label chunk; 3 pt of padding on each side and 1 pt of air.
+  need <- (lss_q_text_width("Subquestion:", th$font_body, th$size_meta) + 7) / 72
+  expect_gt(cond[[6]], 0.58 * 1440)
+  expect_gte(cond[[6]], floor(need * 1440))
+  expect_equal(plain[[6]], round(0.58 * 1440))
+  # The extra width comes from the language column: same total.
+  expect_lte(abs(sum(cond) - sum(plain)), 2)
+  expect_lt(cond[[8]], plain[[8]])
+})
+
 # ---- render_questionnaire() -------------------------------------------------
 
 test_that("questionnaire: the group paragraph and the filters of subquestions", {

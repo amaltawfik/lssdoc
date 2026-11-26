@@ -272,7 +272,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       # An option of a multiple choice with a condition of its own prints
       # that one labelled line in its Filter cell; without one the cell
       # stays empty (the parent row carries the group and question lines).
-      if (identical(kind, "mc_option") && lss_has_condition(r$relevance)) {
+      filter_lines <- lss_table_filter_row_lines(r, theme)
+      if (!is.null(filter_lines)) {
         ft <- flextable::compose(
           ft, i = i, j = "Filter",
           value = lss_table_filter_paragraph(
@@ -280,8 +281,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
             plain_props = filter_plain_props,
             raw_props = filter_raw_props,
             show_raw = isTRUE(state$show_raw_filter),
-            subq_relevance = r$relevance,
-            label_props = filter_label_props
+            label_props = filter_label_props,
+            lines = filter_lines
           )
         )
       }
@@ -313,9 +314,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
         plain_props = filter_plain_props,
         raw_props = filter_raw_props,
         show_raw = isTRUE(state$show_raw_filter),
-        group_relevance = r$group_relevance,
-        subq_relevance = r$subq_relevance,
-        label_props = filter_label_props
+        label_props = filter_label_props,
+        lines = lss_table_filter_row_lines(r, theme)
       )
     )
     # For non-enumerated types (M/P/N/K/T/S/U/D/...), the implicit
@@ -839,12 +839,40 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   rows
 }
 
+#' The lines of the Filter cell of a table row
+#'
+#' The one rule, read by the rendering loop to fill the cell and by
+#' `lss_table_template_polish()` to size the column. A question row
+#' (`leaf`, `subq`, `other`) prints the levels of its question, group and
+#' subquestion(s). An option of a multiple choice prints the one line of
+#' its own condition, and nothing without one (its parent row carries the
+#' group and question lines). Every other row leaves the cell empty.
+#'
+#' @return A list of `lss_filter_lines()` lines, or `NULL` when the cell
+#'   stays empty.
+#' @keywords internal
+#' @noRd
+lss_table_filter_row_lines <- function(r, theme) {
+  if (identical(r$kind, "mc_option")) {
+    if (!lss_has_condition(r$relevance)) {
+      return(NULL)
+    }
+    return(lss_filter_lines(NA_character_, NULL, r$relevance, theme))
+  }
+  if (!r$kind %in% c("leaf", "subq", "other")) {
+    return(NULL)
+  }
+  lss_filter_lines(r$relevance, r$group_relevance, r$subq_relevance, theme)
+}
+
 #' Build the flextable paragraph for the Filter cell of a row (the
 #' table template). Mirrors the meta-table convention from the
 #' cards path: the lines of `lss_filter_lines()` one under the other
 #' (the group, question and subquestion levels), each human-readable
 #' form with its raw LimeSurvey expression beneath in a smaller italic
-#' mono when `show_raw`.
+#' mono when `show_raw`. `lines` defaults to the lines of the three
+#' relevance arguments; the rendering loop passes those of
+#' `lss_table_filter_row_lines()`.
 #' @keywords internal
 #' @noRd
 lss_table_filter_paragraph <- function(relevance, theme,
@@ -852,8 +880,11 @@ lss_table_filter_paragraph <- function(relevance, theme,
                                        show_raw = TRUE,
                                        group_relevance = NULL,
                                        subq_relevance = NULL,
-                                       label_props = plain_props) {
-  lines <- lss_filter_lines(relevance, group_relevance, subq_relevance, theme)
+                                       label_props = plain_props,
+                                       lines = lss_filter_lines(
+                                         relevance, group_relevance,
+                                         subq_relevance, theme
+                                       )) {
   chunks <- lss_filter_chunks(lines, theme, plain_props = plain_props,
                               raw_props = raw_props, label_props = label_props,
                               show_raw = show_raw)
@@ -1234,14 +1265,20 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   #                     (`meta_mandatory_short`); the widest
   #                     localized variant ("Pflicht", 7 chars at
   #                     8 pt bold ~0.42 in) fits with thin margin.
-  #   Filter    0.58  - editorial default (show_raw_filter = FALSE)
-  #                     shows only the plain form; "All" fits, and a
-  #                     real condition (`workstatus = 1`) wrapped
-  #                     already at 0.65, so ceding 0.07 in to Type
-  #                     costs nothing visible.
+  #   Filter    0.58  - the minimum: "All" fits, and a real condition
+  #                     (`workstatus = 1`) wrapped already at 0.65, so
+  #                     ceding 0.07 in to Type costs nothing visible.
+  #                     Wider when the widest level label this table
+  #                     prints ("Subquestion:") needs it, so that it
+  #                     never breaks inside a word
+  #                     (lss_filter_label_width() at the size of the
+  #                     label, with the 3 pt padding on each side);
+  #                     meta_w grows by the same amount, taken from the
+  #                     language columns.
   #   Value     0.55  - 1-3 digit codes in 11 pt Consolas bold
   #                     ("1", "12", "999").
-  # Total meta = 4.47; the language columns split the remaining width.
+  # Total meta = 4.47 at the minimum widths of No and Filter; the language
+  # columns split the remaining width.
   # The total follows the page orientation (theme$content_width_in: 6.30 in
   # portrait, 9.72 in A4 landscape, 14.56 in A3) and NEVER the language
   # count -- four languages fit on an A4 portrait page; reach for landscape
@@ -1251,7 +1288,21 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # too narrow for that many languages and landscape is the fix.
   no_labels <- vapply(rows, function(r) lss_table_no_cell(r$no), character(1L))
   no_w <- max(0.30, lss_no_width(no_labels, body_size, 6))
-  meta_w <- 0.62 + no_w + 1.30 + 0.62 + 0.50 + 0.58 + 0.55
+  # The labels as the Filter cells print them, without the condition, at
+  # the size and weight of their chunk (filter_label_props: body font,
+  # theme$size_meta, regular).
+  fmt <- theme$chrome$filter_level_fmt
+  filter_labels <- unlist(lapply(rows, function(r) {
+    lines <- Filter(function(ln) !is.null(ln$label),
+                    lss_table_filter_row_lines(r, theme))
+    vapply(lines, function(ln) {
+      trimws(sprintf(fmt, ln$label, ""))
+    }, character(1L))
+  }))
+  filter_w <- max(0.58, lss_filter_label_width(
+    filter_labels, theme$font_body, theme$size_meta, 6
+  ))
+  meta_w <- 0.62 + no_w + 1.30 + 0.62 + 0.50 + filter_w + 0.55
   total_w <- theme$content_width_in
   lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 0.40)
   ft <- flextable::width(ft, j = "Field",     width = 0.62, unit = "in")
@@ -1259,7 +1310,7 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   ft <- flextable::width(ft, j = "Variable",  width = 1.30, unit = "in")
   ft <- flextable::width(ft, j = "Type",      width = 0.62, unit = "in")
   ft <- flextable::width(ft, j = "Mandatory", width = 0.50, unit = "in")
-  ft <- flextable::width(ft, j = "Filter",    width = 0.58, unit = "in")
+  ft <- flextable::width(ft, j = "Filter",    width = filter_w, unit = "in")
   ft <- flextable::width(ft, j = "Value",     width = 0.55, unit = "in")
   for (idx in seq_len(n_lang)) {
     ft <- flextable::width(ft, j = 7L + idx, width = lang_w, unit = "in")
