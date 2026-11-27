@@ -9499,7 +9499,7 @@
     <surveyls_alias/>
     <surveyls_language><![CDATA[de]]></surveyls_language>
     <surveyls_title><![CDATA[lssdoc-Demonstrationsfragebogen]]></surveyls_title>
-    <surveyls_description><![CDATA[Fiktiver LimeSurvey-Fragebogen zum Testen der mit lssdoc erstellten Dokumentation. Er enthält die wichtigsten Fragetypen, mehrere Sprachen, Filter, eine Quote und Kodierungsoptionen.]]></surveyls_description>
+    <surveyls_description><![CDATA[Fiktiver LimeSurvey-Fragebogen zum Testen der mit lssdoc erstellten Dokumentation. Er enthält die wichtigsten Fragetypen, mehrere Sprachen, Filter, Quoten und Kodierungsoptionen.]]></surveyls_description>
     <surveyls_welcometext><![CDATA[<p><strong>Willkommen zu diesem Demonstrationsfragebogen.</strong></p>
 
 <p>Dieser fiktive Fragebogen behandelt Gesundheit, Lebensgewohnheiten, Ressourcen und digitale Praktiken. Es gibt keine richtigen oder falschen Antworten. Die Formulierungen sind allgemein und beziehen sich auf keine reale Person oder Institution.</p>
@@ -9536,7 +9536,7 @@
     <surveyls_alias/>
     <surveyls_language><![CDATA[en]]></surveyls_language>
     <surveyls_title><![CDATA[lssdoc demonstration survey]]></surveyls_title>
-    <surveyls_description><![CDATA[Fictional LimeSurvey questionnaire created to test documentation produced by lssdoc. It covers the main question types, several languages, filters, a quota and coding options.]]></surveyls_description>
+    <surveyls_description><![CDATA[Fictional LimeSurvey questionnaire created to test documentation produced by lssdoc. It covers the main question types, several languages, filters, quotas and coding options.]]></surveyls_description>
     <surveyls_welcometext><![CDATA[<p><strong>Welcome to this demonstration questionnaire.</strong></p>
 
 <p>This fictional questionnaire is about health, lifestyle habits, resources and digital practices. There are no right or wrong answers. The wording is generic and does not refer to any real person or institution.</p>
@@ -9573,7 +9573,7 @@
     <surveyls_alias/>
     <surveyls_language><![CDATA[es]]></surveyls_language>
     <surveyls_title><![CDATA[Cuestionario de demostración lssdoc]]></surveyls_title>
-    <surveyls_description><![CDATA[Cuestionario ficticio de LimeSurvey creado para probar la documentación producida por lssdoc. Incluye los principales tipos de pregunta, varios idiomas, filtros, una cuota y opciones de codificación.]]></surveyls_description>
+    <surveyls_description><![CDATA[Cuestionario ficticio de LimeSurvey creado para probar la documentación producida por lssdoc. Incluye los principales tipos de pregunta, varios idiomas, filtros, cuotas y opciones de codificación.]]></surveyls_description>
     <surveyls_welcometext><![CDATA[<p><strong>Bienvenido/a a este cuestionario de demostración.</strong></p>
 
 <p>Este cuestionario ficticio trata sobre salud, hábitos de vida, recursos y prácticas digitales. No hay respuestas correctas o incorrectas. Las formulaciones son genéricas y no se refieren a ninguna persona o institución real.</p>
@@ -9610,7 +9610,7 @@
     <surveyls_alias/>
     <surveyls_language><![CDATA[fr]]></surveyls_language>
     <surveyls_title><![CDATA[Questionnaire de démonstration lssdoc]]></surveyls_title>
-    <surveyls_description><![CDATA[Exemple fictif de questionnaire LimeSurvey destiné à tester la documentation produite par le package R lssdoc. Il couvre les principaux types de questions, plusieurs langues, des filtres, un quota et des options de codage.]]></surveyls_description>
+    <surveyls_description><![CDATA[Exemple fictif de questionnaire LimeSurvey destiné à tester la documentation produite par le package R lssdoc. Il couvre les principaux types de questions, plusieurs langues, des filtres, des quotas et des options de codage.]]></surveyls_description>
     <surveyls_welcometext><![CDATA[<p><strong>Bienvenue dans ce questionnaire de démonstration.</strong></p>
 
 <p>Ce questionnaire fictif porte sur la santé, les habitudes de vie, les ressources et les usages numériques. Il n’y a pas de bonne ou de mauvaise réponse. Les formulations sont génériques et ne renvoient à aucune personne ni institution réelle.</p>
