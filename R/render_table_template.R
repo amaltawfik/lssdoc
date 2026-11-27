@@ -554,16 +554,19 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     # Predefined labelled scales (C/E/Y/G) store no answers in the .lss but
     # carry fixed localizable codes -- list them like a stored scale so the
     # dense table documents the value domain instead of leaving it blank.
+    # Each language column takes the labels in its own language, or in the
+    # chrome language when lssdoc has no strings for it.
     if (length(q$answers) == 0L) {
       labelled <- lss_predefined_labelled(q$type)
       if (is.null(labelled)) return(list())
+      packs <- lapply(langs, lss_builtin_strings, chrome = chrome)
       out <- list()
       for (cl in labelled) {
         out[[length(out) + 1L]] <- list(
           kind = "value",
           code = cl[1],
           labels = stats::setNames(
-            rep(list(chrome[[cl[2]]]), length(langs)), langs
+            lapply(packs, function(p) p[[cl[2]]]), langs
           )
         )
       }
@@ -1079,10 +1082,10 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
   }
 
   # Question stem (parent for compound rows, leaf question for leaf
-  # rows). For the Other item the customized "Other:" prompt
+  # rows). For the Other item the prompt of the "Other:" field
   # replaces the stem.
   if (identical(row$kind, "other")) {
-    add_text(lss_table_other_prompt(row$other_q, lg), plain())
+    add_text(lss_other_prompt(row$other_q, lg, theme$chrome), plain())
   } else {
     add_text(lss_html_to_text(row$parent_text[[lg]]), plain())
   }
@@ -1144,22 +1147,31 @@ lss_table_no_cell <- function(no) {
   if (is.null(no) || length(no) == 0L || is.na(no[1])) "" else as.character(no[1])
 }
 
-#' Resolve the customized prompt of the LimeSurvey "Other:" input
-#' for a language, or fall back to a generic "Other:" label.
+#' The prompt of the LimeSurvey "Other:" input in one language
+#'
+#' The `other_replace_text` of the question for `lg`, else its row
+#' without a language, else the default prompt of LimeSurvey
+#' (`value_other_prompt`) in `lg`, or in the chrome language when lssdoc
+#' has no strings for `lg` (`lss_builtin_strings()`). Shared by the
+#' cards and the table layouts.
+#' @param q A question of the model.
+#' @param lg Length-one character: the language of the column.
+#' @param chrome The chrome strings of the document.
 #' @keywords internal
 #' @noRd
-lss_table_other_prompt <- function(q, lg) {
-  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return("Other:")
+lss_other_prompt <- function(q, lg, chrome) {
+  default <- lss_builtin_strings(lg, chrome)$value_other_prompt
+  if (is.null(q$attributes) || nrow(q$attributes) == 0L) return(default)
   attrs <- q$attributes[q$attributes$attribute == "other_replace_text", ,
                         drop = FALSE]
-  if (nrow(attrs) == 0L) return("Other:")
+  if (nrow(attrs) == 0L) return(default)
   lang_hit <- attrs$value[attrs$language == lg]
   if (length(lang_hit) > 0L && nzchar(trimws(lang_hit[1]))) return(lang_hit[1])
   empty_lang <- attrs$value[!nzchar(attrs$language)]
   if (length(empty_lang) > 0L && nzchar(trimws(empty_lang[1]))) {
     return(empty_lang[1])
   }
-  "Other:"
+  default
 }
 
 #' Implicit-coding text for a question with no enumerated answers.

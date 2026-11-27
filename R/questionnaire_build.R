@@ -114,16 +114,11 @@ lss_q_context <- function(lss, language, chrome_lang = "en",
   ctx$proofing <- lss_q_proofing_lang(language, proofing_lang)
   ctx$chrome_tag <- lss_q_chrome_tag(chrome_lang, ctx$proofing)
   # The labels LimeSurvey builds in (yes / no / uncertain, increase / same
-  # / decrease) are read by the respondent: they come in the content
-  # language when the chrome has it, else in the chrome language.
-  content_primary <- tolower(strsplit(language, "-", fixed = TRUE)[[1]][1])
-  if (content_primary %in% c("en", "fr", "de", "es", "it")) {
-    ctx$builtin <- lss_chrome_strings(content_primary)
-    ctx$builtin_tag <- NULL
-  } else {
-    ctx$builtin <- theme$chrome
-    ctx$builtin_tag <- ctx$chrome_tag
-  }
+  # / decrease, female / male, the "Other" option) are read by the
+  # respondent: they come in the content language when lssdoc has strings
+  # for it, else in the chrome language, whose runs then declare it.
+  ctx$builtin <- lss_builtin_strings(language, theme$chrome)
+  ctx$builtin_tag <- if (is.na(lss_builtin_lang(language))) ctx$chrome_tag
   ctx$show_codes <- isTRUE(show_codes)
   ctx$show_hidden <- isTRUE(show_hidden)
   ctx$show_help <- isTRUE(show_help)
@@ -752,8 +747,9 @@ lss_q_group_filter_para <- function(ctx, relevance) {
              "hint", top = 3, keep = TRUE)
 }
 
-#' The "Other" option: its replacement text, else "Other", then
-#' "(free text)"
+#' The "Other" option: its replacement text, else "Other" in the
+#' content language (in the chrome language when lssdoc has no strings
+#' for it), then "(free text)" in the chrome language
 #' @keywords internal
 #' @noRd
 lss_q_other_item <- function(ctx, q, code) {
@@ -762,8 +758,8 @@ lss_q_other_item <- function(ctx, q, code) {
   if (nzchar(lab)) {
     lss_q_item(code, lab, x$missing, extra = ctx$chrome$q_free_text)
   } else {
-    lss_q_item(code, paste(ctx$chrome$q_other, ctx$chrome$q_free_text),
-               chrome = TRUE)
+    lss_q_item(code, ctx$builtin$q_other, extra = ctx$chrome$q_free_text,
+               lang = ctx$builtin_tag)
   }
 }
 

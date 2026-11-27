@@ -1243,3 +1243,26 @@ test_that("the mention of the question type does not depend on the help text", {
   expect_match(text2[at2], mention, fixed = TRUE)
   expect_false("Several answers possible." %in% text2)
 })
+
+test_that("the Other option without a replacement text takes the content language", {
+  skip_if_not_installed("officer")
+  lss <- q_fixture_lss()
+  q <- list(code = "Q", attributes = NULL)
+  value <- function(runs) vapply(runs, function(r) r$value, "")
+  # French content, English chrome: "Autre" is read by the respondent,
+  # "(free text)" is lssdoc's and stays in the chrome language.
+  ctx <- lss_q_context(lss, "fr", chrome_lang = "en", measure = FALSE)
+  it <- lss_q_other_item(ctx, q, "other")
+  expect_identical(it$label, "Autre")
+  expect_identical(it$extra, "(free text)")
+  expect_null(it$lang)
+  runs <- lss_q_item_runs(ctx, it, 0)
+  expect_identical(value(runs), c("Autre", " (free text)"))
+  expect_null(runs[[1]]$lang)
+  expect_identical(runs[[2]]$lang, ctx$chrome_tag)
+  # The chrome render_questionnaire() takes by default for a French
+  # questionnaire: the printed text is what it was.
+  ctx <- lss_q_context(lss, "fr", chrome_lang = "fr", measure = FALSE)
+  runs <- lss_q_item_runs(ctx, lss_q_other_item(ctx, q, "other"), 0)
+  expect_identical(paste(value(runs), collapse = ""), "Autre (texte libre)")
+})

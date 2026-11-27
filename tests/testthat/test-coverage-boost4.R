@@ -24,23 +24,24 @@ test_that("lss_table_implicit_value_text maps each type and NULLs the rest", {
   expect_null(lss_table_implicit_value_text(list(type = "X"), th))
 })
 
-test_that("lss_table_other_prompt resolves the customized prompt or falls back", {
-  expect_identical(lss_table_other_prompt(list(attributes = NULL), "en"), "Other:")
+test_that("lss_other_prompt resolves the customized prompt or falls back", {
+  ch <- lss_chrome_strings("en")
+  expect_identical(lss_other_prompt(list(attributes = NULL), "en", ch), "Other:")
   q_none <- list(attributes = data.frame(attribute = "prefix", value = "x",
                                          language = "", stringsAsFactors = FALSE))
-  expect_identical(lss_table_other_prompt(q_none, "en"), "Other:")
+  expect_identical(lss_other_prompt(q_none, "en", ch), "Other:")
   q_lang <- list(attributes = data.frame(
     attribute = "other_replace_text", value = c("Please specify", "Bitte"),
     language = c("en", "de"), stringsAsFactors = FALSE))
-  expect_identical(lss_table_other_prompt(q_lang, "en"), "Please specify")
+  expect_identical(lss_other_prompt(q_lang, "en", ch), "Please specify")
   q_empty <- list(attributes = data.frame(
     attribute = "other_replace_text", value = "Autre, precisez",
     language = "", stringsAsFactors = FALSE))
-  expect_identical(lss_table_other_prompt(q_empty, "fr"), "Autre, precisez")
+  expect_identical(lss_other_prompt(q_empty, "fr", ch), "Autre, precisez")
   q_blank <- list(attributes = data.frame(
     attribute = "other_replace_text", value = "", language = "en",
     stringsAsFactors = FALSE))
-  expect_identical(lss_table_other_prompt(q_blank, "en"), "Other:")
+  expect_identical(lss_other_prompt(q_blank, "en", ch), "Other:")
 })
 
 test_that("lss_table_value_paragraph covers every value-domain branch", {

@@ -71,6 +71,13 @@
 * A gender question now lists Female before Male, the order LimeSurvey
   shows.
 
+* `render_documentation()` now prints the labels LimeSurvey builds in (Yes,
+  No, Uncertain, Increase, Same, Decrease, Female, Male) and the default
+  prompt of an "Other" field in the language of each column. Every column
+  had them in the language of the document (`chrome_lang`): in an English
+  document, the French column read "Yes" and "Other:". A column in a
+  language lssdoc has no strings for keeps the language of the document.
+
 * A question hidden from respondents (LimeSurvey attribute `hidden` at 1)
   now says so on its card or row. It used to be rendered like any other
   question.

@@ -186,12 +186,14 @@ test_that("a filter that references an unknown variable is not a forward ref", {
 
 # ---- render_table_template helpers ---------------------------------------
 
-test_that("lss_table_other_prompt falls back through language then empty then default", {
+test_that("lss_other_prompt falls back through language then empty then default", {
+  ch <- lss_chrome_strings("en")
   q_lang <- list(attributes = data.frame(
     attribute = "other_replace_text", value = "Please specify",
     language = "en", stringsAsFactors = FALSE))
-  expect_identical(lss_table_other_prompt(q_lang, "en"), "Please specify")
-  expect_identical(lss_table_other_prompt(q_lang, "fr"), "Other:")
+  expect_identical(lss_other_prompt(q_lang, "en", ch), "Please specify")
+  # The default prompt is worded in the language of the column.
+  expect_identical(lss_other_prompt(q_lang, "fr", ch), "Autre\u00A0:")
 })
 
 test_that("lss_table_question_paragraph composes subq with a facet and help", {

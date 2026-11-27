@@ -419,7 +419,7 @@ test_that("compound array with an NA subquestion scale_id hits the '0' fallback 
   expect_s3_class(doc, "rdocx")
 })
 
-test_that("Other item prompt falls back to 'Other:' when no other_replace_text row exists (render_item 540)", {
+test_that("Other item prompt falls back to the default prompt when no other_replace_text row exists (render_item 540)", {
   skip_if_not_installed("officer"); skip_if_not_installed("flextable")
   th <- ri_theme()
   q <- list(code = "natx", type = "L", relevance = "1",

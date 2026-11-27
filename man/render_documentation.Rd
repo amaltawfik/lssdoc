@@ -284,7 +284,11 @@ when supported, otherwise falls back to \code{"en"}. Independent
 from \code{languages}, which controls the survey's content columns:
 e.g. \code{chrome_lang = "en"} with \code{languages = c("fr", "en")}
 produces an English-labelled document with French and English
-content. Spanish and Italian translations should be reviewed
+content. The labels LimeSurvey builds in (Yes, No, Uncertain,
+Increase, Same, Decrease, Female, Male) and its default "Other:"
+prompt count as content: each column prints them in its own
+language, or in \code{chrome_lang} when lssdoc has no strings for that
+language. Spanish and Italian translations should be reviewed
 by a native speaker before publishing an official document.}
 
 \item{variable_names}{How response-variable names are written, so the

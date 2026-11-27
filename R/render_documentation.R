@@ -214,7 +214,11 @@
 #'   from `languages`, which controls the survey's content columns:
 #'   e.g. `chrome_lang = "en"` with `languages = c("fr", "en")`
 #'   produces an English-labelled document with French and English
-#'   content. Spanish and Italian translations should be reviewed
+#'   content. The labels LimeSurvey builds in (Yes, No, Uncertain,
+#'   Increase, Same, Decrease, Female, Male) and its default "Other:"
+#'   prompt count as content: each column prints them in its own
+#'   language, or in `chrome_lang` when lssdoc has no strings for that
+#'   language. Spanish and Italian translations should be reviewed
 #'   by a native speaker before publishing an official document.
 #' @param variable_names How response-variable names are written, so the
 #'   document matches the data file the reader holds. One of:

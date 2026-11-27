@@ -150,6 +150,9 @@ lss_chrome_strings <- function(lang = "en") {
     value_array_increase              = "Increase",
     value_array_same                  = "Same",
     value_array_decrease              = "Decrease",
+    # Default prompt of an "Other" field, as LimeSurvey words it when the
+    # survey sets no other_replace_text.
+    value_other_prompt                = "Other:",
     value_order_random                = "Labels shown in random order",
     value_order_alphabetical          = "Labels shown in alphabetical order",
     value_npoint_fmt                  = "%d-point scale (1 to %d)",
@@ -375,6 +378,7 @@ lss_chrome_strings <- function(lang = "en") {
     value_array_increase              = "Augmenter",
     value_array_same                  = "Sans changement",
     value_array_decrease              = "Diminuer",
+    value_other_prompt                = "Autre\u00A0:",
     value_order_random                = "Libell\u00e9s pr\u00e9sent\u00e9s dans un ordre al\u00e9atoire",
     value_order_alphabetical          = "Libell\u00e9s pr\u00e9sent\u00e9s par ordre alphab\u00e9tique",
     value_npoint_fmt                  = "\u00C9chelle \u00E0 %d points (1 \u00E0 %d)",
@@ -590,6 +594,7 @@ lss_chrome_strings <- function(lang = "en") {
     value_array_increase              = "Zunahme",
     value_array_same                  = "Keine \u00c4nderung",
     value_array_decrease              = "Abnahme",
+    value_other_prompt                = "Sonstiges:",
     value_order_random                = "Beschriftungen in zuf\u00e4lliger Reihenfolge",
     value_order_alphabetical          = "Beschriftungen in alphabetischer Reihenfolge",
     value_npoint_fmt                  = "%d-Punkt-Skala (1 bis %d)",
@@ -807,6 +812,7 @@ lss_chrome_strings <- function(lang = "en") {
     value_array_increase              = "Aumentar",
     value_array_same                  = "Sin cambio",
     value_array_decrease              = "Disminuir",
+    value_other_prompt                = "Otro:",
     value_order_random                = "Etiquetas en orden aleatorio",
     value_order_alphabetical          = "Etiquetas en orden alfab\u00e9tico",
     value_npoint_fmt                  = "Escala de %d puntos (1 a %d)",
@@ -1022,6 +1028,7 @@ lss_chrome_strings <- function(lang = "en") {
     value_array_increase              = "Aumentare",
     value_array_same                  = "Nessun cambiamento",
     value_array_decrease              = "Diminuire",
+    value_other_prompt                = "Altro:",
     value_order_random                = "Etichette in ordine casuale",
     value_order_alphabetical          = "Etichette in ordine alfabetico",
     value_npoint_fmt                  = "Scala a %d punti (1 a %d)",
@@ -1141,6 +1148,42 @@ lss_chrome_strings <- function(lang = "en") {
     base
   )
   pack
+}
+
+#' Language of the strings for the labels LimeSurvey builds in
+#'
+#' The labels LimeSurvey builds in (Yes / No, Female / Male, Yes /
+#' Uncertain / No, Increase / Same / Decrease) and the default prompt of
+#' an "Other" field are read by the respondent, so they follow the
+#' content language. This returns the lower-case primary subtag of
+#' `lang` (`"de-informal"` gives `"de"`) when lssdoc has strings for it
+#' (`"en"`, `"fr"`, `"de"`, `"es"`, `"it"`), else `NA_character_`.
+#'
+#' @param lang Length-one character: a LimeSurvey language code.
+#' @return Length-one character, or `NA_character_`.
+#' @keywords internal
+#' @noRd
+lss_builtin_lang <- function(lang) {
+  primary <- tolower(sub("-.*$", "", as.character(lang)[1]))
+  if (primary %in% c("en", "fr", "de", "es", "it")) primary else NA_character_
+}
+
+#' Strings for the labels LimeSurvey builds in, for one content language
+#'
+#' The chrome strings of `lss_builtin_lang(lang)`, or `chrome` unchanged
+#' when lssdoc has no strings for that language: such a column keeps the
+#' language of the document.
+#'
+#' @param lang Length-one character: a LimeSurvey language code.
+#' @param chrome The chrome strings of the document
+#'   (`lss_chrome_strings()`).
+#' @return A named list of strings.
+#' @keywords internal
+#' @noRd
+lss_builtin_strings <- function(lang, chrome) {
+  builtin <- lss_builtin_lang(lang)
+  if (is.na(builtin)) return(chrome)
+  lss_chrome_strings(builtin)
 }
 
 #' Localized methodological type label for a question

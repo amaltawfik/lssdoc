@@ -550,7 +550,9 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
 #' additional response variable named `<parent>_other` that holds the
 #' free text the respondent typed in the "Other:" field. The prompt
 #' shown next to that input can be customized via the
-#' `other_replace_text` attribute (per language). We surface this as
+#' `other_replace_text` attribute (per language); without it, each
+#' language column prints the default prompt of LimeSurvey in its own
+#' language (`lss_other_prompt()`). We surface this as
 #' its own card so the reader sees the variable code in the index and
 #' meta table, alongside any other items. The field belongs to its
 #' question, so the card carries the question's own number; the variable
@@ -566,19 +568,11 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
   )
   doc <- lss_render_item_spacer(doc, theme)
 
-  # Look up the customized "Other:" prompt per language; fall back to a
-  # generic "Other:" label when the attribute is missing.
-  prompt_for_lang <- function(lg) {
-    if (is.null(q$attributes) || nrow(q$attributes) == 0L) return("Other:")
-    attrs <- q$attributes[q$attributes$attribute == "other_replace_text", , drop = FALSE]
-    if (nrow(attrs) == 0L) return("Other:")
-    lang_hit <- attrs$value[attrs$language == lg]
-    if (length(lang_hit) > 0L && nzchar(trimws(lang_hit[1]))) return(lang_hit[1])
-    empty_lang <- attrs$value[!nzchar(attrs$language)]
-    if (length(empty_lang) > 0L && nzchar(trimws(empty_lang[1]))) return(empty_lang[1])
-    "Other:"
-  }
-  texts_by_lang <- stats::setNames(lapply(langs, prompt_for_lang), langs)
+  # The prompt of the "Other:" field in each language: the customized
+  # one, else the default prompt of LimeSurvey in that language.
+  texts_by_lang <- stats::setNames(
+    lapply(langs, function(lg) lss_other_prompt(q, lg, theme$chrome)), langs
+  )
 
   if (isTRUE(state$show_item_heading)) {
     heading_text <- lss_item_heading_text(item_no, item_code)
@@ -1269,10 +1263,11 @@ lss_value_implicit_row <- function(q, langs, theme) {
 #'
 #' Yes/No/Uncertain (C), Increase/Same/Decrease (E), Yes/No (Y) and
 #' gender (G) carry fixed, localizable labels. Returns a list of
-#' `c(code, chrome_key)` pairs (the chrome key resolves to the localized
-#' label via `theme$chrome[[key]]`), or `NULL` for any other type. Shared
-#' by the cards Value rows ([lss_predefined_value_rows()]) and the table
-#' questionnaire so both document the same mapping.
+#' `c(code, chrome_key)` pairs (the chrome key resolves to the label in
+#' a pack of chrome strings, the one of each language column given by
+#' `lss_builtin_strings()`), or `NULL` for any other type. Shared by the
+#' cards Value rows ([lss_predefined_value_rows()]), the table layout
+#' and the questionnaire so all three document the same mapping.
 #'
 #' @keywords internal
 #' @noRd
@@ -1298,7 +1293,9 @@ lss_predefined_labelled <- function(type) {
 #' in (so `q$answers` is empty): Yes/No/Uncertain (C), Increase/Same/
 #' Decrease (E), Yes/No (Y), and the 5- and 10-point arrays (A, B) and
 #' the 5-point single choice (5). For the labelled scales we list each
-#' code with its localized label, like a stored answer scale. For the
+#' code with its label, like a stored answer scale: each language column
+#' takes the label in its own language, or in the chrome language when
+#' lssdoc has no strings for it (`lss_builtin_strings()`). For the
 #' numeric N-point scales LimeSurvey stores no labels at all, so we put
 #' a "%d-point scale (1 to %d)" descriptor on the Value header and list
 #' the bare points 1..N (their language cells are intentionally blank).
@@ -1321,18 +1318,23 @@ lss_predefined_value_rows <- function(q, langs, theme) {
            section_with_text = TRUE, span_note = TRUE)
     }
   }
-  value_row <- function(code, label) {
-    list(label = code,
-         texts = stats::setNames(rep(list(label), length(langs)), langs),
-         size = theme$size_answer, value_row = TRUE)
+  value_row <- function(code, texts) {
+    list(label = code, texts = texts, size = theme$size_answer,
+         value_row = TRUE)
   }
 
-  # Labelled predefined scales: list each code with its localized label.
+  # Labelled predefined scales: list each code with its label, taken in
+  # each language column from the strings of that language.
   labelled <- lss_predefined_labelled(q$type)
   if (!is.null(labelled)) {
+    packs <- stats::setNames(
+      lapply(langs, lss_builtin_strings, chrome = chrome), langs
+    )
     rows <- list(header())
     for (cl in labelled) {
-      rows[[length(rows) + 1L]] <- value_row(cl[1], chrome[[cl[2]]])
+      rows[[length(rows) + 1L]] <- value_row(
+        cl[1], lapply(packs, function(p) p[[cl[2]]])
+      )
     }
     return(rows)
   }
