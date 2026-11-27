@@ -62,9 +62,10 @@ Any other extension is rejected with \code{lssdoc_bad_output_ext}.}
 keeps all languages found in the \code{.lss} file in the order of the
 \verb{<languages>} section. Acts both as a subset filter and an
 ordering: e.g. \code{c("en", "fr")} puts English first, \code{c("fr", "en")}
-puts French first. \code{languages[1]} is treated as the primary
-language (TOC entries, group fallback). Requesting a language
-absent from the survey is an error (\code{lssdoc_unknown_language}).}
+puts French first. The heading of a group in the cards layout and
+its entry in the table of contents print its name in the first of
+these languages that has one. Requesting a language absent from
+the survey is an error (\code{lssdoc_unknown_language}).}
 
 \item{template}{Output style. One of \code{"cards"} (the default) or
 \code{"table"}.
@@ -158,10 +159,13 @@ QA cross-checks. The raw form is always shown when the plain
 form could not be simplified.}
 
 \item{show_groups}{Logical. If \code{TRUE} (default), show the group
-banners (cards layout) or group rows (table layout). Pass
-\code{FALSE} to flatten the document into a single sequence of items
-with no section breaks (useful when groups exist only as
-internal organization). The table of contents then lists no group.}
+banners (cards layout) or group rows (table layout). The name of
+a group is printed as written in LimeSurvey. In the cards layout,
+a document in several languages gives the name in each language
+under the banner. Pass \code{FALSE} to flatten the document into a
+single sequence of items with no section breaks (useful when
+groups exist only as internal organization). The table of
+contents then lists no group.}
 
 \item{show_group_description}{Logical. If \code{TRUE} (default), the
 description of a group is printed under its heading: it is the text

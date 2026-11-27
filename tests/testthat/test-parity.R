@@ -8,35 +8,6 @@
 # (the row, the cell) live in the tests of the code that prints it. The
 # helpers are in helper-parity.R.
 
-# The texts a layout does not print yet, named "<survey>: <id> <language>"
-# as parity_missing() names them, by the sub-step that closes each gap.
-# Each sub-step removes its entries when it closes them; the last one
-# removes the list. A gap that is closed and still listed fails the test,
-# so that the list never hides a text that is printed.
-parity_known_gaps <- list(
-  # 8.5 (GAPS B1): the cards print the name of a group in every language,
-  # and neither layout strips a number the author typed in a group name.
-  "8.5 group names" = list(
-    cards = c(
-      "demo: group 1 name fr", "demo: group 2 name fr",
-      "demo: group 3 name fr", "demo: group 4 name fr",
-      "demo: group 5 name fr", "demo: group 6 name fr",
-      "parity: group 1 name fr", "parity: group 2 name fr",
-      "parity: group 3 name fr", "parity: group 4 name fr",
-      "parity: group 5 name en", "parity: group 5 name fr",
-      "parity: group 6 name fr"
-    ),
-    table = c("parity: group 5 name en", "parity: group 5 name fr")
-  )
-)
-
-parity_known <- function(template, survey) {
-  k <- as.character(unlist(lapply(parity_known_gaps, function(g) {
-    g[[template]]
-  }), use.names = FALSE))
-  k[startsWith(k, paste0(survey, ": "))]
-}
-
 test_that("parity_expected() reads the texts of the model", {
   lss <- parity_lss()
   ex <- parity_expected(lss)
@@ -98,13 +69,9 @@ test_that("the cards and the table print the same texts and variables", {
     })
     for (tpl in names(docs)) {
       missing <- sprintf("%s: %s", s, parity_missing(ex, docs[[tpl]]))
-      known <- parity_known(tpl, s)
-      # A text the layout does not print, and that no sub-step has listed.
-      expect_identical(setdiff(missing, known), character(0),
+      # A text of the survey the layout does not print.
+      expect_identical(missing, character(0),
                        info = paste(s, tpl, "texts not printed"))
-      # A gap that is listed and closed: remove it from parity_known_gaps.
-      expect_identical(setdiff(known, missing), character(0),
-                       info = paste(s, tpl, "listed gaps now printed"))
     }
     expect_identical(sort(parity_index_variables(docs$cards)),
                      sort(parity_index_variables(docs$table)),

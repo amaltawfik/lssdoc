@@ -1,4 +1,4 @@
-# Small render utilities: rendering state, group bookmark, language label, title truncation, rich-text composers, yes/no localization, group-prefix stripper.
+# Small render utilities: rendering state, group bookmark, group title, language label, title truncation, rich-text composers, yes/no localization.
 #
 # Extracted from R/render_lss_docx.R.
 
@@ -9,8 +9,8 @@
 #'
 #' Holds the question numbers, computed once from the model by
 #' `lss_item_numbers()` (no renderer counts items itself), the running
-#' group index the group bookmarks and the table of contents rely on, and
-#' the variable-index entries collected while rendering.
+#' group index that names the group bookmarks (`lss_group_bookmark()`),
+#' and the variable-index entries collected while rendering.
 #'
 #' @keywords internal
 #' @noRd
@@ -359,39 +359,19 @@ lss_yes_no <- function(x, theme = NULL) {
   switch(toupper(x), Y = yes, N = no, S = no, x)
 }
 
-#' Strip a leading author-written numeric prefix from a group name
+#' The title of a group in a document
 #'
-#' LimeSurvey authors often prefix their group names with their own
-#' numbering ("1. Vos etudes", "Section A - Demographics"). Word adds
-#' its own Heading 1 list number on top, leading to "1. 1. Vos etudes".
-#' This helper removes the most common explicit-numbering prefixes so
-#' Word's auto-number is the only visible one. Patterns recognized:
-#' `N.`, `N)`, `N -`, `N:`, `N.M.`, and `Section X -` (where X is a
-#' letter or roman numeral). Conservative -- leaves any other prefix
-#' untouched.
+#' The first non-empty name of the group among `langs`, the languages of
+#' the document, in their order, as the author wrote it; "Group <gid>"
+#' when none of them has a name. The heading of the group in the cards
+#' and its entry in the table of contents both read it, so that the entry
+#' reads like the heading it points to.
 #'
 #' @keywords internal
 #' @noRd
-lss_strip_group_number_prefix <- function(name) {
-  if (is.null(name) || is.na(name) || !nzchar(trimws(name))) {
-    return(name)
-  }
-  s <- name
-  patterns <- c(
-    "^\\d+\\.\\d+\\.\\s+",
-    "^\\d+\\.\\s+",
-    "^\\d+\\)\\s+",
-    "^\\d+\\s*[-\u2013\u2014]\\s+",
-    "^\\d+:\\s+",
-    "^Section\\s+[A-Z]+\\s*[-\u2013\u2014]\\s+"
-  )
-  for (p in patterns) {
-    new_s <- sub(p, "", s, perl = TRUE)
-    if (!identical(new_s, s)) {
-      return(trimws(new_s))
-    }
-  }
-  s
+lss_group_title <- function(group, langs) {
+  name <- lss_first_label(group$names, langs)
+  if (is.na(name)) paste0("Group ", group$gid) else name
 }
 
 #' The formula of a computed question, as plain text

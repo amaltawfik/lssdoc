@@ -23,21 +23,6 @@ test_that("lss_yes_no localizes Y/N/S and passes other values through", {
   expect_identical(lss_yes_no("Y", theme), theme$chrome$mandatory_yes)
 })
 
-test_that("lss_strip_group_number_prefix removes common author numbering", {
-  expect_identical(lss_strip_group_number_prefix(NA_character_), NA_character_)
-  expect_identical(lss_strip_group_number_prefix("1. Studies"), "Studies")
-  expect_identical(lss_strip_group_number_prefix("2) Health"), "Health")
-  expect_identical(lss_strip_group_number_prefix("3 - Work"), "Work")
-  expect_identical(lss_strip_group_number_prefix("4: Income"), "Income")
-  expect_identical(lss_strip_group_number_prefix("1.2. Sub"), "Sub")
-  expect_identical(
-    lss_strip_group_number_prefix("Section A - Demographics"), "Demographics"
-  )
-  expect_identical(
-    lss_strip_group_number_prefix("No prefix here"), "No prefix here"
-  )
-})
-
 test_that("lss_language_label maps known codes and passes unknown ones through", {
   expect_identical(lss_language_label("fr"), "Français")
   expect_identical(lss_language_label("xx"), "xx")   # unknown -> passthrough

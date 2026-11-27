@@ -7,6 +7,12 @@
 #' Groups become a visible section banner (bold colored paragraph, not a
 #' Heading style) followed by their items. The banner has outline level 2,
 #' under the level-1 section headings, so Word's navigation pane lists it.
+#' Its text is `lss_group_title()`: the first name of the group among the
+#' languages of the document, as the author wrote it. With more than one
+#' language, a block under the banner (and under the group's condition)
+#' gives the names in every language, then the description
+#' (`lss_render_group_names_block()`). With one language, or without the
+#' banner, the description keeps its own block of one row.
 #' Items are not headings and have no outline level: each one starts with
 #' its meta table (or with the bold "N. variable" line when
 #' `show_item_heading = TRUE`). Its number, shown in the "No" column of
@@ -21,8 +27,9 @@ lss_render_group <- function(doc, group, langs, theme,
                              state,
                              show_groups = TRUE,
                              show_group_description = TRUE) {
-  # The group index must still advance even when the banner itself is
-  # hidden -- bookmarks, audit references and the TOC depend on it.
+  # The group index advances even when the banner itself is hidden: it
+  # names the bookmark of each group heading, which the table of
+  # contents links to by the same count.
   state$group_index <- state$group_index + 1L
   # Render as a styled paragraph (no Heading 1 style) so Word does NOT
   # add its own list number, and the heading stays typographically
@@ -36,14 +43,9 @@ lss_render_group <- function(doc, group, langs, theme,
   # 1.5 pt so it does not visually compete with the dark meta-table
   # header bands of the items below it.
   if (isTRUE(show_groups)) {
-    gname <- lss_first_label(group$names, langs)
-    if (is.na(gname)) gname <- paste0("Group ", group$gid)
-    # Strip a leading numeric prefix written by the LimeSurvey author:
-    # group headings are not numbered (the name carries the meaning, and
-    # forced numbering competed with the section structure), so a
-    # leftover "1." would look like stray text.
-    gname <- lss_strip_group_number_prefix(gname)
-    heading_text <- gname
+    # The name as the author wrote it, in the first language that has
+    # one: no number is added and none is removed.
+    heading_text <- lss_group_title(group, langs)
     doc <- officer::body_add_fpar(
       doc,
       officer::fpar(
@@ -81,7 +83,11 @@ lss_render_group <- function(doc, group, langs, theme,
     group$descriptions, function(v) !is.null(v) && !is.na(v) && nzchar(trimws(v)),
     logical(1)
   ))
-  if (any_desc && isTRUE(show_group_description)) {
+  show_desc <- any_desc && isTRUE(show_group_description)
+  if (isTRUE(show_groups) && length(langs) > 1L) {
+    doc <- lss_render_group_names_block(doc, group, langs, theme,
+                                        show_description = show_desc)
+  } else if (show_desc) {
     doc <- lss_render_lang_block(doc, group$descriptions, langs, theme,
                                  size = theme$size_subq, italic = TRUE)
   }
@@ -1480,6 +1486,48 @@ lss_render_intra_item_gap <- function(doc, theme) {
       fp_p = officer::fp_par(keep_with_next = TRUE)
     )
   )
+}
+
+#' Render the names of a group in every language, then its description
+#'
+#' One table, one column per language, without header and without label
+#' column: a row with the name of the group in each language, upright
+#' and bold in the body colour, then, when `show_description` is `TRUE`,
+#' the row of the description in italic, as `lss_render_lang_block()`
+#' prints it. Both rows are at the size of the description
+#' (`theme$size_subq`). A language without a name shows the muted empty
+#' marker.
+#'
+#' @keywords internal
+#' @noRd
+lss_render_group_names_block <- function(doc, group, langs, theme,
+                                         show_description = FALSE) {
+  n_rows <- if (isTRUE(show_description)) 2L else 1L
+  df <- as.data.frame(
+    matrix("", nrow = n_rows, ncol = length(langs)),
+    stringsAsFactors = FALSE
+  )
+  names(df) <- langs
+  ft <- flextable::flextable(df)
+  ft <- flextable::delete_part(ft, part = "header")
+  for (lg in langs) {
+    name <- group$names[[lg]]
+    if (!lss_any_present(list(name))) name <- NA_character_
+    ft <- flextable::compose(
+      ft, i = 1L, j = lg,
+      value = lss_compose_plain(name, theme, size = theme$size_subq,
+                                bold = !is.na(name))
+    )
+    if (n_rows == 2L) {
+      ft <- flextable::compose(
+        ft, i = 2L, j = lg,
+        value = lss_compose(group$descriptions[[lg]], theme,
+                            size = theme$size_subq, italic_default = TRUE)
+      )
+    }
+  }
+  ft <- lss_table_polish(ft, theme, lang_cols = langs)
+  flextable::body_add_flextable(doc, ft, align = "left")
 }
 
 #' Render a one-row flextable with one column per language

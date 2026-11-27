@@ -243,15 +243,18 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     }
 
     if (identical(kind, "group")) {
-      # Group row: localized name in bold primary per language.
+      # Group row: localized name in bold primary per language, the
+      # muted empty marker where a language has none.
       for (lg in langs) {
         name <- r$name_by_lang[[lg]]
-        if (is.null(name) || is.na(name) || !nzchar(name)) name <- ""
+        chunk <- if (is.null(name) || is.na(name) || !nzchar(name)) {
+          flextable::as_chunk(theme$empty_marker, props = empty_marker_props)
+        } else {
+          flextable::as_chunk(name, props = group_name_props)
+        }
         ft <- flextable::compose(
           ft, i = i, j = paste0("Q_", lg),
-          value = flextable::as_paragraph(flextable::as_chunk(
-            name, props = group_name_props
-          ))
+          value = flextable::as_paragraph(chunk)
         )
       }
       next
@@ -466,10 +469,14 @@ lss_table_text_row <- function(lss, langs, field, kind) {
 #' subquestion (array row, option, rank position); an en dash throughout
 #' an unnumbered question.
 #'
-#' Also advances `state$group_index` and `state$index_entries` so the
-#' rest of the document (TOC, Variable index, navigation) stays
-#' consistent with the table layout. The progress bar is updated at each
-#' group boundary.
+#' The group row holds the name of the group in each language as the
+#' author wrote it, with no number: `NA` (printed as the empty marker)
+#' for a language without a name when another language has one,
+#' "Group <gid>" in every column when none has one.
+#'
+#' Also advances `state$group_index`, which names the bookmark of the
+#' group row (`lss_group_bookmark()`), the target of the table of
+#' contents. The progress bar is updated at each group boundary.
 #'
 #' @keywords internal
 #' @noRd
@@ -479,23 +486,23 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
                                               show_group_description = TRUE) {
   chrome <- theme$chrome
   rows <- list()
-  # The group index must still advance even when the row itself is
-  # hidden -- the variable index and audit references depend on it.
+  # The group index advances even when the row itself is hidden, so
+  # that the bookmarks of the groups keep the count of the cards.
   state$group_index <- state$group_index + 1L
   if (isTRUE(show_groups)) {
     # Group row: Field = "Group" label, language columns hold the
-    # localized name prefixed by the running group index.
+    # name as written, NA (the empty marker) where a language has none,
+    # "Group <gid>" in every column when no language has one.
     group_names <- stats::setNames(
       lapply(langs, function(lg) {
-        raw <- if (!is.null(g$names[[lg]])) g$names[[lg]] else NA_character_
-        if (is.null(raw) || is.na(raw) || !nzchar(raw)) {
-          raw <- paste0("Group ", g$gid)
-        }
-        sprintf("%d. %s", state$group_index,
-                lss_strip_group_number_prefix(raw))
+        raw <- g$names[[lg]]
+        if (lss_any_present(list(raw))) raw else NA_character_
       }),
       langs
     )
+    if (!lss_any_present(group_names)) {
+      group_names[] <- list(lss_group_title(g, langs))
+    }
     rows[[length(rows) + 1L]] <- list(
       kind = "group",
       name_by_lang = group_names,

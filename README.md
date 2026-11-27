@@ -212,13 +212,13 @@ render_documentation(
 )
 ```
 
-`languages` controls which content columns appear and in which order;
-the first one is the primary language used for the table of contents and
-group headings. `chrome_lang` is independent of `languages`: keep
-`chrome_lang = "en"` to get English column headers and row labels even
-if your survey content runs in French and German – pass
-`chrome_lang = "fr"` (or `"de"` / `"es"` / `"it"`) when you want the
-scaffolding to follow the content.
+`languages` controls which content columns appear and in which order. A
+group heading and its entry in the table of contents print the name of
+the group in the first of these languages that has one. `chrome_lang` is
+independent of `languages`: keep `chrome_lang = "en"` to get English
+column headers and row labels even if your survey content runs in French
+and German – pass `chrome_lang = "fr"` (or `"de"` / `"es"` / `"it"`)
+when you want the scaffolding to follow the content.
 
 ### Ethics committee submission
 

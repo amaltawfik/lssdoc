@@ -99,6 +99,15 @@
   document, and not on every card concerned. The audit section lists
   every finding in both layouts, as before.
 
+* `render_documentation()` now prints the name of a group as written in
+  LimeSurvey. It removed a number typed in front of the name
+  (`1. Studies` read `Studies`), and the table layout added a running
+  number of its own. In the cards layout, a document in several languages
+  now gives the name of the group in each language under its heading. The
+  entry of a group in the table of contents reads like its heading: a
+  group without a name in the first language takes the name of the next
+  one.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.

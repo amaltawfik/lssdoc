@@ -434,14 +434,9 @@ lss_render_toc <- function(doc, model, theme, sections = list(),
   # the group headings (cards) or the group rows (table).
   if (isTRUE(show_groups) && length(model$groups)) {
     if (is.null(numbers)) numbers <- lss_item_numbers(model)
-    primary <- model$languages[1]
-    gnames <- vapply(model$groups, function(group) {
-      gname <- group$names[[primary]]
-      if (is.null(gname) || is.na(gname) || !nzchar(gname)) {
-        gname <- paste0("Group ", group$gid)
-      }
-      lss_strip_group_number_prefix(gname)
-    }, character(1))
+    # The text of each entry is the heading of its group in the cards.
+    gnames <- vapply(model$groups, lss_group_title, character(1),
+                     langs = model$languages)
     ranges <- vapply(model$groups, function(group) {
       qids <- vapply(group$questions, function(q) as.character(q$qid),
                      character(1))

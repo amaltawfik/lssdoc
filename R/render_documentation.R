@@ -25,9 +25,10 @@
 #'   keeps all languages found in the `.lss` file in the order of the
 #'   `<languages>` section. Acts both as a subset filter and an
 #'   ordering: e.g. `c("en", "fr")` puts English first, `c("fr", "en")`
-#'   puts French first. `languages[1]` is treated as the primary
-#'   language (TOC entries, group fallback). Requesting a language
-#'   absent from the survey is an error (`lssdoc_unknown_language`).
+#'   puts French first. The heading of a group in the cards layout and
+#'   its entry in the table of contents print its name in the first of
+#'   these languages that has one. Requesting a language absent from
+#'   the survey is an error (`lssdoc_unknown_language`).
 #' @param template Output style. One of `"cards"` (the default) or
 #'   `"table"`.
 #'   * `"cards"` renders one detached pair of tables per item (meta
@@ -104,10 +105,13 @@
 #'   QA cross-checks. The raw form is always shown when the plain
 #'   form could not be simplified.
 #' @param show_groups Logical. If `TRUE` (default), show the group
-#'   banners (cards layout) or group rows (table layout). Pass
-#'   `FALSE` to flatten the document into a single sequence of items
-#'   with no section breaks (useful when groups exist only as
-#'   internal organization). The table of contents then lists no group.
+#'   banners (cards layout) or group rows (table layout). The name of
+#'   a group is printed as written in LimeSurvey. In the cards layout,
+#'   a document in several languages gives the name in each language
+#'   under the banner. Pass `FALSE` to flatten the document into a
+#'   single sequence of items with no section breaks (useful when
+#'   groups exist only as internal organization). The table of
+#'   contents then lists no group.
 #' @param show_group_description Logical. If `TRUE` (default), the
 #'   description of a group is printed under its heading: it is the text
 #'   LimeSurvey shows respondents under the group title. `FALSE` leaves

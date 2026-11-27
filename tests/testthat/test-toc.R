@@ -139,8 +139,8 @@ test_that("the table template bookmarks each group on its own row", {
     expect_identical(xml2::xml_attr(marks[[i]], "w:name", toc_w),
                      sprintf("lssdoc_group_%d", i))
     row <- xml2::xml_find_first(marks[[i]], "ancestor::w:tr[1]", toc_w)
-    expect_match(xml2::xml_text(row), sprintf("%d. %s", i, names[i]),
-                 fixed = TRUE)
+    # The row prints the name as written, with no number in front.
+    expect_true(startsWith(xml2::xml_text(row), paste0("Group", names[i])))
     # Start and end in the first paragraph of the row.
     p <- xml2::xml_find_first(row, ".//w:p", toc_w)
     id <- xml2::xml_attr(marks[[i]], "w:id", toc_w)
@@ -185,9 +185,16 @@ test_that("lss_render_toc() computes the numbers when none are given", {
     body, "//w:p[w:r/w:tab]/w:r[last()]/w:t", toc_w
   ))
   expect_identical(runs, c("questions 1 to 2", "question 3"))
-  # A group without a name in the first language is named after its id.
+  # A group without a name in the first language takes its name in the
+  # next one, and is named after its id when no language has one.
   nameless <- model
   nameless$groups[[1]]$names[[model$languages[1]]] <- ""
+  body <- officer::docx_body_xml(
+    lss_render_toc(officer::read_docx(), nameless, theme)
+  )
+  links <- xml2::xml_text(xml2::xml_find_all(body, "//w:hyperlink", toc_w))
+  expect_true(model$groups[[1]]$names[[model$languages[2]]] %in% links)
+  nameless$groups[[1]]$names[[model$languages[2]]] <- ""
   body <- officer::docx_body_xml(
     lss_render_toc(officer::read_docx(), nameless, theme)
   )
