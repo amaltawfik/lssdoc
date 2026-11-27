@@ -108,6 +108,17 @@
   group without a name in the first language takes the name of the next
   one.
 
+* The table layout of `render_documentation()` now keeps the formatting of
+  the texts, as the cards layout does: bold, italic, underline, superscript
+  and subscript, and the bullets of a list. It printed the question, the
+  subquestion, the help, the answer labels and the attributes as plain
+  text, and the prompt of an "Other" field with its HTML tags.
+
+* `render_documentation()` now sets upright a word the author put in
+  italic inside a text that the document prints in italic, the help of a
+  question for example. In the cards layout such a word did not stand
+  out.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.

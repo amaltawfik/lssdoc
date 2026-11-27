@@ -15,7 +15,7 @@ test_that("parity_expected() reads the texts of the model", {
   # The HTML is flattened: one line per paragraph and per list item.
   expect_identical(
     get("healthself stem", "en"),
-    paste("How is your health in general, today?",
+    paste("How is your health in general,", "today?",
           "Lung volume in dm3", "Blood CO2 level", sep = "\n")
   )
   expect_identical(get("sleephours suffix", "fr"), "heures par nuit")

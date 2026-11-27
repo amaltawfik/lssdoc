@@ -233,8 +233,11 @@ lss_truncate_title <- function(text, max_chars = 80L) {
 
 #' Convert an HTML fragment into a flextable paragraph
 #'
-#' Falls back to an em-dash placeholder when the fragment is empty so the
-#' cell never looks accidentally blank.
+#' The chunks of `lss_compose_chunks()` in the body font at `size` and in
+#' `color`, in italic throughout when `italic_default` (an italic of the
+#' author then set upright, as `lss_compose_chunks()` says). Falls back to an
+#' em-dash placeholder when the fragment is empty so the cell never looks
+#' accidentally blank.
 #'
 #' @keywords internal
 #' @noRd
@@ -242,8 +245,11 @@ lss_compose <- function(html, theme,
                         size = theme$size_question,
                         color = theme$color_text,
                         italic_default = FALSE) {
-  blocks <- lss_html_to_blocks(html)
-  if (length(blocks) == 0) {
+  chunks <- lss_compose_chunks(html, officer::fp_text(
+    font.family = theme$font_body, font.size = size, color = color,
+    italic = isTRUE(italic_default)
+  ))
+  if (length(chunks) == 0L) {
     return(flextable::as_paragraph(
       flextable::as_chunk(
         theme$empty_marker,
@@ -254,16 +260,39 @@ lss_compose <- function(html, theme,
       )
     ))
   }
+  do.call(flextable::as_paragraph, chunks)
+}
 
+#' The chunks of an HTML fragment over a base style
+#'
+#' The runs of `html` (`lss_html_to_blocks()`) as flextable chunks, each in
+#' the style `base` (an `officer::fp_text()`) with the marks of its run
+#' added: bold, underline, superscript or subscript, italic. A block after
+#' the first starts on a new line; an item of a list starts with its bullet
+#' ("1. " in an ordered list), indented by two spaces per level below the
+#' first. The new lines between blocks and the bullets take `base`, upright.
+#' A run in italic is set in italic in an upright `base` and upright in an
+#' italic one, the usual rule for emphasis inside italic text: an italic of
+#' the author stays visible in a text that a layout sets in italic (a help,
+#' an attribute, a subquestion of the table, the description of a group in
+#' the cards). One rule for both layouts: `lss_compose()` reads it for the
+#' cards and for the long texts, the cells of the table layout read it
+#' directly.
+#'
+#' @param html A length-one character HTML fragment.
+#' @param base An `officer::fp_text()`: font, size, colour and the marks
+#'   every chunk starts from.
+#' @return A list of chunks, empty when the fragment prints nothing.
+#' @keywords internal
+#' @noRd
+lss_compose_chunks <- function(html, base) {
+  blocks <- lss_html_to_blocks(html)
+  plain <- stats::update(base, italic = FALSE)
+  base_italic <- isTRUE(base$italic)
   chunks <- list()
   for (bi in seq_along(blocks)) {
     if (bi > 1L) {
-      chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
-        "\n",
-        props = officer::fp_text(
-          font.family = theme$font_body, font.size = size, color = color
-        )
-      )
+      chunks[[length(chunks) + 1L]] <- flextable::as_chunk("\n", props = plain)
     }
     b <- blocks[[bi]]
     if (identical(b$type, "list_item")) {
@@ -274,20 +303,15 @@ lss_compose <- function(html, theme,
         ""
       }
       chunks[[length(chunks) + 1L]] <- flextable::as_chunk(
-        paste0(indent, bullet),
-        props = officer::fp_text(
-          font.family = theme$font_body, font.size = size, color = color
-        )
+        paste0(indent, bullet), props = plain
       )
     }
     for (r in b$runs) {
-      props <- officer::fp_text(
-        font.family = theme$font_body,
-        font.size = size,
-        color = color,
-        bold = isTRUE(r$bold),
-        italic = isTRUE(r$italic) || isTRUE(italic_default),
-        underlined = isTRUE(r$underline),
+      props <- stats::update(
+        base,
+        bold = isTRUE(r$bold) || isTRUE(base$bold),
+        italic = xor(isTRUE(r$italic), base_italic),
+        underlined = isTRUE(r$underline) || isTRUE(base$underlined),
         vertical.align = if (isTRUE(r$superscript)) {
           "superscript"
         } else if (isTRUE(r$subscript)) {
@@ -303,7 +327,7 @@ lss_compose <- function(html, theme,
       }
     }
   }
-  do.call(flextable::as_paragraph, chunks)
+  chunks
 }
 
 #' One-line plain-text paragraph in the body font

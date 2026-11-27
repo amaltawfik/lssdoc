@@ -364,7 +364,9 @@ test_that("table cell: a part one language lacks shows the empty marker", {
   )
   en <- ta_chunks(lss_table_question_paragraph(row, "en", th, show_help = TRUE))
   fr <- ta_chunks(lss_table_question_paragraph(row, "fr", th, show_help = TRUE))
-  expect_identical(en$txt, c("Stem", "\n", "Row", "\n", "\u00AB Help \u00BB"))
+  # The guillemets are chunks of their own, around the chunks of the help.
+  expect_identical(en$txt, c("Stem", "\n", "Row", "\n", "\u00AB ", "Help",
+                             " \u00BB"))
   expect_identical(fr$txt, c(mk, "\n", mk, "\n", mk))
   # Each marker in the style of its part, in the muted colour.
   expect_identical(fr$italic, c(FALSE, FALSE, TRUE, FALSE, TRUE))
@@ -374,7 +376,8 @@ test_that("table cell: a part one language lacks shows the empty marker", {
   row$parent_text$fr <- "Tige"
   row$help$fr <- "Aide"
   fr <- ta_chunks(lss_table_question_paragraph(row, "fr", th, show_help = TRUE))
-  expect_identical(fr$txt, c("Tige", "\n", mk, "\n", "\u00AB Aide \u00BB"))
+  expect_identical(fr$txt, c("Tige", "\n", mk, "\n", "\u00AB ", "Aide",
+                             " \u00BB"))
   # A part that no language has: no line and no marker.
   row$subq_text <- list(en = "", fr = "")
   row$help <- list(en = "", fr = NULL)
@@ -390,10 +393,9 @@ test_that("table cell: a part one language lacks shows the empty marker", {
   row$scale_header <- list(en = "Trust", fr = "Confiance")
   en <- ta_chunks(lss_table_question_paragraph(row, "en", th, show_help = FALSE))
   fr <- ta_chunks(lss_table_question_paragraph(row, "fr", th, show_help = FALSE))
-  expect_identical(en$txt, c("Stem", "
-", "Row (Trust)"))
-  expect_identical(fr$txt, c("Tige", "
-", "Confiance"))
+  # The subquestion, the parentheses and the facet are chunks of their own.
+  expect_identical(en$txt, c("Stem", "\n", "Row", " (", "Trust", ")"))
+  expect_identical(fr$txt, c("Tige", "\n", "Confiance"))
 })
 
 test_that("table: the rows of the parity survey changed in 8.3, cell by cell", {

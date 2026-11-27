@@ -262,10 +262,10 @@ lss_render_table_template <- function(doc, rows, langs, theme,
 
     if (identical(kind, "value") || identical(kind, "mc_option")) {
       # Value row (enumerated answer code) OR multiple-choice option
-      # row: the language columns carry the answer / option label.
-      # `df` already holds the code (Value column) or the full option
-      # variable name (Variable column). Empty cells fall back to the
-      # muted em-dash.
+      # row: the language columns carry the answer / option label, its
+      # formatting kept (lss_compose_chunks()). `df` already holds the code
+      # (Value column) or the full option variable name (Variable column).
+      # Empty cells fall back to the muted em-dash.
       for (lg in langs) {
         label <- lss_html_to_text(r$labels[[lg]])
         if (!nzchar(label)) {
@@ -278,8 +278,8 @@ lss_render_table_template <- function(doc, rows, langs, theme,
         } else {
           ft <- flextable::compose(
             ft, i = i, j = paste0("Q_", lg),
-            value = flextable::as_paragraph(flextable::as_chunk(
-              label, props = value_label_props
+            value = do.call(flextable::as_paragraph, lss_compose_chunks(
+              r$labels[[lg]], value_label_props
             ))
           )
         }
@@ -306,24 +306,28 @@ lss_render_table_template <- function(doc, rows, langs, theme,
 
     if (identical(kind, "attr")) {
       # An attribute row: the text of each language at the body size,
-      # muted italic like the other annotation rows, the empty marker where
-      # a language has none. A raw text (the formula of a computed
-      # question) is printed as written, in the code font. Polish merges the
-      # language columns when the text is the same in all of them.
+      # muted italic like the other annotation rows, its formatting kept
+      # (lss_compose_chunks(): an italic of the author set upright), the
+      # empty marker where a language has none. A raw text (the formula of
+      # a computed question) is printed as written, in the code font, never
+      # read as HTML. Polish merges the language columns when the text is
+      # the same in all of them.
       is_formula <- isTRUE(r$raw)
       for (lg in langs) {
         text <- r$texts[[lg]]
-        if (!is_formula) text <- lss_html_to_text(text)
-        chunk <- if (nzchar(text)) {
-          flextable::as_chunk(
-            text, props = if (is_formula) equation_props else value_descriptor_props
+        chunks <- if (!is_formula) {
+          lss_compose_chunks(text, value_descriptor_props)
+        } else if (nzchar(text)) {
+          list(flextable::as_chunk(text, props = equation_props))
+        }
+        if (length(chunks) == 0L) {
+          chunks <- list(
+            flextable::as_chunk(theme$empty_marker, props = empty_marker_props)
           )
-        } else {
-          flextable::as_chunk(theme$empty_marker, props = empty_marker_props)
         }
         ft <- flextable::compose(
           ft, i = i, j = paste0("Q_", lg),
-          value = flextable::as_paragraph(chunk)
+          value = do.call(flextable::as_paragraph, chunks)
         )
       }
       next
@@ -1120,13 +1124,13 @@ lss_table_value_codes <- function(answers) {
 #' Build the flextable paragraph for one Question cell (one row,
 #' one language).
 #'
-#' Stacks the question stem, the subquestion label (compound rows),
-#' the help text (when present and `show_help`), and the response
-#' modalities (the answer scale or the implicit-coding descriptor).
-#' Each layer has its own typography: stem in the body color at
-#' question size, subq in the same size but italic to distinguish,
-#' help small and gray, answer codes in mono primary, answer labels
-#' in body text.
+#' Stacks the question stem (or the prompt of the "Other" field), the
+#' subquestion label (compound rows) and the help text (when present and
+#' `show_help`), each on its own line, each with the formatting of the
+#' author (`lss_compose_chunks()`). Each layer has its own typography:
+#' stem in the body color, subq in the same size but italic to
+#' distinguish, help muted italic; inside an italic layer an italic of
+#' the author is set upright.
 #' @keywords internal
 #' @noRd
 lss_table_question_paragraph <- function(row, lg, theme, show_help,
@@ -1150,28 +1154,41 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
   br <- function() {
     flextable::as_chunk("\n", props = plain())
   }
+  # A literal chunk in `props` (guillemets, parentheses, the empty marker,
+  # the hidden note), as a list of one chunk.
+  lit <- function(text, props) {
+    list(flextable::as_chunk(text, props = props))
+  }
+  # The chunks of a text of the author in `props`, its formatting kept
+  # (lss_compose_chunks(): in a part set in italic, an italic of the author
+  # is set upright).
+  runs <- function(html, props) {
+    lss_compose_chunks(html, props)
+  }
+  present <- function(text) {
+    !is.null(text) && !is.na(text) && nzchar(trimws(text))
+  }
 
   chunks <- list()
-  add_text <- function(text, props) {
-    if (is.null(text) || is.na(text) || !nzchar(trimws(text))) return()
-    chunks[[length(chunks) + 1L]] <<- flextable::as_chunk(text, props = props)
-  }
-  add_line <- function(text, props) {
-    if (is.null(text) || is.na(text) || !nzchar(trimws(text))) return()
+  # A line of the cell: the chunks `cs`, after a break when the cell
+  # already holds a line.
+  add_line <- function(cs) {
+    if (length(cs) == 0L) return()
     if (length(chunks) > 0L) chunks[[length(chunks) + 1L]] <<- br()
-    add_text(text, props)
+    chunks <<- c(chunks, cs)
   }
-  # One part of the cell (stem, subquestion, help) on its line. When this
-  # language lacks it and another language of the document has it
-  # (`all_langs`, the part in every language), the empty marker takes its
-  # place, in the props of the part with the muted colour: the rule of the
-  # cards, where a row that one language fills shows the marker in the
+  # One part of the cell (stem, subquestion, help) on its line: `text`, the
+  # part in this language as plain text, says whether it is there, `cs`
+  # are its chunks. When this language lacks it and another language of
+  # the document has it (`all_langs`, the part in every language as plain
+  # text), the empty marker takes its place, in `marker_props`: the rule of
+  # the cards, where a row that one language fills shows the marker in the
   # empty cells of the others (lss_compose()).
-  add_part <- function(text, props, all_langs, marker_props) {
-    if (!is.null(text) && !is.na(text) && nzchar(trimws(text))) {
-      add_line(text, props)
+  add_part <- function(text, cs, all_langs, marker_props) {
+    if (present(text)) {
+      add_line(cs)
     } else if (lss_any_present(all_langs)) {
-      add_line(theme$empty_marker, marker_props)
+      add_line(lit(theme$empty_marker, marker_props))
     }
   }
   flat <- function(x) {
@@ -1182,9 +1199,10 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
   # rows). For the Other item the prompt of the "Other:" field
   # replaces the stem.
   if (identical(row$kind, "other")) {
-    add_text(lss_other_prompt(row$other_q, lg, theme$chrome), plain())
+    add_line(runs(lss_other_prompt(row$other_q, lg, theme$chrome), plain()))
   } else {
-    add_part(lss_html_to_text(row$parent_text[[lg]]), plain(),
+    add_part(lss_html_to_text(row$parent_text[[lg]]),
+             runs(row$parent_text[[lg]], plain()),
              flat(row$parent_text), plain(color = theme$color_muted))
   }
 
@@ -1209,19 +1227,33 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
         s
       }
     }
-    add_part(subq_line(lg), plain(size = size_sq, italic = TRUE),
+    # The same line in chunks: the subquestion and the facet with their
+    # formatting, the parentheses in the props of the line.
+    sq_props <- plain(size = size_sq, italic = TRUE)
+    sq_html <- row$subq_text[[lg]]
+    f_html <- if (!is.null(row$scale_header)) row$scale_header[[lg]] else NULL
+    sq_cs <- if (present(lss_html_to_text(f_html))) {
+      if (present(lss_html_to_text(sq_html))) {
+        c(runs(sq_html, sq_props), lit(" (", sq_props), runs(f_html, sq_props),
+          lit(")", sq_props))
+      } else {
+        runs(f_html, sq_props)
+      }
+    } else {
+      runs(sq_html, sq_props)
+    }
+    add_part(subq_line(lg), sq_cs,
              lapply(names(row$subq_text), subq_line),
              plain(size = size_sq, color = theme$color_muted, italic = TRUE))
   }
 
-  # Help (optional), small muted italic.
+  # Help (optional), small muted italic, between guillemets.
   if (isTRUE(show_help) && !identical(row$kind, "other")) {
-    help_text <- lss_html_to_text(row$help[[lg]])
     help_props <- plain(size = size_h, color = theme$color_muted, italic = TRUE)
-    if (!is.null(help_text) && !is.na(help_text) && nzchar(trimws(help_text))) {
-      help_text <- paste0("\u00AB ", help_text, " \u00BB")
-    }
-    add_part(help_text, help_props, flat(row$help), help_props)
+    add_part(lss_html_to_text(row$help[[lg]]),
+             c(lit("\u00AB ", help_props), runs(row$help[[lg]], help_props),
+               lit(" \u00BB", help_props)),
+             flat(row$help), help_props)
   }
 
   if (length(chunks) == 0L) {
@@ -1234,8 +1266,8 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
   # A question hidden from respondents says so on a last muted italic
   # line of the cell, in the chrome language, like the help line above.
   if (isTRUE(row$hidden)) {
-    add_line(theme$chrome$item_hidden,
-             plain(color = theme$color_muted, italic = TRUE))
+    add_line(lit(theme$chrome$item_hidden,
+                 plain(color = theme$color_muted, italic = TRUE)))
   }
   do.call(flextable::as_paragraph, chunks)
 }

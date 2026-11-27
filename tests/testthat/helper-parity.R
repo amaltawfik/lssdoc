@@ -149,9 +149,14 @@ parity_squish <- function(x) {
 # `whole`, for a text that fills its cell in both layouts (the value of an
 # attribute), the whole text, whitespace squished, must be equal to one
 # entry: a short text such as "h" is then not found inside another one.
+# The bullet that both layouts put before an item of a list is not part of
+# the text: it is dropped from the entries before a whole text is compared.
 parity_found <- function(text, content, whole = FALSE) {
   hay <- parity_squish(content)
-  if (isTRUE(whole)) return(parity_squish(text) %in% hay)
+  if (isTRUE(whole)) {
+    hay <- parity_squish(gsub("(^|\n)\u2022 ", "\\1", content))
+    return(parity_squish(text) %in% hay)
+  }
   lines <- parity_squish(strsplit(text, "\n", fixed = TRUE)[[1]])
   lines <- lines[nzchar(lines)]
   all(vapply(lines, function(l) any(grepl(l, hay, fixed = TRUE)), logical(1)))
@@ -248,11 +253,16 @@ parity_missing <- function(expected, doc) {
 #   multiple numeric);
 # - a multiple choice with comments (socialmedia becomes type P);
 # - inline formatting (bold, italic, underline, superscript, subscript, a
-#   bulleted list) in a stem and an answer label (healthself), in a help and
-#   a subquestion (loneliness);
+#   line break, a bulleted list) in a stem and an answer label
+#   (healthself), in a help and a subquestion (loneliness), in an attribute
+#   (the suffix of weight); bold, italic, underline, superscript, subscript
+#   and a line break in the prompt of an "Other" field (respondentrole) and
+#   in the label of an option of the multiple choice with comments
+#   (socialmedia, its first option), which the row of its comment variable
+#   repeats;
 # - a text missing in French only: the stem of occupation, the first
 #   subquestion of dailyresources, the first answer of incomefeel;
-# - a description on the second group;
+# - a description on the second group, with a bold and an italic word;
 # - a group name that begins with a number the author typed ("1) ", fifth
 #   group);
 # - two exclusive options, separated by a semicolon, on the multiple choice
@@ -292,32 +302,72 @@ parity_lss <- function() {
   lss$subquestions$type[lss$subquestions$parent_qid == qid("socialmedia")] <- "P"
   # Inline formatting.
   set_text(qid("healthself"), "en", "question", paste0(
-    "<p>How is your <strong>health</strong> <em>in general</em>, ",
+    "<p>How is your <strong>health</strong> <em>in general</em>,<br>",
     "<u>today</u>?</p><ul><li>Lung volume in dm<sup>3</sup></li>",
     "<li>Blood CO<sub>2</sub> level</li></ul>"
   ))
   set_text(qid("healthself"), "fr", "question", paste0(
-    "<p>Comment est votre <strong>sant\u00E9</strong> <em>en g\u00E9n\u00E9ral</em>, ",
+    "<p>Comment est votre <strong>sant\u00E9</strong> <em>en g\u00E9n\u00E9ral</em>,<br>",
     "<u>aujourd'hui</u>\u00A0?</p><ul><li>Volume pulmonaire en dm<sup>3</sup></li>",
     "<li>Taux de CO<sub>2</sub> sanguin</li></ul>"
   ))
   hs <- lss$answers$aid[lss$answers$qid == qid("healthself")][1]
   al <- lss$answer_l10ns$aid == hs
-  lss$answer_l10ns$answer[al & lss$answer_l10ns$language == "en"] <-
-    "<strong>Very</strong> good<sup>1</sup>"
-  lss$answer_l10ns$answer[al & lss$answer_l10ns$language == "fr"] <-
-    "<strong>Tr\u00E8s</strong> bonne<sup>1</sup>"
+  lss$answer_l10ns$answer[al & lss$answer_l10ns$language == "en"] <- paste0(
+    "<strong>Very</strong> <em>good</em> <u>health</u><sup>1</sup><br>",
+    "H<sub>2</sub>O<ul><li>no pain</li></ul>"
+  )
+  lss$answer_l10ns$answer[al & lss$answer_l10ns$language == "fr"] <- paste0(
+    "<strong>Tr\u00E8s</strong> <em>bonne</em> <u>sant\u00E9</u><sup>1</sup><br>",
+    "H<sub>2</sub>O<ul><li>sans douleur</li></ul>"
+  )
   set_text(qid("loneliness"), "en", "help", paste0(
-    "<p>Think of the <em>last four weeks</em>.</p>",
+    "<p>Think of the <em>last four weeks</em><sup>1</sup>.<br>",
+    "Not CO<sub>2</sub>.</p>",
     "<ul><li>Count <strong>every</strong> day</li><li>Even <u>short</u> moments</li></ul>"
   ))
   set_text(qid("loneliness"), "fr", "help", paste0(
-    "<p>Pensez aux <em>quatre derni\u00E8res semaines</em>.</p>",
+    "<p>Pensez aux <em>quatre derni\u00E8res semaines</em><sup>1</sup>.<br>",
+    "Pas le CO<sub>2</sub>.</p>",
     "<ul><li>Comptez <strong>chaque</strong> jour</li><li>M\u00EAme les <u>brefs</u> moments</li></ul>"
   ))
   lsq <- lss$subquestions$qid[lss$subquestions$parent_qid == qid("loneliness")][1]
-  set_text(lsq, "en", "question", "Left <em>out</em> of H<sub>2</sub>O talk")
-  set_text(lsq, "fr", "question", "Laiss\u00E9 <em>de c\u00F4t\u00E9</em> du H<sub>2</sub>O")
+  set_text(lsq, "en", "question", paste0(
+    "<strong>Left</strong> <em>out</em> of <u>the</u> H<sub>2</sub>O ",
+    "talk<sup>a</sup><br>at work<ul><li>or at home</li></ul>"
+  ))
+  set_text(lsq, "fr", "question", paste0(
+    "<strong>Laiss\u00E9</strong> <em>de c\u00F4t\u00E9</em> de <u>la</u> ",
+    "discussion H<sub>2</sub>O<sup>a</sup><br>au travail",
+    "<ul><li>ou \u00E0 la maison</li></ul>"
+  ))
+  # An attribute: the suffix of weight, one text per language.
+  qa <- lss$question_attributes
+  lss$question_attributes <- qa[!(qa$qid == qid("weight") &
+                                    qa$attribute == "suffix"), , drop = FALSE]
+  add_attr(qid("weight"), "suffix", paste0(
+    "<strong>kg</strong> <em>net</em> <u>body</u> m<sup>3</sup> ",
+    "CO<sub>2</sub><br>rounded<ul><li>no clothes</li></ul>"
+  ), "en")
+  add_attr(qid("weight"), "suffix", paste0(
+    "<strong>kg</strong> <em>net</em> <u>corps</u> m<sup>3</sup> ",
+    "CO<sub>2</sub><br>arrondi<ul><li>sans v\u00EAtements</li></ul>"
+  ), "fr")
+  # The prompt of an "Other" field.
+  add_attr(qid("respondentrole"), "other_replace_text", paste0(
+    "<strong>Other</strong> <em>role</em> <u>here</u><sup>1</sup> ",
+    "H<sub>2</sub>O<br>specify:"
+  ), "en")
+  add_attr(qid("respondentrole"), "other_replace_text", paste0(
+    "<strong>Autre</strong> <em>r\u00F4le</em> <u>ici</u><sup>1</sup> ",
+    "H<sub>2</sub>O<br>pr\u00E9cisez\u00A0:"
+  ), "fr")
+  # The label of an option of the multiple choice with comments.
+  fb <- lss$subquestions$qid[lss$subquestions$parent_qid == qid("socialmedia")][1]
+  set_text(fb, "en", "question",
+           "<strong>Face</strong><u>book</u><sup>1</sup><br><em>or</em> H<sub>2</sub>O")
+  set_text(fb, "fr", "question",
+           "<strong>Face</strong><u>book</u><sup>1</sup><br><em>ou</em> H<sub>2</sub>O")
   # A text missing in French only.
   set_text(qid("occupation"), "fr", "question", "")
   dsq <- lss$subquestions$qid[lss$subquestions$parent_qid == qid("dailyresources")]
@@ -333,9 +383,9 @@ parity_lss <- function() {
     lss$group_l10ns[[col]][hit] <<- value
   }
   set_group(gid[2], "en", "description",
-            "<p>These questions are about your <strong>health</strong>.</p>")
+            "<p>These questions are about your <strong>health</strong> and <em>habits</em>.</p>")
   set_group(gid[2], "fr", "description",
-            "<p>Ces questions portent sur votre <strong>sant\u00E9</strong>.</p>")
+            "<p>Ces questions portent sur votre <strong>sant\u00E9</strong> et vos <em>habitudes</em>.</p>")
   for (lg in c("en", "fr")) {
     hit <- lss$group_l10ns$gid == gid[5] & lss$group_l10ns$language == lg
     lss$group_l10ns$group_name[hit] <- paste0("1) ", lss$group_l10ns$group_name[hit])
