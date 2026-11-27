@@ -1058,7 +1058,9 @@ lss_answer_rows <- function(q, langs, theme) {
 #'   (we never silently drop content), with cells filled by the muted
 #'   em-dash placeholder. A row may bring its own composed `paragraph`
 #'   (a flextable paragraph), printed in every language column instead of
-#'   `texts`.
+#'   `texts`. A row with `raw = TRUE` (the formula of a computed question)
+#'   prints each text as written, upright, in the monospace face and the
+#'   text colour, without reading it as HTML.
 #' @keywords internal
 #' @noRd
 lss_render_item_table <- function(doc, theme, langs, rows) {
@@ -1097,6 +1099,21 @@ lss_render_item_table <- function(doc, theme, langs, rows) {
         # of a multiple choice: several lines, the raw forms in the
         # monospace face).
         ft <- flextable::compose(ft, i = i, j = lg, value = rows[[i]]$paragraph)
+      } else if (isTRUE(rows[[i]]$raw)) {
+        # An expression (the formula of a computed question): as written,
+        # in the monospace face at the size of the raw expressions of the
+        # cards, never read as HTML.
+        ft <- flextable::compose(
+          ft, i = i, j = lg,
+          value = flextable::as_paragraph(flextable::as_chunk(
+            rows[[i]]$texts[[lg]],
+            props = officer::fp_text(
+              font.family = theme$font_code,
+              font.size = theme$size_question - 2L,
+              color = theme$color_text
+            )
+          ))
+        )
       } else if ((is_section && !section_with_text) || is_blank) {
         # Section header row, or a value row with no stored label (an
         # N-point numeric scale): language cells stay truly blank (no
@@ -1524,6 +1541,12 @@ lss_render_lang_block <- function(doc, texts_by_lang, langs, theme,
 #' `other_replace_text` is omitted because it is documented on its own
 #' card via `lss_render_other_item()`.
 #'
+#' The formula of a computed question (`equation`) is its text without the
+#' outer braces, and no row when that leaves nothing (`{}`). Its row carries
+#' `raw = TRUE`: the text is an expression, not a text of the author, and
+#' each layout prints it as written in its monospace face and never reads it
+#' as HTML. The other rows have no `raw` field.
+#'
 #' @keywords internal
 #' @noRd
 lss_attr_rows <- function(q, langs, theme, show_attrs) {
@@ -1544,9 +1567,11 @@ lss_attr_rows <- function(q, langs, theme, show_attrs) {
       ""
     }, character(1))
     if (!lss_any_present(as.list(per_lang))) next
-    # The formula of a computed question, its outer braces removed.
+    # The formula of a computed question, its outer braces removed; no
+    # row when nothing is left.
     if (identical(attr_name, "equation")) {
       per_lang[] <- lss_equation_formula(q)
+      if (!nzchar(trimws(per_lang[1]))) next
     }
 
     # Skip technical attributes when they hold their default/inactive
@@ -1561,13 +1586,15 @@ lss_attr_rows <- function(q, langs, theme, show_attrs) {
     label <- theme$chrome[[paste0("attr_", attr_name)]]
     if (!is.null(label) && nzchar(label)) fmt$label <- label
 
-    rows[[length(rows) + 1L]] <- list(
+    row <- list(
       label = fmt$label,
       texts = fmt$texts,
       size = theme$size_meta,
       color = theme$color_muted,
       italic = TRUE
     )
+    if (identical(attr_name, "equation")) row$raw <- TRUE
+    rows[[length(rows) + 1L]] <- row
   }
   rows
 }

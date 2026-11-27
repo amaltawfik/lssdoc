@@ -145,11 +145,15 @@ parity_squish <- function(x) {
 }
 
 # Is `text` printed in `content`? Each line of the text (a paragraph, an
-# item of a list) must be found inside one entry, whitespace squished.
-parity_found <- function(text, content) {
+# item of a list) must be found inside one entry, whitespace squished. With
+# `whole`, for a text that fills its cell in both layouts (the value of an
+# attribute), the whole text, whitespace squished, must be equal to one
+# entry: a short text such as "h" is then not found inside another one.
+parity_found <- function(text, content, whole = FALSE) {
+  hay <- parity_squish(content)
+  if (isTRUE(whole)) return(parity_squish(text) %in% hay)
   lines <- parity_squish(strsplit(text, "\n", fixed = TRUE)[[1]])
   lines <- lines[nzchar(lines)]
-  hay <- parity_squish(content)
   all(vapply(lines, function(l) any(grepl(l, hay, fixed = TRUE)), logical(1)))
 }
 
@@ -168,27 +172,32 @@ parity_attr_value <- function(attrs, name, lg) {
 # Every text of the survey that the documentation is meant to print, in each
 # language: one row per text, `id` naming it ("<question> stem",
 # "<question>/<subquestion> subquestion", "<question>:<code> answer",
-# "group <n> name", ...) and `text` the plain text, read by the package's
-# own HTML flattener. Empty texts are left out: they have nothing to find.
+# "group <n> name", ...), `text` the plain text, read by the package's
+# own HTML flattener, and `whole` TRUE for the value of an attribute, which
+# fills its cell in both layouts (see parity_found()). The formula of a
+# computed question is not HTML: it is read as written. Empty texts are left
+# out: they have nothing to find.
 parity_expected <- function(lss, languages = c("en", "fr"),
                             show_attrs = c("prefix", "suffix", "validation",
                                            "equation")) {
   m <- lss_model(lss, languages)
   chrome <- lss_chrome_strings("en")
   out <- list()
-  add <- function(id, lg, html) {
+  add <- function(id, lg, html, whole = FALSE, raw = FALSE) {
     if (is.null(html) || length(html) == 0L || is.na(html[1])) return()
-    text <- lss_html_to_text(html[1])
+    text <- if (raw) html[1] else lss_html_to_text(html[1])
     if (!nzchar(trimws(text))) return()
     out[[length(out) + 1L]] <<- data.frame(
-      id = id, lang = lg, text = text, stringsAsFactors = FALSE
+      id = id, lang = lg, text = text, whole = whole,
+      stringsAsFactors = FALSE
     )
   }
   attrs_of <- function(id, x, lg) {
     for (a in show_attrs) {
       v <- parity_attr_value(x$attributes, a, lg)
-      if (identical(a, "equation") && nzchar(v)) v <- lss_equation_formula(x)
-      add(paste(id, a), lg, v)
+      formula <- identical(a, "equation")
+      if (formula && nzchar(v)) v <- lss_equation_formula(x)
+      add(paste(id, a), lg, v, whole = TRUE, raw = formula)
     }
   }
   for (gi in seq_along(m$groups)) {
@@ -223,8 +232,8 @@ parity_expected <- function(lss, languages = c("en", "fr"),
 
 # The texts of `expected` that `doc` does not print, as "<id> <lang>".
 parity_missing <- function(expected, doc) {
-  found <- vapply(expected$text, parity_found, logical(1),
-                  content = doc$content)
+  found <- mapply(parity_found, expected$text, expected$whole,
+                  MoreArgs = list(content = doc$content))
   paste(expected$id, expected$lang)[!found]
 }
 

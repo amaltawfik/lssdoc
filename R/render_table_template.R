@@ -303,10 +303,10 @@ lss_render_table_template <- function(doc, rows, langs, theme,
     if (identical(kind, "attr")) {
       # An attribute row: the text of each language at the body size,
       # muted italic like the other annotation rows, the empty marker where
-      # a language has none. The formula of a computed question is printed
-      # as written, in the code font. Polish merges the language columns
-      # when the text is the same in all of them.
-      is_formula <- identical(r$attribute, "equation")
+      # a language has none. A raw text (the formula of a computed
+      # question) is printed as written, in the code font. Polish merges the
+      # language columns when the text is the same in all of them.
+      is_formula <- isTRUE(r$raw)
       for (lg in langs) {
         text <- r$texts[[lg]]
         if (!is_formula) text <- lss_html_to_text(text)
@@ -631,15 +631,17 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
 
   # The attribute rows of `x` (a question or a subquestion): the rows
   # lss_attr_rows() gives the cards for the attributes of `show_attrs`, in
-  # the same order, each with the name of its attribute (the formula of a
-  # computed question is drawn in the code font) and `merge`, TRUE when
-  # its text is the same in every language.
+  # the same order, each with the name of its attribute, `raw` (TRUE for an
+  # expression, the formula of a computed question, drawn as written in the
+  # code font) and `merge`, TRUE when its text is the same in every
+  # language.
   attr_rows <- function(x) {
     out <- list()
     for (a in unique(state$show_attrs)) {
       for (ar in lss_attr_rows(x, langs, theme, a)) {
         out[[length(out) + 1L]] <- list(
           kind = "attr", attribute = a, label = ar$label, texts = ar$texts,
+          raw = isTRUE(ar$raw),
           merge = length(unique(unlist(ar$texts))) == 1L
         )
       }

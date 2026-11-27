@@ -71,6 +71,8 @@ test_that("table rows: the attributes of a leaf question follow its Question row
   expect_identical(vapply(a, function(r) r$attribute, ""), c("prefix", "suffix"))
   expect_identical(a[[1]]$texts, list(en = "approx.", fr = "env."))
   expect_false(a[[1]]$merge)
+  # Texts of the author, not expressions.
+  expect_identical(vapply(a, function(r) r$raw, NA), c(FALSE, FALSE))
   # The row without a language holds for every language: one merged cell.
   expect_identical(a[[2]]$texts, list(en = "cm", fr = "cm"))
   expect_true(a[[2]]$merge)
@@ -95,7 +97,40 @@ test_that("table rows: the formula of a computed question is an attribute row", 
   expect_identical(rows[[2]]$label, "Equation")
   expect_identical(rows[[2]]$texts, list(en = "a + b", fr = "a + b"))
   expect_true(rows[[2]]$merge)
+  # The flag of lss_attr_rows() reaches the row: printed as written.
+  expect_true(rows[[2]]$raw)
   expect_identical(ta_kinds(ta_rows(list(q), show_attrs = "prefix")), "leaf")
+})
+
+test_that("cards: an empty formula gives no row", {
+  for (v in c("{}", "{ }", " { } ")) {
+    q <- ta_q("*", "q3", ta_attrs(list("equation", v, "")))
+    expect_length(lss_attr_rows(q, TA_LANGS, ta_theme(), TA_ATTRS), 0L)
+  }
+})
+
+test_that("table rows: an empty formula gives no row", {
+  for (v in c("{}", "{ }", " { } ")) {
+    q <- ta_q("*", "q3", ta_attrs(list("equation", v, "")))
+    expect_identical(ta_kinds(ta_rows(list(q))), "leaf", info = v)
+  }
+})
+
+test_that("lss_attr_rows(): the formula row is marked raw, its text as written", {
+  q <- ta_q("*", "q3", ta_attrs(list("equation", "{if(a<b, 1, 2)}", "")))
+  r <- lss_attr_rows(q, TA_LANGS, ta_theme(), "equation")
+  expect_length(r, 1L)
+  expect_identical(r[[1]]$label, "Equation")
+  expect_identical(r[[1]]$texts, list(en = "if(a<b, 1, 2)", fr = "if(a<b, 1, 2)"))
+  expect_true(r[[1]]$raw)
+  # Data only: the layout composes the text.
+  expect_null(r[[1]]$paragraph)
+  # Any other attribute is a text of the author: no flag.
+  q <- ta_q("N", "q4", ta_attrs(SFX))
+  s <- lss_attr_rows(q, TA_LANGS, ta_theme(), "suffix")
+  expect_length(s, 1L)
+  expect_false("raw" %in% names(s[[1]]))
+  expect_null(s[[1]]$paragraph)
 })
 
 test_that("table rows: a multiple choice and a ranking print theirs under the parent row", {
@@ -175,11 +210,14 @@ ta_span <- function(tc) {
                       "val")
   if (is.na(v)) 1L else as.integer(v)
 }
-# The run properties of the first run of a cell: italic, colour, font.
+# The run properties of the first run of a cell: italic (a w:i without a
+# value, or with a true one), colour, font.
 ta_run <- function(tc) {
   rpr <- xml2::xml_find_first(tc, ".//w:r/w:rPr", parity_w)
+  i <- xml2::xml_find_first(rpr, "w:i", parity_w)
   list(
-    italic = !inherits(xml2::xml_find_first(rpr, "w:i", parity_w), "xml_missing"),
+    italic = !inherits(i, "xml_missing") &&
+      xml2::xml_attr(i, "val") %in% c(NA, "true", "1", "on"),
     color = xml2::xml_attr(xml2::xml_find_first(rpr, "w:color", parity_w), "val"),
     font = xml2::xml_attr(xml2::xml_find_first(rpr, "w:rFonts", parity_w), "ascii")
   )
@@ -233,6 +271,48 @@ test_that("table: the attribute rows of the parity survey, cell by cell", {
     expect_identical(unname(b[2:3, "fr"]),
                      c("approximativement", "heures par nuit"), info = v)
   }
+})
+
+test_that("both layouts print a formula with a comparison as written", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  lss <- demo_lss()
+  imc <- lss$questions$qid[lss$questions$title == "imc"]
+  lss$questions <- lss$questions[lss$questions$qid == imc, , drop = FALSE]
+  qa <- lss$question_attributes
+  hit <- qa$qid == imc & qa$attribute == "equation"
+  expect_true(any(hit))
+  qa$value[hit] <- "{if(a<b, 1, 2)}"
+  lss$question_attributes <- qa
+  formula <- "if(a<b, 1, 2)"
+  th <- ta_theme()
+  rows_with <- function(doc, label) {
+    trs <- xml2::xml_find_all(doc$xml, "//w:tbl/w:tr", parity_w)
+    Filter(function(r) identical(r$cells[1], label), lapply(trs, function(tr) {
+      tcs <- xml2::xml_find_all(tr, "w:tc", parity_w)
+      list(tcs = tcs, cells = vapply(tcs, parity_node_text, ""))
+    }))
+  }
+
+  # Cards: the Equation row reads the formula whole in each language
+  # column, upright, in the code font and the text colour.
+  hit <- rows_with(parity_render(lss, "cards"), "Equation")
+  expect_length(hit, 1L)
+  expect_identical(hit[[1]]$cells[2:3], c(formula, formula))
+  for (tc in hit[[1]]$tcs[2:3]) {
+    run <- ta_run(tc)
+    expect_identical(run$font, th$font_code)
+    expect_false(run$italic)
+    expect_identical(toupper(run$color), toupper(sub("^#", "", th$color_text)))
+  }
+
+  # Table: the formula already prints whole, once across the languages.
+  hit <- rows_with(parity_render(lss, "table"), "Equation")
+  expect_length(hit, 1L)
+  expect_true(formula %in% hit[[1]]$cells)
+  expect_identical(ta_run(hit[[1]]$tcs[[which(hit[[1]]$cells == formula)]])$font,
+                   th$font_code)
 })
 
 test_that("table: a language without the attribute shows the empty marker", {

@@ -58,6 +58,32 @@ test_that("parity_expected() reads the texts of the model", {
   # squished.
   expect_true(parity_found("a b\nc", c("x a\u00A0 b y", "c")))
   expect_false(parity_found("a b\nc", c("x a b y")))
+  # The value of an attribute fills its cell: it is marked `whole`, and a
+  # whole text is found only as one entry, whitespace squished, never
+  # inside another text.
+  is_attr <- grepl(" (prefix|suffix|validation|equation)$", ex$id)
+  expect_true(any(is_attr))
+  expect_identical(ex$whole, is_attr)
+  expect_true(parity_found("h", c("12 h a day", " h\u00A0"), whole = TRUE))
+  expect_false(parity_found("h", c("12 h a day", "hours"), whole = TRUE))
+  expect_true(parity_found("h", c("12 h a day", "hours")))
+  expect_true(parity_found("hours a\nnight", "hours a night", whole = TRUE))
+  expect_identical(
+    parity_missing(data.frame(id = c("a", "b"), lang = "en", text = "h",
+                              whole = c(FALSE, TRUE)),
+                   list(content = "12 h a day")),
+    "b en"
+  )
+  # The formula of a computed question is read as written, not as HTML.
+  qa <- lss$question_attributes
+  qa$value[qa$attribute == "equation" &
+             qa$qid %in% lss$questions$qid[lss$questions$title == "imc"]] <-
+    "{if(a<b, 1, 2)}"
+  lss$question_attributes <- qa
+  expect_identical(
+    parity_expected(lss)$text[parity_expected(lss)$id == "imc equation"],
+    c("if(a<b, 1, 2)", "if(a<b, 1, 2)")
+  )
 })
 
 test_that("the cards and the table print the same texts and variables", {
