@@ -120,42 +120,45 @@ test_that("lss_other_prompt prefers the replacement text of the survey", {
 
 # ---- rendered documents --------------------------------------------------
 
-# The table cells of a rendered document, row by row.
-bl_cells <- function(path) {
-  s <- officer::docx_summary(officer::read_docx(path))
-  s[s$content_type %in% "table cell", c("row_id", "cell_id", "text")]
-}
-# Does one row of `cells`, among `rows`, hold all of `texts`?
-bl_row_has <- function(cells, rows, texts) {
-  any(vapply(rows, function(r) {
-    all(texts %in% cells$text[cells$row_id == r])
-  }, logical(1)))
+# Does a rendered document of the demo survey print the built-in labels in
+# the column of each language? Cards: the Value rows of the card of
+# chroniccondition, the Question row of the card of nationality[other].
+# Table: the Value rows under the row of chroniccondition, the row of
+# nationality[other]. The rows of that question, not any row of the
+# document. The helpers are in helper-parity.R.
+bl_labels_in_columns <- function(doc, template) {
+  if (identical(template, "cards")) {
+    has <- function(rows, cells) {
+      any(vapply(rows, identical, logical(1), cells))
+    }
+    yn <- parity_card_rows(doc, "chroniccondition")
+    other <- parity_card_rows(doc, "nationality[other]")
+    return(c(
+      yes = has(yn, c("Y", "Yes", "Oui")),
+      no = has(yn, c("N", "No", "Non")),
+      other = has(other, c("Question", "Other:", BL_AUTRE))
+    ))
+  }
+  grid <- parity_table_grid(doc)
+  has <- function(block, code, en, fr) {
+    any(block[, "Value"] == code & block[, "en"] == en & block[, "fr"] == fr)
+  }
+  yn <- parity_grid_block(grid, "chroniccondition")
+  other <- parity_grid_block(grid, "nationality[other]")
+  c(
+    yes = has(yn, "Y", "Yes", "Oui"),
+    no = has(yn, "N", "No", "Non"),
+    other = identical(unname(other[1L, c("en", "fr")]), c("Other:", BL_AUTRE))
+  )
 }
 
 test_that("a rendered document prints the built-in labels in each column", {
   skip_on_cran()
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  path <- system.file("extdata", "demo_survey.lss", package = "lssdoc")
-  skip_if_not(file.exists(path))
-  lss <- lss_cached(path)
   for (tpl in c("cards", "table")) {
-    out <- tempfile(fileext = ".docx")
-    suppressMessages(render_documentation(
-      lss, out, languages = c("en", "fr"), template = tpl,
-      chrome_lang = "en", show_audit = FALSE
-    ))
-    cells <- bl_cells(out)
-    unlink(out)
-    # The yes/no question chroniccondition: its Value rows sit in the rows
-    # that follow the row of its variable, in either layout.
-    r0 <- min(cells$row_id[cells$text %in% "chroniccondition"])
-    expect_true(bl_row_has(cells, r0 + 1:8, c("Yes", "Oui")), info = tpl)
-    expect_true(bl_row_has(cells, r0 + 1:8, c("No", "Non")), info = tpl)
-    # The Other item of nationality: the prompt sits in the row of its
-    # variable (table) or in the card that follows it (cards).
-    r1 <- min(cells$row_id[cells$text %in% "nationality[other]"])
-    expect_true(bl_row_has(cells, r1 + 0:3, c("Other:", BL_AUTRE)),
-                info = tpl)
+    doc <- parity_render(demo_lss(), tpl, key = "demo")
+    expect_identical(bl_labels_in_columns(doc, tpl),
+                     c(yes = TRUE, no = TRUE, other = TRUE), info = tpl)
   }
 })
