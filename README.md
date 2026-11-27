@@ -75,9 +75,11 @@ Other things lssdoc takes care of for you:
   `parent[subq]` / `parent[other]`, dual-scale arrays split into one
   block per scale (`parent[subq][1]`), two-dimensional arrays as the row
   x column cross-product (`parent[row_col]`), ranking expanded into one
-  column per position (`parent[answerid]`), and list-with-comment into
-  `parent[_Ccomment]`. Pass `variable_names = "underscore"` for the
-  Expression Manager / SPSS / Stata code form (`parent_subq`) instead.
+  column per position (`parent[answerid]`), list-with-comment into
+  `parent[_Ccomment]`, and the comment of each option of a multiple
+  choice with comments as `parent[subqcomment]`. Pass
+  `variable_names = "underscore"` for the Expression Manager / SPSS /
+  Stata code form (`parent_subq`) instead.
 - **Methodological type labels.** UI distinctions like “List (radio)” vs
   “List (dropdown)” collapse into “Single choice”, because the response
   semantics are identical and the actual codes appear in the Value

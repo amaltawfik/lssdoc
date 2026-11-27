@@ -669,6 +669,31 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     list(kind = "order_note", text = note, field_label = field_label)
   }
 
+  # The row of a comment variable, registered in the variable index under
+  # `no`: a short free text (its Value cell takes the token of type S),
+  # with the label "Comment" in the Field column, as on the card of the
+  # comment of a list, never mandatory (a comment field is not, whatever
+  # the question says, as the card of the comment and the "Other" row
+  # print), and without the help of the question. The language
+  # cells hold `texts`, by default the stem (the comment of a list with
+  # comment); the comment of an option of a multiple choice with comments
+  # passes the label of the option, the comment of its "Other" the prompt.
+  # `sq`, the option, adds its condition to the Filter cell.
+  emit_comment_row <- function(q, no, variable, texts = NULL, sq = NULL) {
+    state$index_entries[[length(state$index_entries) + 1L]] <- list(
+      code = variable, no = no
+    )
+    cr <- emit_question_row("leaf", no, variable, q = q, sq = sq)
+    cr$q$type <- "S"
+    cr$q$answers <- list()
+    cr$type_label <- chrome$type_text_short
+    cr$mandatory_label <- lss_yes_no("N", theme)
+    cr$field <- chrome$item_comment
+    cr$help <- NULL
+    if (!is.null(texts)) cr$parent_text <- texts
+    cr
+  }
+
   # One grouped block for a multiple-choice question: a parent
   # Question row (stem once, Variable = parent_*, the implicit
   # "Y/blank" coding in the Value cell) followed by one row per option
@@ -677,8 +702,11 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   # option label in the language columns. The parent row carries the
   # question's number (`28`), each option row its sub-item number
   # (`28.1`, `28.2`, ...), and each option variable is registered in the
-  # variable index under that sub-item number.
+  # variable index under that sub-item number. With comments (type P),
+  # each option row and the "Other" row are followed by the row of their
+  # comment variable, at the same number.
   emit_multiple_choice <- function(q) {
+    comments <- identical(q$type, "P")
     out <- list()
     parent_no <- lss_item_label(state$numbers, q$qid)
     # The parent row is a pure question header: stem, type, filter, but
@@ -704,16 +732,23 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
         code = item_code, no = option_no
       )
+      labels <- stats::setNames(
+        lapply(langs, function(lg) sq$texts[[lg]]$question), langs
+      )
       out[[length(out) + 1L]] <- list(
         kind = "mc_option",
         no = option_no,
         variable = item_code,
         value_token = value_token,
         relevance = sq$relevance,
-        labels = stats::setNames(
-          lapply(langs, function(lg) sq$texts[[lg]]$question), langs
-        )
+        labels = labels
       )
+      if (comments) {
+        out[[length(out) + 1L]] <- emit_comment_row(
+          q, option_no, lss_comment_variable(q, sq$code, theme$variable_names),
+          texts = labels, sq = sq
+        )
+      }
     }
     excl <- lss_exclusive_options_text(q, chrome)
     if (!is.null(excl)) {
@@ -729,6 +764,14 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
       out[[length(out) + 1L]] <- emit_question_row(
         "other", parent_no, item_code, q = q, other_q = q
       )
+      if (comments) {
+        out[[length(out) + 1L]] <- emit_comment_row(
+          q, parent_no, lss_comment_variable(q, "other", theme$variable_names),
+          texts = stats::setNames(
+            lapply(langs, function(lg) lss_other_prompt(q, lg, chrome)), langs
+          )
+        )
+      }
     }
     out
   }
@@ -901,24 +944,12 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
             "other", q_no, item_code, q = q, other_q = q
           )
         }
-        # List-with-comment (type O) free-text comment column.
+        # List-with-comment (type O) free-text comment column, with the
+        # stem in the language cells.
         if (identical(q$type, "O")) {
-          item_code <- lss_variable_name(q$code, "_Ccomment",
-                                         style = theme$variable_names)
-          state$index_entries[[length(state$index_entries) + 1L]] <- list(
-            code = item_code, no = q_no
+          rows[[length(rows) + 1L]] <- emit_comment_row(
+            q, q_no, lss_comment_variable(q, style = theme$variable_names)
           )
-          # A short free text (its Value cell takes the token of type S),
-          # with the label "Comment" in the Field column, as on the card of
-          # the comment, and the stem in the language cells without the
-          # help of the question (it belongs to the list).
-          cr <- emit_question_row("leaf", q_no, item_code, q = q)
-          cr$q$type <- "S"
-          cr$q$answers <- list()
-          cr$type_label <- chrome$type_text_short
-          cr$field <- chrome$item_comment
-          cr$help <- NULL
-          rows[[length(rows) + 1L]] <- cr
         }
       }
   }
@@ -1235,34 +1266,6 @@ lss_other_prompt <- function(q, lg, chrome) {
     return(empty_lang[1])
   }
   default
-}
-
-#' Implicit-coding text for a question with no enumerated answers.
-#' Mirrors the language map of `lss_value_implicit_row()` but
-#' returns the descriptor as a single string suitable for
-#' embedding inside a Question cell.
-#' @keywords internal
-#' @noRd
-lss_table_implicit_value_text <- function(q, theme) {
-  chrome <- theme$chrome
-  switch(
-    q$type,
-    "M" = chrome$value_multi_y_blank,
-    "P" = chrome$value_multi_y_blank_with_comment,
-    "Y" = chrome$value_yes_no,
-    "G" = chrome$value_gender,
-    "5" = chrome$value_5point,
-    "N" = chrome$value_numeric_input,
-    "K" = chrome$value_numeric_input,
-    "S" = chrome$value_free_text_short,
-    "T" = chrome$value_free_text,
-    "U" = chrome$value_free_text,
-    "D" = chrome$value_date_input,
-    "*" = chrome$value_computed,
-    "R" = chrome$value_ranking,
-    "|" = chrome$value_file_upload,
-    NULL
-  )
 }
 
 #' Apply the visual polish (band, borders, widths, section-row

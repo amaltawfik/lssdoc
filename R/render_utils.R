@@ -38,8 +38,9 @@ lss_render_state <- function(model) {
 #'
 #' `part` is the subquestion code, the multiple-choice answer code, the
 #' literal `"other"` / `"_Cother"` / `"_Ccomment"` appendix marker, the
-#' ranking slot's answer id, or `"*"` for the family placeholder shown in
-#' a multiple-choice meta band. `scale` is the 1-based dual-scale index.
+#' part of a comment variable (`lss_comment_variable()`), the ranking
+#' slot's answer id, or `"*"` for the family placeholder shown in a
+#' multiple-choice meta band. `scale` is the 1-based dual-scale index.
 #'
 #' @keywords internal
 #' @noRd
@@ -75,6 +76,33 @@ lss_other_variable <- function(q, style = "brackets") {
   multiple <- identical(lss_type_info(q$type)$family, "multiple")
   lss_variable_name(q$code, if (multiple) "other" else "_Cother",
                     style = style)
+}
+
+#' Data-column name of a comment variable
+#'
+#' The names LimeSurvey's field map gives the free-text comments:
+#' * multiple choice with comments (type P), the comment of option `part`:
+#'   the subquestion code followed by `comment`, `code[SQcomment]` or
+#'   `code_SQcomment`; `part = "other"` gives the comment of "Other",
+#'   `code[othercomment]`, and `part = "*"` the pattern of the names that
+#'   the card prints, `code[*comment]`;
+#' * list with comment (type O), `part = NULL`: `code[_Ccomment]` in the
+#'   CSV / Excel export, `code_comment` in the underscore style (the
+#'   Expression Manager's name).
+#'
+#' A digit-only subquestion code keeps its leading zeros here (`Q[001comment]`),
+#' since the part is not digit-only; `lss_variable_name()` drops them from
+#' the option's own name (`Q[1]`).
+#'
+#' @keywords internal
+#' @noRd
+lss_comment_variable <- function(q, part = NULL, style = "brackets") {
+  if (is.null(part)) {
+    part <- if (identical(style, "underscore")) "comment" else "_Ccomment"
+  } else {
+    part <- paste0(part, "comment")
+  }
+  lss_variable_name(q$code, part, style = style)
 }
 
 #' Bookmark name for a group, used to wire TOC entries to group headings

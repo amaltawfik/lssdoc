@@ -74,7 +74,8 @@
 * In the table layout of `render_documentation()`, the rows of an "Other"
   field and of the comment field of a list with comment now show `[text]`
   in the Value cell, which was empty. The comment field is labelled
-  "Comment", and its row no longer repeats the help of the question.
+  "Comment". Its row no longer repeats the help of the question, and its
+  Mandatory cell reads "No", as on the card.
 
 * In the table layout, a question text, a subquestion or a help missing in
   one language of the document now shows the empty marker in its place.
@@ -83,6 +84,14 @@
 * In the table layout, the Field column is now wide enough for the longest
   word of its labels. A label such as "Commentaire" or "Begrüßungstext"
   broke inside the word. The extra width comes from the language columns.
+
+* `render_documentation()` now documents the comment variables of a
+  multiple choice with comments. The table layout has one row per comment
+  variable, under the row of its option, and the card gives the pattern of
+  their names (`Q[*comment]`). The variable index lists them in both
+  layouts. With `variable_names = "underscore"`, the comment of a list
+  with comment is now named `Q_comment`, the name the Expression Manager
+  gives it. It was `Q__Ccomment`.
 
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read

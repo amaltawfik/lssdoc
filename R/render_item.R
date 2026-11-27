@@ -410,10 +410,25 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   # One card for the whole question, so it carries the question's own
   # number; every option variable points to it in the index.
   item_no <- lss_item_label(state$numbers, q$qid)
-  # Register every option variable in the index (lookup preserved).
+  # Register every option variable in the index (lookup preserved); with
+  # comments (type P), the comment variable of each option and of "Other"
+  # too, at the same number.
+  comments <- identical(q$type, "P")
   for (sq in q$subquestions) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
       code = lss_variable_name(q$code, sq$code, style = theme$variable_names),
+      no = item_no
+    )
+    if (comments) {
+      state$index_entries[[length(state$index_entries) + 1L]] <- list(
+        code = lss_comment_variable(q, sq$code, theme$variable_names),
+        no = item_no
+      )
+    }
+  }
+  if (comments && identical(q$other, "Y")) {
+    state$index_entries[[length(state$index_entries) + 1L]] <- list(
+      code = lss_comment_variable(q, "other", theme$variable_names),
       no = item_no
     )
   }
@@ -535,7 +550,8 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   # type uses (lss_value_implicit_row), so the multiple-choice card is
   # consistent with single-choice, Yes/No, numeric, etc. -- one "Value"
   # row carrying the localized "Y = selected, blank = not selected"
-  # (with the comment-variable note for type P).
+  # (for type P, followed by the pattern of the names of the comment
+  # variables).
   vrow <- lss_value_implicit_row(q, langs, theme)
   if (!is.null(vrow)) rows[[length(rows) + 1L]] <- vrow
 
@@ -622,17 +638,17 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
 #' Render the free-text comment of a "list with comment" question (type O)
 #'
 #' A list-with-comment question yields a second data column holding the
-#' respondent's free-text comment, which LimeSurvey names `<parent>[_Ccomment]`
-#' in its CSV/Excel export. We surface it as its own card so the reader
-#' sees the variable in the index and meta table alongside the list. Like
-#' the "Other" field, it carries the question's own number.
+#' respondent's free-text comment, which LimeSurvey names
+#' `<parent>[_Ccomment]` in its CSV/Excel export (`lss_comment_variable()`).
+#' We surface it as its own card so the reader sees the variable in the
+#' index and meta table alongside the list. Like the "Other" field, it
+#' carries the question's own number.
 #'
 #' @keywords internal
 #' @noRd
 lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
   item_no <- lss_item_label(state$numbers, q$qid)
-  item_code <- lss_variable_name(q$code, "_Ccomment",
-                                 style = theme$variable_names)
+  item_code <- lss_comment_variable(q, style = theme$variable_names)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = item_no
   )
@@ -1226,7 +1242,10 @@ lss_value_implicit_row <- function(q, langs, theme) {
     q$type,
     # Multi-choice subquestions: each subq is a binary Y/blank flag.
     "M" = chrome$value_multi_y_blank,
-    "P" = chrome$value_multi_y_blank_with_comment,
+    # With comments: the same, then the pattern of the names of the
+    # comment variables, one per option (`Q[*comment]`).
+    "P" = sprintf(chrome$value_multi_y_blank_with_comment,
+                  lss_comment_variable(q, "*", theme$variable_names)),
     # Pre-defined enumerated types with implicit (not stored) codes.
     "Y" = chrome$value_yes_no,
     "G" = chrome$value_gender,

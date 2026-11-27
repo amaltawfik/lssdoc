@@ -226,11 +226,14 @@
 #'     **CSV / Excel data export**, so the variable index reproduces the
 #'     raw data file column for column: `parent[subq]`,
 #'     `parent[subq][1]` (dual scale), `parent[CH]` / `parent[other]`
-#'     (multiple choice), `parent[59842]` (ranking, by answer id),
-#'     `parent[_Ccomment]` (list-with-comment).
+#'     (multiple choice), `parent[CHcomment]` / `parent[othercomment]`
+#'     (the comments of a multiple choice with comments),
+#'     `parent[59842]` (ranking, by answer id), `parent[_Ccomment]`
+#'     (list-with-comment).
 #'   * `"underscore"` -- the sanitized code form used by the Expression
 #'     Manager / relevance equations and the SPSS / Stata / R exports
-#'     (`parent_subq`, `parent_subq_1`).
+#'     (`parent_subq`, `parent_subq_1`, `parent_CHcomment`, and
+#'     `parent_comment` for the comment of a list-with-comment).
 #'   The two-dimensional arrays (array of numbers / texts with a second
 #'   axis) and ranking questions are expanded so every produced column
 #'   appears as its own entry either way.

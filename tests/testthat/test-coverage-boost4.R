@@ -16,14 +16,6 @@ test_that("lss_table_value_codes collapses sequential codes and lists the rest",
   expect_identical(lss_table_value_codes(list(ans4("a"), ans4("b"))), "a, b")
 })
 
-test_that("lss_table_implicit_value_text maps each type and NULLs the rest", {
-  th <- mk_theme4()
-  for (ty in c("M","P","Y","G","5","N","K","S","T","U","D","*","R","|")) {
-    expect_false(is.null(lss_table_implicit_value_text(list(type = ty), th)), info = ty)
-  }
-  expect_null(lss_table_implicit_value_text(list(type = "X"), th))
-})
-
 test_that("lss_other_prompt resolves the customized prompt or falls back", {
   ch <- lss_chrome_strings("en")
   expect_identical(lss_other_prompt(list(attributes = NULL), "en", ch), "Other:")
