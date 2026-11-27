@@ -93,6 +93,12 @@
   with comment is now named `Q_comment`, the name the Expression Manager
   gives it. It was `Q__Ccomment`.
 
+* `render_documentation()` no longer adds a note on audit findings to the
+  heading of a card. The note printed only in the cards layout with
+  `show_item_heading = TRUE`, in English whatever the language of the
+  document, and not on every card concerned. The audit section lists
+  every finding in both layouts, as before.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.

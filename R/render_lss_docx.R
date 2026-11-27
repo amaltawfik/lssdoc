@@ -142,8 +142,8 @@
     set = 0L,
     status = if (isTRUE(show_audit)) "Running audit" else "Skipping audit"
   )
-  audit_idx <- if (isTRUE(show_audit)) {
-    lss_audit_index(audit_lss(lss))
+  audit <- if (isTRUE(show_audit)) {
+    audit_lss(lss)
   } else {
     NULL
   }
@@ -185,8 +185,8 @@
   # to). Computed up front so the early TOC agrees with what is rendered
   # later; the bookmarks it links to are added on each section heading.
   toc_sections <- list(
-    audit = isTRUE(show_audit) && !is.null(audit_idx) &&
-      nrow(audit_idx$findings) > 0,
+    audit = isTRUE(show_audit) && !is.null(audit) &&
+      nrow(audit$findings) > 0,
     consent = isTRUE(show_consent) && lss_consent_present(lss, langs),
     quotas = isTRUE(show_quotas) && !is.null(lss$quotas) &&
       nrow(lss$quotas) > 0,
@@ -198,11 +198,11 @@
                           numbers = state$numbers, show_groups = show_groups)
     doc <- officer::body_add_break(doc)
   }
-  if (isTRUE(show_audit) && !is.null(audit_idx) && nrow(audit_idx$findings) > 0) {
+  if (isTRUE(show_audit) && !is.null(audit) && nrow(audit$findings) > 0) {
     # The table of contents already inserts a page break after itself, so
     # the audit section starts on a fresh page without a second break
     # (which produced an empty page between them).
-    doc <- lss_render_audit_section(doc, audit_idx, theme)
+    doc <- lss_render_audit_section(doc, audit, theme)
   }
 
   # Front matter: the data-protection / consent gate the respondent
@@ -287,7 +287,6 @@
         show_technical_attrs = show_technical_attrs,
         show_groups = show_groups,
         show_group_description = show_group_description,
-        audit_idx = audit_idx,
         state = state
       )
     }

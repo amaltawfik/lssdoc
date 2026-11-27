@@ -94,9 +94,8 @@ Other things lssdoc takes care of for you:
 - **Automated audit.** Missing translations, duplicate codes,
   forward references in routing filters, array-scale
   inconsistencies, orphan structural references, types missing
-  their required options or subquestions -- all flagged inline
-  on the rendered item and, when you ask for it, in a dedicated
-  section. No AI; rule-based and reviewable.
+  their required options or subquestions -- all listed in an
+  audit section of the document. No AI; rule-based and reviewable.
 - **Local-only processing.** No network calls, no third-party
   services. The questionnaire content never leaves the machine
   where R runs.

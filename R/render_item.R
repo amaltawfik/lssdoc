@@ -18,7 +18,7 @@
 #' @noRd
 lss_render_group <- function(doc, group, langs, theme,
                              show_help, show_attrs, show_technical_attrs,
-                             audit_idx, state,
+                             state,
                              show_groups = TRUE,
                              show_group_description = TRUE) {
   # The group index must still advance even when the banner itself is
@@ -92,7 +92,6 @@ lss_render_group <- function(doc, group, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
-      audit_idx = audit_idx,
       state = state
     )
   }
@@ -104,7 +103,7 @@ lss_render_group <- function(doc, group, langs, theme,
 #' @noRd
 lss_render_question_block <- function(doc, q, langs, theme,
                                       show_help, show_attrs,
-                                      show_technical_attrs, audit_idx, state) {
+                                      show_technical_attrs, state) {
   info <- lss_type_info(q$type)
   if (identical(q$type, "R")) {
     # Ranking: N items -> N data columns, one per rank position, named by
@@ -113,7 +112,7 @@ lss_render_question_block <- function(doc, q, langs, theme,
     doc <- lss_render_ranking_item(
       doc, q, langs, theme,
       show_help = show_help, show_attrs = show_attrs,
-      audit_idx = audit_idx, state = state
+      state = state
     )
   } else if (isTRUE(info$has_subquestions) && length(q$subquestions) > 0L) {
     doc <- lss_render_compound_question(
@@ -121,7 +120,6 @@ lss_render_question_block <- function(doc, q, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
-      audit_idx = audit_idx,
       info = info,
       state = state
     )
@@ -131,7 +129,6 @@ lss_render_question_block <- function(doc, q, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
       show_technical_attrs = show_technical_attrs,
-      audit_idx = audit_idx,
       item_code = q$code,
       texts_by_lang = lapply(langs, function(lg) q$texts[[lg]]$question),
       help_by_lang = lapply(langs, function(lg) q$texts[[lg]]$help),
@@ -145,7 +142,6 @@ lss_render_question_block <- function(doc, q, langs, theme,
   if (identical(q$other, "Y")) {
     doc <- lss_render_other_item(
       doc, q, langs, theme,
-      audit_idx = audit_idx,
       state = state
     )
   }
@@ -153,7 +149,6 @@ lss_render_question_block <- function(doc, q, langs, theme,
   if (identical(q$type, "O")) {
     doc <- lss_render_comment_item(
       doc, q, langs, theme,
-      audit_idx = audit_idx,
       state = state
     )
   }
@@ -178,7 +173,7 @@ lss_render_question_block <- function(doc, q, langs, theme,
 #' @noRd
 lss_render_compound_question <- function(doc, q, langs, theme,
                                          show_help, show_attrs,
-                                         show_technical_attrs, audit_idx,
+                                         show_technical_attrs,
                                          info, state) {
   # Multiple-choice questions (types M / P) are question-centric: the
   # stem appears once and every option is a row carrying its own Yes/No
@@ -190,7 +185,6 @@ lss_render_compound_question <- function(doc, q, langs, theme,
       doc, q, langs, theme,
       show_help = show_help,
       show_attrs = show_attrs,
-      audit_idx = audit_idx,
       state = state
     ))
   }
@@ -235,7 +229,6 @@ lss_render_compound_question <- function(doc, q, langs, theme,
           item_code = item_code,
           show_help = show_help,
           show_attrs = show_attrs,
-          audit_idx = audit_idx,
           state = state,
           column = csq,
           k = k
@@ -255,7 +248,6 @@ lss_render_compound_question <- function(doc, q, langs, theme,
           item_code = item_code,
           show_help = show_help,
           show_attrs = show_attrs,
-          audit_idx = audit_idx,
           state = state,
           scale = list(
             answers = q$scales[[si]],
@@ -273,7 +265,6 @@ lss_render_compound_question <- function(doc, q, langs, theme,
                                       style = theme$variable_names),
         show_help = show_help,
         show_attrs = show_attrs,
-        audit_idx = audit_idx,
         state = state,
         k = k
       )
@@ -296,7 +287,7 @@ lss_render_compound_question <- function(doc, q, langs, theme,
 #' @keywords internal
 #' @noRd
 lss_render_ranking_item <- function(doc, q, langs, theme,
-                                    show_help, show_attrs, audit_idx, state) {
+                                    show_help, show_attrs, state) {
   chrome <- theme$chrome
   item_no <- lss_item_label(state$numbers, q$qid)
   n <- length(q$answers)
@@ -308,15 +299,10 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
   }
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
-    audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
     heading_text <- lss_item_heading_text(item_no, q$code)
-    if (!is.null(audit_marker)) {
-      heading_text <- paste0(heading_text, "  ", audit_marker$text)
-    }
     heading_prop <- officer::fp_text(
       font.family = theme$font_body, font.size = theme$size_heading2,
-      bold = TRUE,
-      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+      bold = TRUE, color = theme$color_text
     )
     doc <- officer::body_add_fpar(
       doc,
@@ -406,7 +392,7 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
 #' @keywords internal
 #' @noRd
 lss_render_multiple_choice <- function(doc, q, langs, theme,
-                                       show_help, show_attrs, audit_idx, state) {
+                                       show_help, show_attrs, state) {
   # One card for the whole question, so it carries the question's own
   # number; every option variable points to it in the index.
   item_no <- lss_item_label(state$numbers, q$qid)
@@ -435,15 +421,10 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
 
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
-    audit_marker <- lss_audit_marker(q$code, audit_idx, theme)
     heading_text <- lss_item_heading_text(item_no, q$code)
-    if (!is.null(audit_marker)) {
-      heading_text <- paste0(heading_text, "  ", audit_marker$text)
-    }
     heading_prop <- officer::fp_text(
       font.family = theme$font_body, font.size = theme$size_heading2,
-      bold = TRUE,
-      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+      bold = TRUE, color = theme$color_text
     )
     doc <- officer::body_add_fpar(
       doc,
@@ -574,7 +555,7 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
 #'
 #' @keywords internal
 #' @noRd
-lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
+lss_render_other_item <- function(doc, q, langs, theme, state) {
   item_no <- lss_item_label(state$numbers, q$qid)
   item_code <- lss_other_variable(q, theme$variable_names)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -646,7 +627,7 @@ lss_render_other_item <- function(doc, q, langs, theme, audit_idx, state) {
 #'
 #' @keywords internal
 #' @noRd
-lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
+lss_render_comment_item <- function(doc, q, langs, theme, state) {
   item_no <- lss_item_label(state$numbers, q$qid)
   item_code <- lss_comment_variable(q, style = theme$variable_names)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -716,7 +697,7 @@ lss_render_comment_item <- function(doc, q, langs, theme, audit_idx, state) {
 #' @noRd
 lss_render_subq_item <- function(doc, q, sq, langs, theme,
                                  item_code, show_help, show_attrs,
-                                 audit_idx, state, scale = NULL,
+                                 state, scale = NULL,
                                  column = NULL, k = NULL) {
   item_no <- lss_item_label(state$numbers, q$qid, k)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -724,15 +705,10 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
   )
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
-    audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
     heading_text <- lss_item_heading_text(item_no, item_code)
-    if (!is.null(audit_marker)) {
-      heading_text <- paste0(heading_text, "  ", audit_marker$text)
-    }
     heading_prop <- officer::fp_text(
       font.family = theme$font_body, font.size = theme$size_heading2,
-      bold = TRUE,
-      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+      bold = TRUE, color = theme$color_text
     )
     doc <- officer::body_add_fpar(
       doc,
@@ -842,7 +818,7 @@ lss_render_subq_item <- function(doc, q, sq, langs, theme,
 #' @noRd
 lss_render_leaf_item <- function(doc, q, langs, theme,
                                  show_help, show_attrs, show_technical_attrs,
-                                 audit_idx, item_code,
+                                 item_code,
                                  texts_by_lang, help_by_lang, state) {
   item_no <- lss_item_label(state$numbers, q$qid)
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -850,15 +826,10 @@ lss_render_leaf_item <- function(doc, q, langs, theme,
   )
   doc <- lss_render_item_spacer(doc, theme)
   if (isTRUE(state$show_item_heading)) {
-    audit_marker <- lss_audit_marker(item_code, audit_idx, theme)
     heading_text <- lss_item_heading_text(item_no, item_code)
-    if (!is.null(audit_marker)) {
-      heading_text <- paste0(heading_text, "  ", audit_marker$text)
-    }
     heading_prop <- officer::fp_text(
       font.family = theme$font_body, font.size = theme$size_heading2,
-      bold = TRUE,
-      color = if (is.null(audit_marker)) theme$color_text else audit_marker$color
+      bold = TRUE, color = theme$color_text
     )
     doc <- officer::body_add_fpar(
       doc,

@@ -55,29 +55,6 @@ test_that("render_documentation rejects an output path that is neither .docx nor
   )
 })
 
-# ---- Audit index / marker over subquestion and answer locations ----
-
-test_that("lss_audit_index resolves subquestion and answer item codes, and the marker guards NULL", {
-  findings <- data.frame(
-    severity = c("error", "warning", "note", "note"),
-    check    = c("a", "b", "c", "d"),
-    location = c("Question 'Q1'", "Subquestion 'P1 / SQ01'",
-                 "Answer 'Q2 = 1'", "Survey"),
-    language = c(NA, NA, NA, NA),
-    message  = c("m1", "m2", "m3", "m4"),
-    stringsAsFactors = FALSE
-  )
-  idx <- lss_audit_index(list(findings = findings))
-  expect_true("Q1" %in% names(idx$by_code))
-  expect_true("P1_SQ01" %in% names(idx$by_code))
-  expect_true("Q2" %in% names(idx$by_code))
-
-  theme <- lss_render_theme()
-  expect_null(lss_audit_marker(NULL, idx, theme))
-  m <- lss_audit_marker("Q1", idx, theme)
-  expect_true(grepl("audit finding", m$text))
-})
-
 # ---- URL splitter on an empty fragment ------------------------------
 
 test_that("lss_split_text_urls returns no chunks for an empty fragment", {

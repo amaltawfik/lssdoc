@@ -1,58 +1,15 @@
-# Inline audit section: index, per-item marker and the dedicated audit findings table.
+# The audit section of render_documentation(): the findings of audit_lss()
+# in one table near the top of the document.
 #
 # Extracted from R/render_lss_docx.R.
 
-#' Index audit findings by question code for inline lookup
-#' @keywords internal
-#' @noRd
-lss_audit_index <- function(audit) {
-  fdf <- audit$findings
-  fdf$item_code <- vapply(fdf$location, function(loc) {
-    if (grepl("^Question '[^']+'$", loc)) {
-      sub("^Question '([^']+)'$", "\\1", loc)
-    } else if (grepl("^Subquestion '[^/]+ / .+'$", loc)) {
-      # Match the item-centric code used in the renderer: parent_subq.
-      sub("^Subquestion '([^/]+) / (.+)'$", "\\1_\\2", loc)
-    } else if (grepl("^Answer '[^=]+ = .+'$", loc)) {
-      # Findings on answer options attach to the parent question.
-      sub("^Answer '([^=]+) = .+'$", "\\1", loc)
-    } else {
-      NA_character_
-    }
-  }, character(1), USE.NAMES = FALSE)
-  fdf$item_code[!grepl("^[A-Za-z0-9_]+$", fdf$item_code)] <- NA_character_
-  by_code <- split(fdf, fdf$item_code)
-  list(audit = audit, findings = fdf, by_code = by_code)
-}
-
-#' Audit marker for inline display next to a question heading
-#' @keywords internal
-#' @noRd
-lss_audit_marker <- function(qcode, audit_idx, theme) {
-  if (is.null(audit_idx) || is.null(qcode) || is.na(qcode)) return(NULL)
-  rows <- audit_idx$by_code[[qcode]]
-  if (is.null(rows) || nrow(rows) == 0) return(NULL)
-  n <- nrow(rows)
-  worst <- rows$severity[order(match(rows$severity, c("error", "warning", "note")))][1]
-  list(
-    text = sprintf(
-      "(%d audit finding%s, worst: %s)",
-      n, if (n == 1L) "" else "s", worst
-    ),
-    color = switch(
-      worst,
-      error = theme$color_error,
-      warning = theme$color_warning,
-      theme$color_note
-    )
-  )
-}
-
 #' Render the audit summary section
+#'
+#' `audit` is the result of `audit_lss()`: a summary line of its counts,
+#' then one row per finding.
 #' @keywords internal
 #' @noRd
-lss_render_audit_section <- function(doc, audit_idx, theme) {
-  audit <- audit_idx$audit
+lss_render_audit_section <- function(doc, audit, theme) {
   doc <- lss_render_section_heading(
     doc, theme, theme$chrome$audit_findings_title,
     lss_section_bookmark("audit")

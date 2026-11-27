@@ -117,7 +117,7 @@ test_that("cards: the index lists the comment variables at the question's number
                                 stringsAsFactors = FALSE)
     lss_render_multiple_choice(officer::read_docx(), q, TA_LANGS,
                                cv_theme(style = style), show_help = TRUE,
-                               show_attrs = character(0), audit_idx = NULL,
+                               show_attrs = character(0),
                                state = state)
     cv_index(state$index_entries)
   }
@@ -227,7 +227,7 @@ test_that("table rows: a comment row is never mandatory", {
   )
   state <- lss_render_state(NULL)
   lss_render_comment_item(officer::read_docx(), o, TA_LANGS, cv_theme(),
-                          audit_idx = NULL, state = state)
+                          state = state)
   expect_identical(lss_yes_no(seen, cv_theme()), rows[[3]]$mandatory_label)
   # A mandatory multiple choice with comments and "Other": every comment
   # row says No, the question row Yes.

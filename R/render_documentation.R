@@ -42,9 +42,10 @@
 #'     steps down for three or four languages so the columns stay
 #'     within the portrait content width.
 #' @param layout Reserved for future use. Currently `"auto"` only.
-#' @param show_audit Logical. If `TRUE` (default), include an audit
-#'   summary section near the top and inline markers on questions
-#'   that carry findings. Set to `FALSE` for a clean reading copy.
+#' @param show_audit Logical. If `TRUE` (default), the document has an
+#'   audit section near the top: the findings of [audit_lss()] in a table.
+#'   The section is left out when the audit finds nothing. `FALSE` skips
+#'   the audit.
 #' @param show_help Logical. If `TRUE` (default), include question
 #'   help texts under the question text.
 #' @param show_attrs Character vector of question attributes to surface

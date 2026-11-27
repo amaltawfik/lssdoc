@@ -489,7 +489,6 @@ test_that("cards number dual-scale and two-dimensional cells in order", {
       show_help = FALSE,
       show_attrs = character(0),
       show_technical_attrs = FALSE,
-      audit_idx = NULL,
       state = state
     )
   }

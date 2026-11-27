@@ -208,17 +208,6 @@ test_that("print.lss counts zero for the tables a survey does not carry", {
   expect_match(counts, "Answers 0", fixed = TRUE)
 })
 
-# ---- render_audit_section.R --------------------------------------------------
-
-test_that("lss_audit_marker writes the plural for several findings", {
-  theme <- lss_render_theme()
-  idx <- list(by_code = list(
-    Q1 = data.frame(severity = c("warning", "error"), stringsAsFactors = FALSE)))
-  marker <- lss_audit_marker("Q1", idx, theme)
-  expect_identical(marker$text, "(2 audit findings, worst: error)")
-  expect_identical(marker$color, theme$color_error)
-})
-
 # ---- render_cover.R ----------------------------------------------------------
 
 test_that("the cover shows zero counts and the empty marker for a bare survey", {

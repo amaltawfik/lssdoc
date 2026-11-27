@@ -214,13 +214,9 @@ ri_state <- function(show_heading = FALSE) {
   st$show_raw_filter <- FALSE
   st
 }
-ri_audit <- function(code, severity = "error") {
-  list(by_code = stats::setNames(
-    list(data.frame(severity = severity, stringsAsFactors = FALSE)), code))
-}
 RI_L <- c("en", "fr")
 
-test_that("ranking item shows the audit marker and a Help row (render_item 292, 327-331)", {
+test_that("ranking item shows its heading and a Help row (render_item 292, 327-331)", {
   skip_if_not_installed("officer"); skip_if_not_installed("flextable")
   th <- ri_theme()
   q <- list(
@@ -243,14 +239,14 @@ test_that("ranking item shows the audit marker and a Help row (render_item 292, 
   expect_no_error(
     doc <- lss_render_ranking_item(
       doc, q, RI_L, th, show_help = TRUE, show_attrs = character(0),
-      audit_idx = ri_audit("devicerank", "error"), state = st)
+      state = st)
   )
   expect_s3_class(doc, "rdocx")
   # One card, its two position variables registered in the index.
   expect_length(st$index_entries, 2L)
 })
 
-test_that("multiple-choice item shows the audit marker on its heading (render_item 401)", {
+test_that("multiple-choice item shows its heading (render_item 401)", {
   skip_if_not_installed("officer"); skip_if_not_installed("flextable")
   th <- ri_theme()
   q <- list(
@@ -279,12 +275,12 @@ test_that("multiple-choice item shows the audit marker on its heading (render_it
   expect_no_error(
     doc <- lss_render_multiple_choice(
       doc, q, RI_L, th, show_help = FALSE, show_attrs = character(0),
-      audit_idx = ri_audit("supportsources", "warning"), state = st)
+      state = st)
   )
   expect_s3_class(doc, "rdocx")
 })
 
-test_that("subquestion item shows the audit marker on its heading (render_item 680)", {
+test_that("subquestion item shows its heading (render_item 680)", {
   skip_if_not_installed("officer"); skip_if_not_installed("flextable")
   th <- ri_theme()
   q <- list(
@@ -310,8 +306,7 @@ test_that("subquestion item shows the audit marker on its heading (render_item 6
   expect_no_error(
     doc <- lss_render_subq_item(
       doc, q, sq, RI_L, th, item_code = item_code, show_help = FALSE,
-      show_attrs = character(0), audit_idx = ri_audit(item_code, "note"),
-      state = st)
+      show_attrs = character(0), state = st)
   )
   expect_s3_class(doc, "rdocx")
 })
@@ -347,7 +342,7 @@ test_that("subquestion facet falls back to the facet alone when the row label is
   expect_no_error(
     doc <- lss_render_subq_item(
       doc, q, sq, RI_L, th, item_code = "arr1[SQ1_COL1]", show_help = FALSE,
-      show_attrs = character(0), audit_idx = NULL, state = st, column = csq)
+      show_attrs = character(0), state = st, column = csq)
   )
   expect_s3_class(doc, "rdocx")
 })
@@ -380,7 +375,7 @@ test_that("subquestion item emits the exclusive row when the parent names it (re
   expect_no_error(
     doc <- lss_render_subq_item(
       doc, q, sq, RI_L, th, item_code = "arr1[SQ1]", show_help = FALSE,
-      show_attrs = character(0), audit_idx = NULL, state = st)
+      show_attrs = character(0), state = st)
   )
   expect_s3_class(doc, "rdocx")
 })
@@ -414,7 +409,7 @@ test_that("compound array with an NA subquestion scale_id hits the '0' fallback 
   expect_no_error(
     doc <- lss_render_compound_question(
       doc, q, RI_L, th, show_help = FALSE, show_attrs = character(0),
-      show_technical_attrs = FALSE, audit_idx = NULL, info = info, state = st)
+      show_technical_attrs = FALSE, info = info, state = st)
   )
   expect_s3_class(doc, "rdocx")
 })
@@ -429,7 +424,7 @@ test_that("Other item prompt falls back to the default prompt when no other_repl
   st <- ri_state()
   doc <- officer::read_docx()
   expect_no_error(
-    doc <- lss_render_other_item(doc, q, RI_L, th, audit_idx = NULL, state = st)
+    doc <- lss_render_other_item(doc, q, RI_L, th, state = st)
   )
   expect_s3_class(doc, "rdocx")
 })
@@ -446,7 +441,7 @@ test_that("Other item prompt uses a per-language value then the generic fallback
   st <- ri_state()
   doc <- officer::read_docx()
   expect_no_error(
-    doc <- lss_render_other_item(doc, q, RI_L, th, audit_idx = NULL, state = st)
+    doc <- lss_render_other_item(doc, q, RI_L, th, state = st)
   )
   expect_s3_class(doc, "rdocx")
 })

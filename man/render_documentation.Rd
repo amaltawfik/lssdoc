@@ -84,9 +84,10 @@ within the portrait content width.
 
 \item{layout}{Reserved for future use. Currently \code{"auto"} only.}
 
-\item{show_audit}{Logical. If \code{TRUE} (default), include an audit
-summary section near the top and inline markers on questions
-that carry findings. Set to \code{FALSE} for a clean reading copy.}
+\item{show_audit}{Logical. If \code{TRUE} (default), the document has an
+audit section near the top: the findings of \code{\link[=audit_lss]{audit_lss()}} in a table.
+The section is left out when the audit finds nothing. \code{FALSE} skips
+the audit.}
 
 \item{show_help}{Logical. If \code{TRUE} (default), include question
 help texts under the question text.}
