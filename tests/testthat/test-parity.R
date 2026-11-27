@@ -14,26 +14,6 @@
 # removes the list. A gap that is closed and still listed fails the test,
 # so that the list never hides a text that is printed.
 parity_known_gaps <- list(
-  # 8.2 (GAPS A1): the table prints the attributes of `show_attrs`, as
-  # the cards do.
-  "8.2 attributes in the table" = list(
-    table = c(
-      "demo: height suffix en", "demo: height suffix fr",
-      "demo: weight suffix en", "demo: weight suffix fr",
-      "demo: physicalactivitydays prefix en",
-      "demo: physicalactivitydays prefix fr",
-      "demo: physicalactivitydays suffix en",
-      "demo: physicalactivitydays suffix fr",
-      "parity: height suffix en", "parity: height suffix fr",
-      "parity: weight suffix en", "parity: weight suffix fr",
-      "parity: physicalactivitydays prefix en",
-      "parity: physicalactivitydays prefix fr",
-      "parity: physicalactivitydays suffix en",
-      "parity: physicalactivitydays suffix fr",
-      "parity: sleephours prefix en", "parity: sleephours prefix fr",
-      "parity: sleephours suffix en", "parity: sleephours suffix fr"
-    )
-  ),
   # 8.5 (GAPS B1): the cards print the name of a group in every language,
   # and neither layout strips a number the author typed in a group name.
   "8.5 group names" = list(

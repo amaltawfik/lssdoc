@@ -59,6 +59,11 @@
   by default: `"equation"` joins the default of `show_attrs`.
   `render_questionnaire()` prints it after the code of the question.
 
+* The table layout of `render_documentation()` now prints the attributes
+  named in `show_attrs`, such as a prefix or a suffix, as the cards layout
+  does. Each one has its own row under the row of the question or of the
+  subquestion. The table printed the formula of a computed question only.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.
