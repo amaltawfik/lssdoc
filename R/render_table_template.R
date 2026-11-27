@@ -86,8 +86,9 @@ lss_render_table_template <- function(doc, rows, langs, theme,
       # cells stay empty.
       df$Field[i] <- r$label
     } else {
-      # Question row (leaf / subq / other).
-      df$Field[i]     <- chrome$item_question
+      # Question row (leaf / subq / other); the comment field of a list
+      # with comment carries its own label ("Comment").
+      df$Field[i]     <- if (!is.null(r$field)) r$field else chrome$item_question
       df$No[i]        <- lss_table_no_cell(r$no)
       df$Variable[i]  <- r$variable
       df$Type[i]      <- r$type_label
@@ -649,6 +650,15 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     out
   }
 
+  # The "Exclusive" row of a row that stands for subquestion `sq`, where
+  # the card of that subquestion prints it (lss_exclusive_text()); an empty
+  # list otherwise.
+  exclusive_rows <- function(q, sq) {
+    text <- lss_exclusive_text(q, sq, chrome)
+    if (is.null(text)) return(list())
+    list(list(kind = "mc_exclusive", text = text))
+  }
+
   # An answer / option order annotation row, or NULL when the order is
   # the (silent) default. `attr` is answer_order (leaf single choice) or
   # subquestion_order (multiple choice); `field_label` is the row label
@@ -705,12 +715,9 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         )
       )
     }
-    excl <- lss_exclusive_codes(q)
-    if (length(excl) > 0L) {
-      out[[length(out) + 1L]] <- list(
-        kind = "mc_exclusive",
-        text = sprintf(chrome$exclusive_text_fmt, paste(excl, collapse = ", "))
-      )
+    excl <- lss_exclusive_options_text(q, chrome)
+    if (!is.null(excl)) {
+      out[[length(out) + 1L]] <- list(kind = "mc_exclusive", text = excl)
     }
     onr <- order_note_row(q, "subquestion_order", chrome$item_order)
     if (!is.null(onr)) out[[length(out) + 1L]] <- onr
@@ -814,8 +821,9 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
             )
             rows[[length(rows) + 1L]] <- qr
             # The attributes of the row subquestion, then the question's,
-            # as on the card of the cell.
-            rows <- c(rows, attr_rows(rsq), attr_rows(q))
+            # then the Exclusive row, as on the card of the cell.
+            rows <- c(rows, attr_rows(rsq), attr_rows(q),
+                      exclusive_rows(q, rsq))
             rows <- c(rows, emit_value_rows_for(q))
           }
         } else {
@@ -840,7 +848,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
                 )
               }
               rows[[length(rows) + 1L]] <- qr
-              rows <- c(rows, attr_rows(sq), attr_rows(q))
+              rows <- c(rows, attr_rows(sq), attr_rows(q),
+                        exclusive_rows(q, sq))
               rows <- c(rows, emit_values(q$scales[[si]]))
             }
           } else {
@@ -854,9 +863,10 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
             rows[[length(rows) + 1L]] <- emit_question_row(
               "subq", sub_no, item_code, q = q, sq = sq
             )
-            # The attributes of the subquestion, then the question's, as on
-            # the card of the subquestion.
-            rows <- c(rows, attr_rows(sq), attr_rows(q))
+            # The attributes of the subquestion, then the question's, then
+            # the Exclusive row, as on the card of the subquestion.
+            rows <- c(rows, attr_rows(sq), attr_rows(q),
+                      exclusive_rows(q, sq))
             rows <- c(rows, emit_value_rows_for(q))
           }
         }
@@ -898,9 +908,16 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           state$index_entries[[length(state$index_entries) + 1L]] <- list(
             code = item_code, no = q_no
           )
+          # A short free text (its Value cell takes the token of type S),
+          # with the label "Comment" in the Field column, as on the card of
+          # the comment, and the stem in the language cells without the
+          # help of the question (it belongs to the list).
           cr <- emit_question_row("leaf", q_no, item_code, q = q)
           cr$q$type <- "S"
+          cr$q$answers <- list()
           cr$type_label <- chrome$type_text_short
+          cr$field <- chrome$item_comment
+          cr$help <- NULL
           rows[[length(rows) + 1L]] <- cr
         }
       }
@@ -973,7 +990,8 @@ lss_table_filter_paragraph <- function(relevance, theme,
 #'   short fixed token in mono primary ("Y/blank", "1-5", "1-10").
 #' * Open-ended types -> descriptor in italic muted ("[num]",
 #'   "[text]", "[date]", "[file]", "[calc]", "[rank]").
-#' * Other item and section rows -> empty cell.
+#' * The "Other" field -> the descriptor of a short free text ("[text]"),
+#'   whatever the type of its question.
 #'
 #' @keywords internal
 #' @noRd
@@ -982,11 +1000,6 @@ lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) 
   # enumerated code, so the Question row's Value cell stays empty
   # for enumerated types -- only non-enumerated types receive an
   # inline descriptor in the Question row itself.
-  if (identical(row$kind, "other")) {
-    return(flextable::as_paragraph(flextable::as_chunk(
-      "", props = descriptor_props
-    )))
-  }
   # Multiple-choice parent header: not a data column, so it documents no
   # value domain of its own -- each option row below carries its Y/blank
   # token instead.
@@ -995,7 +1008,9 @@ lss_table_value_paragraph <- function(row, theme, code_props, descriptor_props) 
       "", props = descriptor_props
     )))
   }
-  q <- row$q
+  # The "Other" field is a single-line free text: it takes the token of a
+  # short free text (type S), as the comment row of a list with comment.
+  q <- if (identical(row$kind, "other")) list(type = "S") else row$q
   # Enumerated stored answers, and the labelled predefined scales
   # (C/E/Y/G), are documented in their own Value rows below, so the
   # Question row's Value cell stays empty for them.
@@ -1108,6 +1123,22 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
     if (length(chunks) > 0L) chunks[[length(chunks) + 1L]] <<- br()
     add_text(text, props)
   }
+  # One part of the cell (stem, subquestion, help) on its line. When this
+  # language lacks it and another language of the document has it
+  # (`all_langs`, the part in every language), the empty marker takes its
+  # place, in the props of the part with the muted colour: the rule of the
+  # cards, where a row that one language fills shows the marker in the
+  # empty cells of the others (lss_compose()).
+  add_part <- function(text, props, all_langs, marker_props) {
+    if (!is.null(text) && !is.na(text) && nzchar(trimws(text))) {
+      add_line(text, props)
+    } else if (lss_any_present(all_langs)) {
+      add_line(theme$empty_marker, marker_props)
+    }
+  }
+  flat <- function(x) {
+    lapply(x, function(v) if (is.null(v)) NULL else lss_html_to_text(v))
+  }
 
   # Question stem (parent for compound rows, leaf question for leaf
   # rows). For the Other item the prompt of the "Other:" field
@@ -1115,7 +1146,8 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
   if (identical(row$kind, "other")) {
     add_text(lss_other_prompt(row$other_q, lg, theme$chrome), plain())
   } else {
-    add_text(lss_html_to_text(row$parent_text[[lg]]), plain())
+    add_part(lss_html_to_text(row$parent_text[[lg]]), plain(),
+             flat(row$parent_text), plain(color = theme$color_muted))
   }
 
   # Subquestion label below the stem (compound rows only), in italic so
@@ -1124,31 +1156,34 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
   # a 2-D array column -- is appended in parentheses ("Parliament (Trust)",
   # "Trying new things (Today)"), with no empty parentheses when absent.
   if (identical(row$kind, "subq")) {
-    s <- lss_html_to_text(row$subq_text[[lg]])
-    f <- if (!is.null(row$scale_header)) {
-      lss_html_to_text(row$scale_header[[lg]])
-    } else {
-      ""
+    subq_line <- function(l) {
+      s <- lss_html_to_text(row$subq_text[[l]])
+      f <- if (!is.null(row$scale_header)) {
+        lss_html_to_text(row$scale_header[[l]])
+      } else {
+        ""
+      }
+      s_ok <- !is.na(s) && nzchar(trimws(s))
+      f_ok <- !is.na(f) && nzchar(trimws(f))
+      if (f_ok) {
+        if (s_ok) paste0(s, " (", f, ")") else f
+      } else {
+        s
+      }
     }
-    s_ok <- !is.na(s) && nzchar(trimws(s))
-    f_ok <- !is.na(f) && nzchar(trimws(f))
-    txt <- if (f_ok) {
-      if (s_ok) paste0(s, " (", f, ")") else f
-    } else {
-      s
-    }
-    add_line(txt, plain(size = size_sq, italic = TRUE))
+    add_part(subq_line(lg), plain(size = size_sq, italic = TRUE),
+             lapply(names(row$subq_text), subq_line),
+             plain(size = size_sq, color = theme$color_muted, italic = TRUE))
   }
 
   # Help (optional), small muted italic.
   if (isTRUE(show_help) && !identical(row$kind, "other")) {
     help_text <- lss_html_to_text(row$help[[lg]])
+    help_props <- plain(size = size_h, color = theme$color_muted, italic = TRUE)
     if (!is.null(help_text) && !is.na(help_text) && nzchar(trimws(help_text))) {
-      add_line(
-        paste0("\u00AB ", help_text, " \u00BB"),
-        plain(size = size_h, color = theme$color_muted, italic = TRUE)
-      )
+      help_text <- paste0("\u00AB ", help_text, " \u00BB")
     }
+    add_part(help_text, help_props, flat(row$help), help_props)
   }
 
   if (length(chunks) == 0L) {

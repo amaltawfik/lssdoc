@@ -516,14 +516,12 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   frow <- lss_option_filter_row(q$subquestions, langs, theme,
                                 show_raw = isTRUE(state$show_raw_filter))
   if (!is.null(frow)) rows[[length(rows) + 1L]] <- frow
-  # Exclusive option(s): a subquestion flagged `exclude_all_others`
+  # Exclusive option(s): an option named in `exclude_all_others`
   # (e.g. "None of the above") clears every other selection when
-  # checked. Surface it once, naming the option suffix(es) -- the same
-  # information the per-subquestion layout shows on the exclusive item.
-  excl_codes <- lss_exclusive_codes(q)
-  if (length(excl_codes) > 0L) {
-    excl_text <- sprintf(theme$chrome$exclusive_text_fmt,
-                         paste(excl_codes, collapse = ", "))
+  # checked. One row names them (lss_exclusive_options_text(), the
+  # sentence the table prints too).
+  excl_text <- lss_exclusive_options_text(q, theme$chrome)
+  if (!is.null(excl_text)) {
     rows[[length(rows) + 1L]] <- list(
       label = theme$chrome$item_exclusive,
       texts = stats::setNames(rep(list(excl_text), length(langs)), langs),
@@ -1627,29 +1625,14 @@ lss_format_attr <- function(attr_name, per_lang, langs) {
   )
 }
 
-#' If the parent question of a compound multi-choice question declares
-#' an `exclude_all_others` attribute, emit an "Exclusive" row only on
-#' the subquestion(s) whose code is named in the attribute value
-#'
-#' LimeSurvey stores `exclude_all_others` on the parent `qid` with the
-#' value being one (or several, comma-separated) subquestion titles
-#' that, when checked, clear every other selection. We use the
-#' subquestion code to decide whether THIS subquestion is the
-#' exclusive one, and only then render a single italic row that names
-#' the parent variable so a reviewer knows what gets cleared.
-#'
-#' Returns `NULL` (i.e. no row) when the attribute is absent or when
-#' the current subquestion is not in the exclusion list.
-#'
-#' @keywords internal
-#' @noRd
 #' Extract the exclusive subquestion codes of a question
 #'
 #' Returns the subquestion codes listed in the parent's
-#' `exclude_all_others` attribute (a comma-separated list), or an empty
-#' character vector when the question has no exclusive option. Shared by
-#' the per-subquestion path ([lss_exclusive_row()]) and the grouped
-#' multiple-choice card.
+#' `exclude_all_others` attribute, which LimeSurvey (and `write_lss()`)
+#' separates with a semicolon (`"4;5"`), or an empty character vector
+#' when the question has no exclusive option. Shared by the
+#' per-subquestion path ([lss_exclusive_text()]) and the grouped form
+#' ([lss_exclusive_options_text()]), in both layouts.
 #'
 #' @keywords internal
 #' @noRd
@@ -1659,14 +1642,52 @@ lss_exclusive_codes <- function(q) {
   if (nrow(hit) == 0L) return(character(0))
   raw <- trimws(as.character(hit$value[1L]))
   if (!nzchar(raw)) return(character(0))
-  codes <- trimws(strsplit(raw, ",", fixed = TRUE)[[1L]])
+  codes <- trimws(strsplit(raw, ";", fixed = TRUE)[[1L]])
   codes[nzchar(codes)]
 }
 
+#' The sentence of the exclusive options of a multiple choice
+#'
+#' `sprintf(chrome$exclusive_options_fmt, <codes>)`, the codes of
+#' [lss_exclusive_codes()] joined by ", ", or `NULL` when the question has
+#' none. The "Exclusive" row of the card of a multiple choice and of its
+#' block in the table.
+#'
+#' @keywords internal
+#' @noRd
+lss_exclusive_options_text <- function(q, chrome) {
+  codes <- lss_exclusive_codes(q)
+  if (length(codes) == 0L) return(NULL)
+  sprintf(chrome$exclusive_options_fmt, paste(codes, collapse = ", "))
+}
+
+#' The sentence of an exclusive subquestion
+#'
+#' For a question shown as one item per subquestion: when `sq` is named in
+#' the `exclude_all_others` attribute of `q` ([lss_exclusive_codes()]),
+#' `sprintf(chrome$exclusive_text_fmt, <question code>)`, else `NULL`. A
+#' cell of a two-dimensional array passes its row subquestion. Read by the
+#' card of the subquestion ([lss_exclusive_row()]) and by its row in the
+#' table, so that both print it under the same condition.
+#'
+#' @keywords internal
+#' @noRd
+lss_exclusive_text <- function(q, sq, chrome) {
+  if (!(sq$code %in% lss_exclusive_codes(q))) return(NULL)
+  sprintf(chrome$exclusive_text_fmt, q$code)
+}
+
+#' The "Exclusive" row of the card of a subquestion
+#'
+#' A muted italic row spanning the language columns, holding
+#' [lss_exclusive_text()]; `NULL` (no row) when the attribute is absent or
+#' does not name this subquestion.
+#'
+#' @keywords internal
+#' @noRd
 lss_exclusive_row <- function(q, sq, langs, theme) {
-  targets <- lss_exclusive_codes(q)
-  if (!(sq$code %in% targets)) return(NULL)
-  text <- sprintf(theme$chrome$exclusive_text_fmt, q$code)
+  text <- lss_exclusive_text(q, sq, theme$chrome)
+  if (is.null(text)) return(NULL)
   list(
     label = theme$chrome$item_exclusive,
     texts = stats::setNames(rep(list(text), length(langs)), langs),

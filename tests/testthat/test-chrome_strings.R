@@ -25,7 +25,7 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "value_yes_no", "value_gender", "value_5point", "value_numeric_input",
     "value_free_text_short", "value_free_text",
     "value_date_input", "value_computed", "value_ranking", "value_file_upload",
-    "exclusive_text_fmt",
+    "exclusive_text_fmt", "exclusive_options_fmt",
     "audit_findings_title", "audit_no_anomalies", "audit_summary_fmt",
     "audit_col_severity", "audit_col_check", "audit_col_location",
     "audit_col_language", "audit_col_message",

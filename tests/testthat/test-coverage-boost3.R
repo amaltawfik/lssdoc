@@ -205,7 +205,7 @@ test_that("lss_attr_rows renders present attrs, uses the empty-language fallback
 test_that("lss_exclusive_codes and lss_exclusive_row target only the named subquestion", {
   th <- mk_theme()
   q <- list(code = "Q1", attributes = data.frame(
-    attribute = "exclude_all_others", value = "SQ1, SQ2", language = "",
+    attribute = "exclude_all_others", value = "SQ1; SQ2", language = "",
     stringsAsFactors = FALSE))
   expect_identical(lss_exclusive_codes(q), c("SQ1", "SQ2"))
   expect_null(lss_exclusive_row(q, list(code = "SQ3"), LANGS, th))

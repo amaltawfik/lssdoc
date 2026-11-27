@@ -254,7 +254,13 @@ parity_missing <- function(expected, doc) {
 #   subquestion of dailyresources, the first answer of incomefeel;
 # - a description on the second group;
 # - a group name that begins with a number the author typed ("1) ", fifth
-#   group).
+#   group);
+# - two exclusive options, separated by a semicolon, on the multiple choice
+#   socialmedia (its last two options), and one exclusive subquestion on the
+#   array dailyresources (its second subquestion);
+# - a help missing in French only (nationality);
+# - a help on the list with comment langhome, which the row of its comment
+#   field does not repeat.
 # The questions that carry none of these cases are dropped, one or more
 # questions stay in every group, so that a render takes seconds.
 parity_lss <- function() {
@@ -334,6 +340,27 @@ parity_lss <- function() {
     hit <- lss$group_l10ns$gid == gid[5] & lss$group_l10ns$language == lg
     lss$group_l10ns$group_name[hit] <- paste0("1) ", lss$group_l10ns$group_name[hit])
   }
+  # Exclusive options: the attribute replaced by one row without a language.
+  set_exclusive <- function(id, value) {
+    qa <- lss$question_attributes
+    lss$question_attributes <<- qa[!(qa$qid == id &
+                                       qa$attribute == "exclude_all_others"), ,
+                                   drop = FALSE]
+    add_attr(id, "exclude_all_others", value, "")
+  }
+  sq_codes <- function(code) {
+    s <- lss$subquestions[lss$subquestions$parent_qid == qid(code), , drop = FALSE]
+    s$title[order(as.integer(s$question_order))]
+  }
+  sm_codes <- sq_codes("socialmedia")
+  set_exclusive(qid("socialmedia"),
+                paste(utils::tail(sm_codes, 2L), collapse = ";"))
+  set_exclusive(qid("dailyresources"), sq_codes("dailyresources")[2])
+  # A help missing in French only.
+  set_text(qid("nationality"), "fr", "help", "")
+  set_text(qid("langhome"), "en", "help", "Choose the language you use most.")
+  set_text(qid("langhome"), "fr", "help",
+           "Choisissez la langue que vous utilisez le plus.")
   keep <- c("respondentrole", "age", "height", "weight", "imc",
             "nationality", "langhome", "healthself", "physicalactivitydays",
             "sleephours", "loneliness", "chroniccondition", "incomefeel",

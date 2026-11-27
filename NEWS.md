@@ -64,6 +64,22 @@
   does. Each one has its own row under the row of the question or of the
   subquestion. The table printed the formula of a computed question only.
 
+* `render_documentation()` now reads the exclusive options of a question
+  (`exclude_all_others`) with the separator LimeSurvey uses, a semicolon.
+  With two exclusive options, it read their codes as one. The note of a
+  multiple choice now names the options, and the table layout prints the
+  note of an exclusive subquestion of an array, a multiple numeric or a
+  multiple text question, as the cards layout does.
+
+* In the table layout of `render_documentation()`, the rows of an "Other"
+  field and of the comment field of a list with comment now show `[text]`
+  in the Value cell, which was empty. The comment field is labelled
+  "Comment", and its row no longer repeats the help of the question.
+
+* In the table layout, a question text, a subquestion or a help missing in
+  one language of the document now shows the empty marker in its place.
+  The marker used to appear only when the whole cell was empty.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.
