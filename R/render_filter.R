@@ -413,13 +413,15 @@ lss_filter_chunks <- function(lines, theme, plain_props, raw_props,
   chunks
 }
 
-#' Width of the Filter column that the labels of its lines need
+#' Width of a column that its labels need, without a break inside a word
 #'
-#' The label of a level of condition ("Subquestion:") must not break inside
-#' a word. It may break after a hyphen ("Sous-question :"), so the width
-#' needed is that of its widest part once each label is split after every
-#' hyphen, measured by `lss_q_text_width()`. The cell's left and right
-#' padding and 1 pt are added, and the result is rounded up to 0.01 in, as
+#' The label of a level of condition in the Filter column ("Subquestion:"),
+#' or a row label in the Field column ("Commentaire"), must not break inside
+#' a word. It may break at a space and after a hyphen ("Sous-question :"),
+#' so the width needed is that of its widest part once each label is split
+#' at every space and after every hyphen, measured by `lss_q_text_width()`.
+#' A no-break space does not split. The cell's left and right padding and
+#' 1 pt are added, and the result is rounded up to 0.01 in, as
 #' `lss_no_width()` does.
 #'
 #' @param labels Character vector of labels, as the cell prints them
@@ -427,17 +429,19 @@ lss_filter_chunks <- function(lines, theme, plain_props, raw_props,
 #' @param font,size Font and size of the label, in points.
 #' @param padding Left plus right padding of the cell, in points.
 #' @param measure Passed to `lss_q_text_width()`.
+#' @param bold Whether the label is printed in bold.
 #' @return The width in inches, `0` when there is no label.
 #' @keywords internal
 #' @noRd
 lss_filter_label_width <- function(labels, font, size, padding,
-                                   measure = NULL) {
+                                   measure = NULL, bold = FALSE) {
   labels <- as.character(labels)
   labels <- labels[!is.na(labels) & nzchar(labels)]
   if (length(labels) == 0L) {
     return(0)
   }
-  parts <- unlist(strsplit(labels, "(?<=-)", perl = TRUE))
-  pt <- lss_q_text_width(parts, font, size, measure = measure) + padding + 1
+  parts <- unlist(strsplit(labels, "(?<=-)| ", perl = TRUE))
+  pt <- lss_q_text_width(parts, font, size, bold = bold, measure = measure) +
+    padding + 1
   ceiling(round(pt / 72 * 100, 6)) / 100
 }

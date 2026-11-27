@@ -1357,9 +1357,13 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # are the primary content of the table). Short header labels
   # are allowed to wrap to two lines ("Single | choice") -- the
   # visual cost is small and the question-column gain is large.
-  #   Field     0.62  - "Welcome" (7) and "Question" (8) fit on
-  #                     one line; longer localized labels
-  #                     ("Description", 11) wrap.
+  #   Field     0.62  - the minimum: "Welcome" (7) and "Question" (8)
+  #                     fit on one line. Wider when the widest word of a
+  #                     label of this table needs it ("Commentaire",
+  #                     "Reihenfolge"), so that a label never breaks
+  #                     inside a word (lss_table_field_width(), bold at
+  #                     the body size); meta_w grows by the same amount,
+  #                     taken from the language columns.
   #   No        0.30  - the minimum. Wider when the widest label of this
   #                     table needs it (lss_no_width() at the body size,
   #                     with the 3 pt padding on each side); meta_w grows
@@ -1390,8 +1394,8 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   #                     language columns.
   #   Value     0.55  - 1-3 digit codes in 11 pt Consolas bold
   #                     ("1", "12", "999").
-  # Total meta = 4.47 at the minimum widths of No and Filter; the language
-  # columns split the remaining width.
+  # Total meta = 4.47 at the minimum widths of Field, No and Filter; the
+  # language columns split the remaining width.
   # The total follows the page orientation (theme$content_width_in: 6.30 in
   # portrait, 9.72 in A4 landscape, 14.56 in A3) and NEVER the language
   # count -- four languages fit on an A4 portrait page; reach for landscape
@@ -1415,10 +1419,14 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   filter_w <- max(0.58, lss_filter_label_width(
     filter_labels, theme$font_body, theme$size_meta, 6
   ))
-  meta_w <- 0.62 + no_w + 1.30 + 0.62 + 0.50 + filter_w + 0.55
+  # The labels of the Field column as the body prints them.
+  kinds <- vapply(rows, function(r) as.character(r$kind), character(1L))
+  field_w <- lss_table_field_width(ft$body$dataset$Field, kinds, theme,
+                                   body_size)
+  meta_w <- field_w + no_w + 1.30 + 0.62 + 0.50 + filter_w + 0.55
   total_w <- theme$content_width_in
   lang_w <- max((total_w - meta_w) / max(n_lang, 1L), 0.40)
-  ft <- flextable::width(ft, j = "Field",     width = 0.62, unit = "in")
+  ft <- flextable::width(ft, j = "Field",     width = field_w, unit = "in")
   ft <- flextable::width(ft, j = "No",        width = no_w, unit = "in")
   ft <- flextable::width(ft, j = "Variable",  width = 1.30, unit = "in")
   ft <- flextable::width(ft, j = "Type",      width = 0.62, unit = "in")
@@ -1432,7 +1440,6 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
   # Row-type indices for selective styling. The hierarchy is
   # group (most saturated) > question (zebra) > value (white);
   # welcome / endtext sit outside the data flow with accent borders.
-  kinds <- vapply(rows, function(r) as.character(r$kind), character(1L))
   group_idx        <- which(kinds == "group")
   group_desc_idx   <- which(kinds == "group_description")
   group_filter_idx <- which(kinds == "group_filter")
@@ -1520,6 +1527,30 @@ lss_table_template_polish <- function(ft, theme, rows, n_lang) {
 }
 
 # Helpers ----------------------------------------------------------
+
+#' Width of the Field column of the table, in inches
+#'
+#' 0.62 in, or more when the widest word of a label needs it, so that no
+#' label breaks inside a word. The labels are measured as the body prints
+#' them (body font, bold, `size`) by `lss_filter_label_width()`, with the
+#' left and right padding of their row: 4 pt on each side for the rows of a
+#' group, the description, the welcome and the end text, 3 pt for the
+#' others.
+#'
+#' @param labels The texts of the Field column, one per body row.
+#' @param kinds The kinds of the rows, in the same order.
+#' @param size The size of the body, in points.
+#' @param measure Passed to `lss_filter_label_width()`.
+#' @keywords internal
+#' @noRd
+lss_table_field_width <- function(labels, kinds, theme, size, measure = NULL) {
+  wide <- kinds %in% c("group", "description", "welcome", "endtext")
+  need <- function(x, padding) {
+    lss_filter_label_width(x, theme$font_body, size, padding,
+                           measure = measure, bold = TRUE)
+  }
+  max(0.62, need(labels[!wide], 6), need(labels[wide], 8))
+}
 
 #' Replace `NULL` or empty strings with a fallback. Used inside the
 #' rich-cell composer to avoid `as_chunk(NA)` or `as_chunk(NULL)`

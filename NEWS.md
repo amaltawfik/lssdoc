@@ -80,6 +80,10 @@
   one language of the document now shows the empty marker in its place.
   The marker used to appear only when the whole cell was empty.
 
+* In the table layout, the Field column is now wide enough for the longest
+  word of its labels. A label such as "Commentaire" or "Begrüßungstext"
+  broke inside the word. The extra width comes from the language columns.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.

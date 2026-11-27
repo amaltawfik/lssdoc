@@ -419,10 +419,11 @@ test_that("lss_filter_label_width() needs the widest part of a label", {
   expect_identical(w(c(NA, "")), 0)
   # 12 x 0.56 x 7 = 47.04, + 7 = 54.04 pt = 0.7506 in.
   expect_equal(w("Subquestion:"), 0.76)
-  # The label breaks after its hyphen: "question :" (10 characters),
-  # 39.2 + 7 = 46.2 pt = 0.6417 in.
-  expect_equal(w("Sous-question :"), 0.65)
-  # As the French chrome writes it, with a no-break space.
+  # The label breaks after its hyphen and at a space: with a plain space,
+  # "question" (8 characters), 31.36 + 7 = 38.36 pt = 0.5328 in.
+  expect_equal(w("Sous-question :"), 0.54)
+  # As the French chrome writes it, with a no-break space: "question :"
+  # (10 characters), 39.2 + 7 = 46.2 pt = 0.6417 in.
   expect_equal(w("Sous-question\u00A0:"), 0.65)
   expect_equal(w(c("Group:", "Subquestion:", NA)), 0.76)
   measured <- lss_filter_label_width("Subquestion:", "Calibri", 8, 6)
