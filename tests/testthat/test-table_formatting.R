@@ -290,3 +290,60 @@ test_that("table cell: a prompt that prints nothing gives the empty marker", {
   # The cards print the marker for the same prompt (lss_compose()).
   expect_identical(lss_compose("<p> </p>", th)[[1]]$txt, th$empty_marker)
 })
+
+test_that("lss_compose_chunks() numbers the items of an ordered list", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  base <- officer::fp_text(font.family = "Arial", font.size = 8)
+  chunk_txt <- function(html) {
+    do.call(flextable::as_paragraph, lss_compose_chunks(html, base))[[1]]$txt
+  }
+  expect_identical(
+    chunk_txt("<ol><li>a</li><li>b<ul><li>x</li></ul></li><li>c</li></ol>"),
+    c("1. ", "a", "\n", "2. ", "b", "\n", paste0("  ", BUL), "x", "\n",
+      "3. ", "c")
+  )
+  expect_identical(chunk_txt('<ol start="7"><li>a</li><li>b</li></ol>'),
+                   c("7. ", "a", "\n", "8. ", "b"))
+  expect_identical(
+    chunk_txt("<ul><li>a<ol><li>x</li><li>y</li></ol></li></ul>"),
+    c(BUL, "a", "\n", "  1. ", "x", "\n", "  2. ", "y")
+  )
+})
+
+test_that("an ordered list prints its numbers in both layouts", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  en <- c("1. Stand straight", "2. Take off", paste0("  ", BUL, "your shoes"),
+          paste0("  ", BUL, "your hat"), "3. Read the scale")
+  fr <- c("1. Tenez-vous droit", "2. Retirez",
+          paste0("  ", BUL, "vos chaussures"),
+          paste0("  ", BUL, "votre chapeau"), "3. Lisez la toise")
+  marks <- list("1. " = "", straight = "b,i", "  \u2022 " = "")
+  # Cards: the Help row of the card of height, one cell per language.
+  doc <- parity_render(parity_lss(), "cards", key = "parity")
+  tcs <- tf_cells(doc, "Stand straight", field = "Help")
+  expect_length(tcs, 1L)
+  tf_expect(tcs, marks, en, info = "cards en")
+  tcs <- tf_cells(doc, "Tenez-vous droit", field = "Help")
+  expect_length(tcs, 1L)
+  tf_expect(tcs, list(droit = "b,i"), fr, info = "cards fr")
+  # Table: the help between guillemets in the cell of height.
+  doc <- parity_render(parity_lss(), "table", key = "parity")
+  tcs <- tf_cells(doc, "Stand straight")
+  expect_length(tcs, 1L)
+  en[1] <- paste0("\u00AB ", en[1])
+  en[5] <- paste0(en[5], " \u00BB")
+  tf_expect(tcs, list(straight = "b,i"), en, info = "table en")
+  tcs <- tf_cells(doc, "Tenez-vous droit")
+  expect_length(tcs, 1L)
+  fr[1] <- paste0("\u00AB ", fr[1])
+  fr[5] <- paste0(fr[5], " \u00BB")
+  tf_expect(tcs, list(droit = "b,i"), fr, info = "table fr")
+  # The row of the cell is the Question row of height.
+  grid <- parity_table_grid(doc)
+  i <- grep("Stand straight", grid[, "en"], fixed = TRUE)
+  expect_identical(grid[i, c("Field", "Variable")],
+                   c(Field = "Question", Variable = "height"))
+})

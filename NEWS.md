@@ -119,6 +119,12 @@
   question for example. In the cards layout such a word did not stand
   out.
 
+* An ordered list in a text now prints the number of each item.
+  `render_documentation()` printed `1.` in front of every item.
+  `render_questionnaire()` printed a bullet in the texts where it keeps
+  the lists: the description of the survey or of a group, the welcome
+  text and the end text.
+
 * The quotas table of `render_documentation()` joined two answers of the
   same question with `AND`. They are alternatives and now read
   `Q1 ∈ {1, 2}`.

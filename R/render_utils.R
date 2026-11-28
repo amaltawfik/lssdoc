@@ -268,9 +268,10 @@ lss_compose <- function(html, theme,
 #' The runs of `html` (`lss_html_to_blocks()`) as flextable chunks, each in
 #' the style `base` (an `officer::fp_text()`) with the marks of its run
 #' added: bold, underline, superscript or subscript, italic. A block after
-#' the first starts on a new line; an item of a list starts with its bullet
-#' ("1. " in an ordered list), indented by two spaces per level below the
-#' first. The new lines between blocks and the bullets take `base`, upright.
+#' the first starts on a new line; an item of a list starts with its bullet,
+#' or with its number and a full stop in an ordered list ("2. "), indented by
+#' two spaces per level below the first. The new lines between blocks and
+#' the bullets or numbers take `base`, upright.
 #' A run in italic is set in italic in an upright `base` and upright in an
 #' italic one, the usual rule for emphasis inside italic text: an italic of
 #' the author stays visible in a text that a layout sets in italic (a help,
@@ -296,7 +297,7 @@ lss_compose_chunks <- function(html, base) {
     }
     b <- blocks[[bi]]
     if (identical(b$type, "list_item")) {
-      bullet <- if (isTRUE(b$ordered)) "1. " else "\u2022 "
+      bullet <- lss_list_marker(b)
       indent <- if (b$level > 1L) {
         strrep("  ", b$level - 1L)
       } else {

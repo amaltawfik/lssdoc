@@ -270,7 +270,9 @@ parity_missing <- function(expected, doc) {
 #   array dailyresources (its second subquestion);
 # - a help missing in French only (nationality);
 # - a help on the list with comment langhome, which the row of its comment
-#   field does not repeat.
+#   field does not repeat;
+# - an ordered list of three items, the second with a nested unordered
+#   list, in the help of height.
 # The questions that carry none of these cases are dropped, one or more
 # questions stay in every group, so that a render takes seconds.
 parity_lss <- function() {
@@ -411,6 +413,17 @@ parity_lss <- function() {
   set_text(qid("langhome"), "en", "help", "Choose the language you use most.")
   set_text(qid("langhome"), "fr", "help",
            "Choisissez la langue que vous utilisez le plus.")
+  # An ordered list.
+  set_text(qid("height"), "en", "help", paste0(
+    "<ol><li>Stand <strong>straight</strong></li><li>Take off",
+    "<ul><li>your shoes</li><li>your hat</li></ul></li>",
+    "<li>Read the scale</li></ol>"
+  ))
+  set_text(qid("height"), "fr", "help", paste0(
+    "<ol><li>Tenez-vous <strong>droit</strong></li><li>Retirez",
+    "<ul><li>vos chaussures</li><li>votre chapeau</li></ul></li>",
+    "<li>Lisez la toise</li></ol>"
+  ))
   keep <- c("respondentrole", "age", "height", "weight", "imc",
             "nationality", "langhome", "healthself", "physicalactivitydays",
             "sleephours", "loneliness", "chroniccondition", "incomefeel",

@@ -67,3 +67,43 @@ test_that("paragraphs separate blocks and text lines", {
     "One\nTwo"
   )
 })
+
+test_that("an item of an ordered list carries its number in its list", {
+  idx <- function(html) {
+    vapply(lss_html_to_blocks(html), function(b) b$index, integer(1))
+  }
+  expect_identical(idx("<ol><li>a</li><li>b</li><li>c</li></ol>"), 1:3)
+  # The start attribute, when it holds an integer.
+  expect_identical(idx('<ol start="4"><li>a</li><li>b</li></ol>'), 4:5)
+  expect_identical(idx('<ol start=" 0 "><li>a</li><li>b</li></ol>'), 0:1)
+  expect_identical(idx('<ol start="-2"><li>a</li><li>b</li></ol>'),
+                   c(-2L, -1L))
+  expect_identical(idx('<ol start="+3"><li>a</li></ol>'), 3L)
+  for (s in c("x", "2.5", "", "1e3", "3a", "12345678901")) {
+    html <- sprintf('<ol start="%s"><li>a</li><li>b</li></ol>', s)
+    expect_identical(idx(html), 1:2, info = s)
+  }
+  # value, type and reversed are not read.
+  expect_identical(
+    idx('<ol type="I" reversed><li>a</li><li value="9">b</li></ol>'), 1:2
+  )
+  # A nested ordered list has its own count, and the item of the parent
+  # that follows it takes the next number of the parent.
+  expect_identical(
+    idx("<ol><li>a<ol><li>x</li><li>y</li></ol></li><li>b</li></ol>"),
+    c(1L, 1L, 2L, 2L)
+  )
+  # A nested unordered list: no number, the parent goes on counting.
+  html <- "<ol><li>a</li><li>b<ul><li>x</li><li>y</li></ul></li><li>c</li></ol>"
+  blocks <- lss_html_to_blocks(html)
+  expect_identical(idx(html), c(1L, 2L, NA, NA, 3L))
+  expect_identical(vapply(blocks, function(b) b$level, integer(1)),
+                   c(1L, 1L, 2L, 2L, 1L))
+  # An unordered list, a paragraph: no number. Each list has its count.
+  expect_identical(idx("<ul><li>a</li><li>b</li></ul>"), c(NA_integer_, NA))
+  expect_identical(idx("<ol><li>a</li></ol><p>p</p><ol><li>b</li></ol>"),
+                   c(1L, NA, 1L))
+  expect_identical(idx("<li>a</li>"), NA_integer_)
+  # A flattened text holds neither bullets nor numbers.
+  expect_identical(lss_html_to_text(html), "a\nb\nx\ny\nc")
+})

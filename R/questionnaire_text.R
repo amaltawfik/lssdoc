@@ -41,8 +41,9 @@ lss_q_french <- function(s) {
 #'
 #' One element per paragraph of the HTML, a line break starting a new
 #' one, each with its plain text and whether it is entirely bold (a small
-#' heading, kept with the paragraph that follows it). A list item keeps a
-#' bullet. Empty paragraphs are dropped.
+#' heading, kept with the paragraph that follows it). A list item starts
+#' with its bullet, or with its number in an ordered list
+#' (`lss_list_marker()`). Empty paragraphs are dropped.
 #'
 #' @keywords internal
 #' @noRd
@@ -67,7 +68,7 @@ lss_q_html_paras <- function(html, french = FALSE) {
       if (!nzchar(txt)) next
       if (isTRUE(french)) txt <- lss_q_french(txt)
       if (identical(b$type, "list_item") && k == 1L) {
-        txt <- paste0("\u2022 ", txt)
+        txt <- paste0(lss_list_marker(b), txt)
       }
       filled <- Filter(function(r) nzchar(trimws(r$text)), runs)
       bold <- length(filled) > 0L &&

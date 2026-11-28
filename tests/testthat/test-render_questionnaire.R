@@ -310,6 +310,15 @@ test_that("texts lose their HTML, and French gets its no-break spaces", {
                    c("Title", "One", "Two", "\u2022 item"))
   expect_identical(vapply(paras, `[[`, NA, "bold"),
                    c(TRUE, FALSE, FALSE, FALSE))
+  # An ordered list: each item its number, a nested unordered list its
+  # bullet, the parent goes on counting; the second line of an item has
+  # neither.
+  paras <- lss_q_html_paras(paste0(
+    "<ol start=\"2\"><li>a<br>more</li><li>b<ul><li>x</li></ul></li>",
+    "<li>c</li></ol>"
+  ))
+  expect_identical(vapply(paras, `[[`, "", "text"),
+                   c("2. a", "more", "3. b", "\u2022 x", "4. c"))
   expect_identical(lss_q_html_paras(""), list())
   expect_identical(lss_q_html_paras("<p> </p>"), list())
   expect_identical(lss_q_html_paras("Vous ?", french = TRUE)[[1]]$text,
@@ -870,6 +879,27 @@ test_that("groups without questions, names or numbers still plan", {
 })
 
 # ---- Rendering (not on CRAN) ------------------------------------------------
+
+test_that("the welcome text numbers the items of an ordered list", {
+  skip_on_cran()
+  skip_if_not_installed("officer")
+  lss <- q_fixture_lss()
+  ls <- lss$survey_language_settings
+  ls$surveyls_welcometext <- paste0(
+    "<ol><li>Read the page</li><li>Answer",
+    "<ul><li>alone</li><li>calmly</li></ul></li>",
+    "<li>Send</li></ol>"
+  )
+  lss$survey_language_settings <- ls
+  out <- q_render(lss)
+  on.exit(unlink(out), add = TRUE)
+  paras <- q_paras(q_parts(out)$doc)
+  i <- grep("Read the page", paras, fixed = TRUE)
+  expect_length(i, 1L)
+  expect_identical(sub("^.*\t", "", paras[i + 0:4]),
+                   c("1. Read the page", "2. Answer", "\u2022 alone",
+                     "\u2022 calmly", "3. Send"))
+})
 
 test_that("the message on the new name comes once per session", {
   skip_on_cran()
