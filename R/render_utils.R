@@ -25,22 +25,23 @@ lss_render_state <- function(model) {
 
 #' Build a response-variable name in the requested style
 #'
-#' Assembles the data-column name LimeSurvey gives a response variable
-#' from its parts, in one of two styles:
-#' * `"brackets"` (default) -- the exact form of the **CSV / Excel data
-#'   export** header, so the rendered questionnaire and its variable index
-#'   match the raw data file column for column: `parent[part]`,
-#'   `parent[part][scale]` (e.g. `sleephours[WEEK]`,
+#' Assembles the name of a response column from its parts, in one of two
+#' styles:
+#' * `"brackets"` (default) -- the heading of the column in the CSV and
+#'   Excel export of LimeSurvey 7.12.1, "question code" style:
+#'   `parent[part]`, `parent[part][scale]` (e.g. `sleephours[WEEK]`,
 #'   `trustinstitutions[PARL][1]`, `devicerank[1]`).
-#' * `"underscore"` -- the sanitized code form used by the Expression
-#'   Manager / relevance equations and the SPSS / Stata / R exports:
-#'   `parent_part`, `parent_part_scale`.
+#' * `"underscore"` -- `parent_part`, `parent_part_scale`: the name of the
+#'   Expression Manager, used in conditions. For a dual scale the scale is
+#'   counted from 1 here, as in the SPSS export; the Expression Manager
+#'   counts it from 0.
 #'
-#' `part` is the subquestion code, the multiple-choice answer code, the
-#' literal `"other"` / `"_Cother"` / `"_Ccomment"` appendix marker, the
-#' part of a comment variable (`lss_comment_variable()`), the rank of a
-#' ranking column, or `"*"` for the family placeholder shown in a
-#' multiple-choice meta band. `scale` is the 1-based dual-scale index.
+#' `part` is the subquestion code, one of the literals `"other"`,
+#' `"comment"`, `"otherchecked"` and `"filecount"`, the part of a comment
+#' variable (`lss_comment_variable()`), the rank of a ranking column, or
+#' `"*"` for the family placeholder shown in a meta band. It is used as
+#' given: a code made of digits keeps its leading zeros (`Q[001]`,
+#' `Q_001`). `scale` is the 1-based dual-scale index.
 #'
 #' @keywords internal
 #' @noRd
@@ -48,12 +49,6 @@ lss_variable_name <- function(parent, part = NULL, scale = NULL,
                               style = "brackets") {
   brackets <- !identical(style, "underscore")
   wrap <- function(x) if (brackets) paste0("[", x, "]") else paste0("_", x)
-  # LimeSurvey exports a purely-numeric subquestion code without its
-  # leading zeros (`001` -> `1`), so normalize digit-only parts to match
-  # the data file column.
-  if (!is.null(part) && grepl("^[0-9]+$", part)) {
-    part <- as.character(as.integer(part))
-  }
   out <- parent
   if (!is.null(part)) out <- paste0(out, wrap(part))
   if (!is.null(scale)) out <- paste0(out, wrap(scale))
@@ -62,20 +57,44 @@ lss_variable_name <- function(parent, part = NULL, scale = NULL,
 
 #' Data-column name of a question's free-text "Other" response
 #'
-#' LimeSurvey names the "Other" appendix differently by family in the
-#' CSV/Excel export: a multiple-choice "Other" is `code[other]`, while a
-#' single-choice list "Other" is `code[_Cother]`. The `"underscore"`
-#' style uses the clean code form `code_other` for both.
+#' `code[other]` in the brackets style and `code_other` in the underscore
+#' style, for every type that has an "Other" field: list, dropdown list,
+#' multiple choice and multiple choice with comments.
 #'
 #' @keywords internal
 #' @noRd
 lss_other_variable <- function(q, style = "brackets") {
-  if (identical(style, "underscore")) {
-    return(lss_variable_name(q$code, "other", style = style))
-  }
-  multiple <- identical(lss_type_info(q$type)$family, "multiple")
-  lss_variable_name(q$code, if (multiple) "other" else "_Cother",
-                    style = style)
+  lss_variable_name(q$code, "other", style = style)
+}
+
+#' Data-column name of the box of "Other" of a multiple choice
+#'
+#' A multiple choice (type M) with "Other" has a column that records the
+#' box of "Other": `Y` when it is ticked, empty otherwise. It is
+#' `code[otherchecked]` in the brackets style and `code_otherchecked` in
+#' the underscore style. The second is the name of the SPSS export: the
+#' Expression Manager has no variable for this column. `NULL` for any
+#' other question, a multiple choice with comments (type P) included: it
+#' has no such column.
+#'
+#' @keywords internal
+#' @noRd
+lss_other_checked_variable <- function(q, style = "brackets") {
+  if (!identical(q$type, "M") || !identical(q$other, "Y")) return(NULL)
+  lss_variable_name(q$code, "otherchecked", style = style)
+}
+
+#' Data-column name of the number of files of a file upload question
+#'
+#' A file upload question (type `|`) has a column for the number of files
+#' the respondent uploaded: `code[filecount]` in the brackets style,
+#' `code_filecount` in the underscore style. `NULL` for any other question.
+#'
+#' @keywords internal
+#' @noRd
+lss_file_count_variable <- function(q, style = "brackets") {
+  if (!identical(q$type, "|")) return(NULL)
+  lss_variable_name(q$code, "filecount", style = style)
 }
 
 #' Data-column name of a comment variable
@@ -86,22 +105,16 @@ lss_other_variable <- function(q, style = "brackets") {
 #'   `code_SQcomment`; `part = "other"` gives the comment of "Other",
 #'   `code[othercomment]`, and `part = "*"` the pattern of the names that
 #'   the card prints, `code[*comment]`;
-#' * list with comment (type O), `part = NULL`: `code[_Ccomment]` in the
-#'   CSV / Excel export, `code_comment` in the underscore style (the
-#'   Expression Manager's name).
+#' * list with comment (type O), `part = NULL`: `code[comment]` in the
+#'   brackets style, `code_comment` in the underscore style.
 #'
-#' A digit-only subquestion code keeps its leading zeros here (`Q[001comment]`),
-#' since the part is not digit-only; `lss_variable_name()` drops them from
-#' the option's own name (`Q[1]`).
+#' A code made of digits keeps its leading zeros (`Q[001comment]`), as in
+#' the name of the option itself (`Q[001]`).
 #'
 #' @keywords internal
 #' @noRd
 lss_comment_variable <- function(q, part = NULL, style = "brackets") {
-  if (is.null(part)) {
-    part <- if (identical(style, "underscore")) "comment" else "_Ccomment"
-  } else {
-    part <- paste0(part, "comment")
-  }
+  part <- if (is.null(part)) "comment" else paste0(part, "comment")
   lss_variable_name(q$code, part, style = style)
 }
 

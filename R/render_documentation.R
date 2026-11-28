@@ -227,21 +227,28 @@
 #'   by a native speaker before publishing an official document.
 #' @param variable_names How response-variable names are written, so the
 #'   document matches the data file the reader holds. One of:
-#'   * `"brackets"` (default) -- the exact column names of the
-#'     **CSV / Excel data export**, so the variable index reproduces the
-#'     raw data file column for column: `parent[subq]`,
+#'   * `"brackets"` (default) -- the column names of the **CSV / Excel
+#'     data export** of LimeSurvey 7.12.1, so the variable index
+#'     reproduces the raw data file column for column: `parent[subq]`,
 #'     `parent[subq][1]` (dual scale), `parent[CH]` / `parent[other]`
 #'     (multiple choice), `parent[CHcomment]` / `parent[othercomment]`
-#'     (the comments of a multiple choice with comments),
-#'     `parent[1]` (ranking, by rank), `parent[_Ccomment]`
-#'     (list-with-comment).
+#'     (the comments of a multiple choice with comments), `parent[1]`
+#'     (ranking, by rank), `parent[other]` (the "Other" field of a list)
+#'     and `parent[comment]` (list-with-comment). A subquestion code made
+#'     of digits keeps its leading zeros (`parent[001]`).
 #'   * `"underscore"` -- the sanitized code form used by the Expression
 #'     Manager / relevance equations and the SPSS / Stata / R exports
 #'     (`parent_subq`, `parent_subq_1`, `parent_CHcomment`, and
-#'     `parent_comment` for the comment of a list-with-comment).
+#'     `parent_comment` for the comment of a list-with-comment). The two
+#'     scales of a dual-scale array are numbered 1 and 2, as in the SPSS
+#'     export. The Expression Manager numbers them 0 and 1.
 #'   The two-dimensional arrays (array of numbers / texts with a second
 #'   axis) and ranking questions are expanded so every produced column
-#'   appears as its own entry either way.
+#'   appears as its own entry either way. Two columns LimeSurvey adds on
+#'   its own are listed too: `parent[otherchecked]`, the "Other" box of a
+#'   multiple choice, present in the data of a survey activated in
+#'   LimeSurvey 7.10.0 or later, and `parent[filecount]`, the number of
+#'   files of a file upload.
 #' @param base_size Body type size in points (default `10`). One lever
 #'   scales the whole document: question text, item tables, the meta band,
 #'   the quotas table, the variable index and the cover metadata all

@@ -157,6 +157,19 @@ lss_render_question_block <- function(doc, q, langs, theme,
       state = state
     )
   }
+  # File upload adds the column of the number of files uploaded, a card
+  # built like the one of the comment.
+  file_count <- lss_file_count_variable(q, theme$variable_names)
+  if (!is.null(file_count)) {
+    doc <- lss_render_comment_item(
+      doc, q, langs, theme,
+      state = state,
+      variable = file_count, type = "N",
+      type_label = theme$chrome$type_number,
+      label = theme$chrome$item_value,
+      value = theme$chrome$value_file_count
+    )
+  }
   doc
 }
 
@@ -405,7 +418,8 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
   item_no <- lss_item_label(state$numbers, q$qid)
   # Register every option variable in the index (lookup preserved); with
   # comments (type P), the comment variable of each option and of "Other"
-  # too, at the same number.
+  # too, at the same number; for a type M with "Other", the box of
+  # "Other" after the options.
   comments <- identical(q$type, "P")
   for (sq in q$subquestions) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -418,6 +432,12 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
         no = item_no
       )
     }
+  }
+  checked <- lss_other_checked_variable(q, theme$variable_names)
+  if (!is.null(checked)) {
+    state$index_entries[[length(state$index_entries) + 1L]] <- list(
+      code = checked, no = item_no
+    )
   }
   if (comments && identical(q$other, "Y")) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
@@ -510,6 +530,18 @@ lss_render_multiple_choice <- function(doc, q, langs, theme,
       texts = stats::setNames(
         lapply(langs, function(lg) sq$texts[[lg]]$question), langs
       ),
+      size = theme$size_answer,
+      code_row = TRUE
+    )
+  }
+  # The box of "Other" of a type M: one more option after those of the
+  # survey (the count of the header stays theirs), the suffix of its name
+  # as the label and, in each language column, the built-in label in the
+  # language of that column.
+  if (!is.null(checked)) {
+    rows[[length(rows) + 1L]] <- list(
+      label = "otherchecked",
+      texts = lss_other_checked_labels(langs, theme$chrome),
       size = theme$size_answer,
       code_row = TRUE
     )
@@ -626,17 +658,28 @@ lss_render_other_item <- function(doc, q, langs, theme, state) {
 #' Render the free-text comment of a "list with comment" question (type O)
 #'
 #' A list-with-comment question yields a second data column holding the
-#' respondent's free-text comment, which LimeSurvey names
-#' `<parent>[_Ccomment]` in its CSV/Excel export (`lss_comment_variable()`).
-#' We surface it as its own card so the reader sees the variable in the
-#' index and meta table alongside the list. Like the "Other" field, it
-#' carries the question's own number.
+#' respondent's free-text comment, `<parent>[comment]`
+#' (`lss_comment_variable()`). We surface it as its own card so the reader
+#' sees the variable in the index and meta table alongside the list. Like
+#' the "Other" field, it carries the question's own number.
+#'
+#' The card of the number of files of a file upload is built the same way:
+#' it passes its `variable`, its `type` and `type_label`, and the `label`
+#' and `value` of the row under the Question row (a Value row with
+#' `value_file_count`). The defaults give the card of the comment.
 #'
 #' @keywords internal
 #' @noRd
-lss_render_comment_item <- function(doc, q, langs, theme, state) {
+lss_render_comment_item <- function(doc, q, langs, theme, state,
+                                    variable = lss_comment_variable(
+                                      q, style = theme$variable_names
+                                    ),
+                                    type = "S",
+                                    type_label = theme$chrome$type_text_short,
+                                    label = theme$chrome$item_comment,
+                                    value = theme$chrome$value_free_text_short) {
   item_no <- lss_item_label(state$numbers, q$qid)
-  item_code <- lss_comment_variable(q, style = theme$variable_names)
+  item_code <- variable
   state$index_entries[[length(state$index_entries) + 1L]] <- list(
     code = item_code, no = item_no
   )
@@ -659,7 +702,7 @@ lss_render_comment_item <- function(doc, q, langs, theme, state) {
     doc, theme,
     item_no = item_no,
     variable = item_code,
-    type = "S", type_label = theme$chrome$type_text_short,
+    type = type, type_label = type_label,
     mandatory = "N",
     relevance = q$relevance,
     show_raw_filter = isTRUE(state$show_raw_filter),
@@ -672,11 +715,12 @@ lss_render_comment_item <- function(doc, q, langs, theme, state) {
     list(label = theme$chrome$item_question,
          texts = stats::setNames(stem, langs),
          size = theme$size_question),
-    # A "Comment" line names what this free-text column records, then the
-    # Value section documents its response shape (single-line free text).
-    list(label = theme$chrome$item_comment,
+    # A "Comment" line names what this free-text column records and
+    # documents its response shape (single-line free text); the file count
+    # has a Value line.
+    list(label = label,
          texts = stats::setNames(
-           rep(list(theme$chrome$value_free_text_short), length(langs)), langs
+           rep(list(value), length(langs)), langs
          ),
          size = theme$size_answer, section_header = TRUE,
          section_with_text = TRUE, span_note = TRUE)

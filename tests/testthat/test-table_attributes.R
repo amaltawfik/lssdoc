@@ -37,7 +37,7 @@ test_that("table rows: a list with comment prints no attribute on its comment ro
   q <- ta_q("O", "q2", ta_attrs(SFX), answers = list(ta_answer("A1")))
   rows <- ta_rows(list(q))
   expect_identical(ta_kinds(rows), c("leaf", "attr", "value", "leaf"))
-  expect_identical(rows[[4]]$variable, "q2[_Ccomment]")
+  expect_identical(rows[[4]]$variable, "q2[comment]")
 })
 
 test_that("table rows: the formula of a computed question is an attribute row", {
@@ -341,7 +341,7 @@ test_that("table rows: the comment row of a list with comment", {
   rows <- ta_rows(list(q))
   expect_identical(ta_kinds(rows), c("leaf", "value", "leaf"))
   cr <- rows[[3]]
-  expect_identical(cr$variable, "q2[_Ccomment]")
+  expect_identical(cr$variable, "q2[comment]")
   # The label of the card of the comment, and no help of the question.
   expect_identical(cr$field, "Comment")
   expect_null(cr$help)
@@ -418,7 +418,7 @@ test_that("table: the rows of the parity survey changed in 8.3, cell by cell", {
 
   # A5 with B2: the comment row of langhome, "Comment" in Field, the stem
   # without the help in the language cells.
-  k <- which(grid[, "Variable"] == "langhome[_Ccomment]")
+  k <- which(grid[, "Variable"] == "langhome[comment]")
   expect_length(k, 1L)
   expect_identical(unname(grid[k, c("Field", "Value")]), c("Comment", "[text]"))
   for (lg in TA_LANGS) {

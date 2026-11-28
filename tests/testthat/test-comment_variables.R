@@ -45,12 +45,12 @@ test_that("lss_comment_variable() names the comment variables in both styles", {
   # The pattern the card prints.
   expect_identical(lss_comment_variable(q, "*"), "Q[*comment]")
   expect_identical(lss_comment_variable(q, "*", "underscore"), "Q_*comment")
-  # Type O: the CSV export's name, and the Expression Manager's.
-  expect_identical(lss_comment_variable(q), "Q[_Ccomment]")
+  # Type O, in both styles.
+  expect_identical(lss_comment_variable(q), "Q[comment]")
   expect_identical(lss_comment_variable(q, style = "underscore"), "Q_comment")
-  # A digit-only code keeps its leading zeros in the comment's name, while
-  # the option's own name drops them (not checked against an export).
-  expect_identical(lss_variable_name("Q", "001"), "Q[1]")
+  # A code made of digits keeps its leading zeros, in the comment's name as
+  # in the option's own name.
+  expect_identical(lss_variable_name("Q", "001"), "Q[001]")
   expect_identical(lss_comment_variable(q, "001"), "Q[001comment]")
 })
 
@@ -187,11 +187,12 @@ test_that("table rows: the Other of a type P has its comment row", {
 })
 
 test_that("table rows: no comment row for a multiple choice without comments", {
+  # The third option row is the box of "Other" (test-response_columns.R).
   res <- cv_rows(cv_q("M", other = "Y"))
   expect_identical(ta_kinds(res$rows),
-                   c("leaf", "mc_option", "mc_option", "other"))
+                   c("leaf", "mc_option", "mc_option", "mc_option", "other"))
   expect_identical(names(cv_index(res$index)),
-                   c("q1[SQ1]", "q1[SQ2]", "q1[other]"))
+                   c("q1[SQ1]", "q1[SQ2]", "q1[otherchecked]", "q1[other]"))
 })
 
 test_that("table rows: the names of the comment variables in the underscore style", {
@@ -200,11 +201,11 @@ test_that("table rows: the names of the comment variables in the underscore styl
     "q1_SQ1", "q1_SQ1comment", "q1_SQ2", "q1_SQ2comment", "q1_other",
     "q1_othercomment"
   ))
-  # The list with comment: the Expression Manager's name.
+  # The list with comment, in both styles.
   o <- ta_q("O", "q2", answers = list(ta_answer("A1")))
   rows <- cv_rows(o, style = "underscore")$rows
   expect_identical(rows[[length(rows)]]$variable, "q2_comment")
-  expect_identical(cv_rows(o)$rows[[length(rows)]]$variable, "q2[_Ccomment]")
+  expect_identical(cv_rows(o)$rows[[length(rows)]]$variable, "q2[comment]")
 })
 
 test_that("table rows: a comment row is never mandatory", {

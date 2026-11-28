@@ -20,12 +20,19 @@
   count the cover prints under "Questions". A document rendered with an
   earlier version carries other numbers.
 
-* The rank columns of a ranking are now named by rank: `devicerank[1]`,
-  `devicerank[2]` and so on, or `devicerank_1` with
-  `variable_names = "underscore"`. These are the names LimeSurvey 7.12.1
-  gives them. They were named by answer id (`devicerank[59842]`). A
-  ranking has as many rank columns as items, or fewer when
-  `max_subquestions` sets a lower number.
+* The names of the response columns now follow LimeSurvey 7.12.1. Four
+  of them change with `variable_names = "brackets"`, the default. The
+  "Other" field of a list is `Q[other]`, where it was `Q[_Cother]`. The
+  comment of a list with comment is `Q[comment]`, where it was
+  `Q[_Ccomment]`. A subquestion code made of digits keeps its leading
+  zeros: `Q[001]`, where it was `Q[1]`. The rank columns of a ranking
+  are named by rank, `devicerank[1]`, `devicerank[2]` and so on, where
+  they were named by answer id (`devicerank[59842]`). Three change with
+  `variable_names = "underscore"`. The comment of a list with comment is
+  `Q_comment`, the name the Expression Manager gives it, where it was
+  `Q__Ccomment`. The other two are `Q_001` and `devicerank_1`. A ranking
+  has as many rank columns as items, or fewer when `max_subquestions`
+  sets a lower number.
 
 ## New features
 
@@ -96,9 +103,7 @@
   multiple choice with comments. The table layout has one row per comment
   variable, under the row of its option, and the card gives the pattern of
   their names (`Q[*comment]`). The variable index lists them in both
-  layouts. With `variable_names = "underscore"`, the comment of a list
-  with comment is now named `Q_comment`, the name the Expression Manager
-  gives it. It was `Q__Ccomment`.
+  layouts.
 
 * `render_documentation()` no longer adds a note on audit findings to the
   heading of a card. The note printed only in the cards layout with
@@ -172,6 +177,14 @@
   `missing_options`. The order of the items is read from
   `subquestion_order`, and from `answer_order` in a file of the earlier
   form.
+
+* `render_documentation()` now lists two columns LimeSurvey adds to the
+  data on its own. `Q[otherchecked]` tells whether the "Other" box of a
+  multiple choice is ticked. It is in the data of a survey activated in
+  LimeSurvey 7.10.0 or later, and a multiple choice with comments has no
+  such column. `Q[filecount]` holds the number of files a respondent
+  uploaded to a file upload question. Both layouts and the variable
+  index show them.
 
 # lssdoc 0.3.0
 

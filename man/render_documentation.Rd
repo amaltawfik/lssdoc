@@ -299,21 +299,28 @@ by a native speaker before publishing an official document.}
 \item{variable_names}{How response-variable names are written, so the
 document matches the data file the reader holds. One of:
 \itemize{
-\item \code{"brackets"} (default) -- the exact column names of the
-\strong{CSV / Excel data export}, so the variable index reproduces the
-raw data file column for column: \code{parent[subq]},
+\item \code{"brackets"} (default) -- the column names of the \strong{CSV / Excel
+data export} of LimeSurvey 7.12.1, so the variable index
+reproduces the raw data file column for column: \code{parent[subq]},
 \code{parent[subq][1]} (dual scale), \code{parent[CH]} / \code{parent[other]}
 (multiple choice), \code{parent[CHcomment]} / \code{parent[othercomment]}
-(the comments of a multiple choice with comments),
-\code{parent[1]} (ranking, by rank), \verb{parent[_Ccomment]}
-(list-with-comment).
+(the comments of a multiple choice with comments), \code{parent[1]}
+(ranking, by rank), \code{parent[other]} (the "Other" field of a list)
+and \code{parent[comment]} (list-with-comment). A subquestion code made
+of digits keeps its leading zeros (\code{parent[001]}).
 \item \code{"underscore"} -- the sanitized code form used by the Expression
 Manager / relevance equations and the SPSS / Stata / R exports
 (\code{parent_subq}, \code{parent_subq_1}, \code{parent_CHcomment}, and
-\code{parent_comment} for the comment of a list-with-comment).
+\code{parent_comment} for the comment of a list-with-comment). The two
+scales of a dual-scale array are numbered 1 and 2, as in the SPSS
+export. The Expression Manager numbers them 0 and 1.
 The two-dimensional arrays (array of numbers / texts with a second
 axis) and ranking questions are expanded so every produced column
-appears as its own entry either way.
+appears as its own entry either way. Two columns LimeSurvey adds on
+its own are listed too: \code{parent[otherchecked]}, the "Other" box of a
+multiple choice, present in the data of a survey activated in
+LimeSurvey 7.10.0 or later, and \code{parent[filecount]}, the number of
+files of a file upload.
 }}
 
 \item{base_size}{Body type size in points (default \code{10}). One lever

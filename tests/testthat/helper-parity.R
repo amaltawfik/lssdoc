@@ -242,6 +242,42 @@ parity_missing <- function(expected, doc) {
   paste(expected$id, expected$lang)[!found]
 }
 
+# Add a file upload question `code` to `lss`, right after the question
+# `after`, in its group: a question row copied from `after` with a qid no
+# other row has, and one text per language of the survey, `texts[[lg]]`, or
+# the English text for a language `texts` does not name.
+parity_add_file_upload <- function(lss, code, after, texts) {
+  q <- lss$questions
+  prev <- q[q$title == after, , drop = FALSE]
+  stopifnot(nrow(prev) == 1L)
+  later <- q$gid == prev$gid &
+    as.integer(q$question_order) > as.integer(prev$question_order)
+  q$question_order[later] <- as.character(as.integer(q$question_order[later]) + 1L)
+  new <- prev
+  new$qid <- as.character(max(as.integer(c(q$qid, lss$subquestions$qid))) + 1L)
+  new$type <- "|"
+  new$title <- code
+  new$other <- "N"
+  new$mandatory <- "N"
+  new$relevance <- "1"
+  new$question_order <- as.character(as.integer(prev$question_order) + 1L)
+  new$question_theme_name <- "file_upload"
+  lss$questions <- rbind(q, new)
+  l10 <- lss$question_l10ns
+  langs <- lss$languages
+  row <- l10[rep(1L, length(langs)), , drop = FALSE]
+  row$id <- as.character(max(as.integer(l10$id)) + seq_along(langs))
+  row$qid <- new$qid
+  row$question <- unname(vapply(langs, function(lg) {
+    if (lg %in% names(texts)) texts[[lg]] else texts[["en"]]
+  }, ""))
+  row$help <- ""
+  if ("script" %in% names(row)) row$script <- ""
+  row$language <- langs
+  lss$question_l10ns <- rbind(l10, row)
+  lss
+}
+
 # The demo survey, changed so that it carries every case the two layouts
 # must agree on. What the demo already has, and is kept: a prefix and a
 # suffix on a leaf question (physicalactivitydays), suffixes (age, height,
@@ -273,7 +309,9 @@ parity_missing <- function(expected, doc) {
 #   field does not repeat;
 # - an ordered list of three items, the second with a nested unordered
 #   list, in the help of height;
-# - a bold and an italic word in the first item of the ranking devicerank.
+# - a bold and an italic word in the first item of the ranking devicerank;
+# - a file upload question (idscan) after langhome, with a bold word in its
+#   stem.
 # The questions that carry none of these cases are dropped, one or more
 # questions stay in every group, so that a render takes seconds.
 parity_lss <- function() {
@@ -432,8 +470,14 @@ parity_lss <- function() {
     "<strong>Smart</strong>phone <em>of any brand</em>"
   lss$answer_l10ns$answer[dl & lss$answer_l10ns$language == "fr"] <-
     "<strong>Smart</strong>phone <em>de toute marque</em>"
+  # A file upload question.
+  lss <- parity_add_file_upload(lss, "idscan", "langhome", c(
+    en = "Upload a scan of your <strong>identity card</strong>.",
+    fr = "D\u00E9posez un scan de votre <strong>carte d'identit\u00E9</strong>."
+  ))
   keep <- c("respondentrole", "age", "height", "weight", "imc",
-            "nationality", "langhome", "healthself", "physicalactivitydays",
+            "nationality", "langhome", "idscan", "healthself",
+            "physicalactivitydays",
             "sleephours", "loneliness", "chroniccondition", "incomefeel",
             "dailyresources", "occupation", "adaptability", "socialmedia",
             "trustinstitutions", "devicerank", "surveyinterest")

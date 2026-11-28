@@ -61,7 +61,9 @@ test_that("lss_chrome_strings returns a localized string set for every supported
     "q_open_numbers", "q_open_short_texts", "q_open_number_range_fmt",
     "q_open_number_step_fmt", "q_open_checkbox", "q_columns",
     "q_for_each_cell", "q_open_file",
-    "q_open_language", "q_open_free"
+    "q_open_language", "q_open_free",
+    # The columns of the box of Other and of the file count (0.4.0)
+    "value_other_checked", "item_file_count", "value_file_count"
   )
   for (lang in c("en", "fr", "de", "es", "it")) {
     pack <- lss_chrome_strings(lang)

@@ -128,9 +128,9 @@ cover_fields <- function(rows) {
 
 cards_expected <- c(
   "Q01Single" = "1",
-  "Q01Single[_Cother]" = "1",
+  "Q01Single[other]" = "1",
   "Q02Singlecomment" = "2",
-  "Q02Singlecomment[_Ccomment]" = "2",
+  "Q02Singlecomment[comment]" = "2",
   "Q03Multiple[*]" = "3",
   "Q03Multiple[other]" = "3",
   "Q04Array[1]" = "4.1",
@@ -291,7 +291,7 @@ test_that("cards carry question numbers, sub-item numbers and en dashes", {
   paras <- s$text[s$content_type %in% "paragraph"]
   for (h in c(
     "1. Q01Single",
-    "1. Q01Single[_Cother]",
+    "1. Q01Single[other]",
     "3. Q03Multiple",
     "4.1. Q04Array[1]",
     "4.3. Q04Array[3]",
@@ -313,7 +313,7 @@ test_that("cards carry question numbers, sub-item numbers and en dashes", {
       "Q03Multiple[4]",
       "Q03Multiple[other]",
       "Q04Array[2]",
-      "Q02Singlecomment[_Ccomment]",
+      "Q02Singlecomment[comment]",
       "Q07Shorttext",
       "Q08Numeric"
     )]),
@@ -364,6 +364,7 @@ test_that("the table template numbers parent, option and rank rows", {
       "3.3",
       "3.4",
       "3",
+      "3",
       "4.1",
       "4.2",
       "4.3",
@@ -381,17 +382,18 @@ test_that("the table template numbers parent, option and rank rows", {
     )
   )
   expect_identical(
-    var[c(1:10, 20:24)],
+    var[c(1:11, 21:25)],
     c(
       "Q01Single",
-      "Q01Single[_Cother]",
+      "Q01Single[other]",
       "Q02Singlecomment",
-      "Q02Singlecomment[_Ccomment]",
+      "Q02Singlecomment[comment]",
       "",
       "Q03Multiple[1]",
       "Q03Multiple[2]",
       "Q03Multiple[3]",
       "Q03Multiple[4]",
+      "Q03Multiple[otherchecked]",
       "Q03Multiple[other]",
       "Q10Display",
       "Q06Text",
@@ -400,7 +402,7 @@ test_that("the table template numbers parent, option and rank rows", {
       "Q09Date"
     )
   )
-  expect_true(all(startsWith(var[15:19], "Q05Ranking[")))
+  expect_true(all(startsWith(var[16:20], "Q05Ranking[")))
 
   # The mention closes every language cell of the hidden questions' rows,
   # and no other row.

@@ -142,9 +142,10 @@ knitr::include_graphics("../man/figures/template_table.png")
 - `chrome_lang` -- language of the *document chrome* (column headers, row
   labels, type labels), independent of the content languages.
 - `template` -- `"cards"` (default) or `"table"`.
-- `variable_names` -- `"brackets"` (default) reproduces the LimeSurvey
-  CSV/Excel export column names, so the variable index matches the raw
-  data file; `"underscore"` uses the SPSS/Stata code form.
+- `variable_names` -- `"brackets"` (default) reproduces the column names
+  of the LimeSurvey 7.12.1 CSV/Excel export, so the variable index
+  matches the raw data file; `"underscore"` uses the SPSS/Stata code
+  form.
 - `base_size` -- body type size in points (default `10`); raise it
   (e.g. `12`) for a roomier single-language render.
 - `page_format` -- `"auto"`, `"A4-portrait"`, `"A4-landscape"` or `"A3"`.

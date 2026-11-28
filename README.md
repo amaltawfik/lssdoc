@@ -69,14 +69,14 @@ Other things lssdoc takes care of for you:
   FR/DE questionnaire and switch the document scaffolding to English (or
   vice versa) with a single argument.
 - **Variable-centric compound rendering, matching the data file.** Every
-  response variable is documented under the exact column name of the
-  LimeSurvey **CSV / Excel export**, so the variable index lines up with
-  the raw data file column for column: arrays and multiple choice as
-  `parent[subq]` / `parent[other]`, dual-scale arrays split into one
-  block per scale (`parent[subq][1]`), two-dimensional arrays as the row
-  x column cross-product (`parent[row_col]`), ranking expanded into one
-  column per position (`parent[1]`), list-with-comment into
-  `parent[_Ccomment]`, and the comment of each option of a multiple
+  response variable is documented under the column name of the
+  LimeSurvey 7.12.1 **CSV / Excel export**, so the variable index lines
+  up with the raw data file column for column: arrays and multiple
+  choice as `parent[subq]` / `parent[other]`, dual-scale arrays split
+  into one block per scale (`parent[subq][1]`), two-dimensional arrays
+  as the row x column cross-product (`parent[row_col]`), ranking
+  expanded into one column per rank (`parent[1]`), list-with-comment
+  into `parent[comment]`, and the comment of each option of a multiple
   choice with comments as `parent[subqcomment]`. Pass
   `variable_names = "underscore"` for the Expression Manager / SPSS /
   Stata code form (`parent_subq`) instead.

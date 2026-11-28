@@ -8,8 +8,8 @@ test_that("lss_variable_name assembles both styles", {
   expect_identical(lss_variable_name("Q", "WEEK", style = "underscore"), "Q_WEEK")
   expect_identical(lss_variable_name("Q", "PARL", 1L), "Q[PARL][1]")
   expect_identical(lss_variable_name("Q", "PARL", 1L, "underscore"), "Q_PARL_1")
-  # Numeric subquestion codes drop their leading zeros (CSV behavior).
-  expect_identical(lss_variable_name("Q", "001"), "Q[1]")
+  # A code made of digits keeps its leading zeros.
+  expect_identical(lss_variable_name("Q", "001"), "Q[001]")
   expect_identical(lss_variable_name("Q", "*"), "Q[*]")
 })
 
@@ -26,12 +26,12 @@ test_that("brackets (default) reproduce the CSV/Excel column names", {
   expected <- c(
     "sleephours[WEEK]",            # array subquestion
     "nationality[CH]", "nationality[other]",  # multiple choice + other
-    "supportsources[1]",           # numeric subquestion code (zero-stripped)
+    "supportsources[1]",           # subquestion code made of digits
     "trustinstitutions[PARL][1]", "trustinstitutions[PARL][2]",  # dual scale
     "adaptability[NEW_NOW]",       # 2-D array (row x column)
     "mediaquality[REL_EX]",        # 2-D array texts
     "devicerank[1]",               # ranking, rank 1
-    "langhome[_Ccomment]"          # list-with-comment
+    "langhome[comment]"            # list-with-comment
   )
   for (tmpl in c("cards", "table")) {
     out <- tempfile(fileext = ".docx")

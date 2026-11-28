@@ -689,17 +689,21 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   # cells hold `texts`, by default the stem (the comment of a list with
   # comment); the comment of an option of a multiple choice with comments
   # passes the label of the option, the comment of its "Other" the prompt.
-  # `sq`, the option, adds its condition to the Filter cell.
-  emit_comment_row <- function(q, no, variable, texts = NULL, sq = NULL) {
+  # `sq`, the option, adds its condition to the Filter cell. The file count
+  # of a file upload is built the same way, with its own `field`, `type`
+  # (whose token the Value cell takes) and `type_label`.
+  emit_comment_row <- function(q, no, variable, texts = NULL, sq = NULL,
+                               field = chrome$item_comment, type = "S",
+                               type_label = chrome$type_text_short) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
       code = variable, no = no
     )
     cr <- emit_question_row("leaf", no, variable, q = q, sq = sq)
-    cr$q$type <- "S"
+    cr$q$type <- type
     cr$q$answers <- list()
-    cr$type_label <- chrome$type_text_short
+    cr$type_label <- type_label
     cr$mandatory_label <- lss_yes_no("N", theme)
-    cr$field <- chrome$item_comment
+    cr$field <- field
     cr$help <- NULL
     if (!is.null(texts)) cr$parent_text <- texts
     cr
@@ -715,7 +719,9 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   # (`28.1`, `28.2`, ...), and each option variable is registered in the
   # variable index under that sub-item number. With comments (type P),
   # each option row and the "Other" row are followed by the row of their
-  # comment variable, at the same number.
+  # comment variable, at the same number. A multiple choice (type M) with
+  # "Other" has one more option row after those of the survey, the box of
+  # "Other" (`lss_other_checked_variable()`), at the question's number.
   emit_multiple_choice <- function(q) {
     comments <- identical(q$type, "P")
     out <- list()
@@ -760,6 +766,19 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
           texts = labels, sq = sq
         )
       }
+    }
+    checked <- lss_other_checked_variable(q, theme$variable_names)
+    if (!is.null(checked)) {
+      state$index_entries[[length(state$index_entries) + 1L]] <- list(
+        code = checked, no = parent_no
+      )
+      out[[length(out) + 1L]] <- list(
+        kind = "mc_option",
+        no = parent_no,
+        variable = checked,
+        value_token = value_token,
+        labels = lss_other_checked_labels(langs, chrome)
+      )
     }
     excl <- lss_exclusive_options_text(q, chrome)
     if (!is.null(excl)) {
@@ -959,6 +978,15 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         if (identical(q$type, "O")) {
           rows[[length(rows) + 1L]] <- emit_comment_row(
             q, q_no, lss_comment_variable(q, style = theme$variable_names)
+          )
+        }
+        # File upload: the column of the number of files uploaded, with the
+        # stem in the language cells.
+        file_count <- lss_file_count_variable(q, theme$variable_names)
+        if (!is.null(file_count)) {
+          rows[[length(rows) + 1L]] <- emit_comment_row(
+            q, q_no, file_count, field = chrome$item_file_count,
+            type = "N", type_label = chrome$type_number
           )
         }
       }
@@ -1277,6 +1305,23 @@ lss_table_question_paragraph <- function(row, lg, theme, show_help,
 #' @noRd
 lss_table_no_cell <- function(no) {
   if (is.null(no) || length(no) == 0L || is.na(no[1])) "" else as.character(no[1])
+}
+
+#' The label of the box of "Other" of a multiple choice, by language
+#'
+#' The built-in label `value_other_checked` in the language of each
+#' column of `langs`, or in the chrome language when lssdoc has no strings
+#' for it (`lss_builtin_strings()`). Shared by the cards and the table
+#' layouts.
+#' @param langs Character: the languages of the document.
+#' @param chrome The chrome strings of the document.
+#' @return A list of strings named by `langs`.
+#' @keywords internal
+#' @noRd
+lss_other_checked_labels <- function(langs, chrome) {
+  stats::setNames(lapply(langs, function(lg) {
+    lss_builtin_strings(lg, chrome)$value_other_checked
+  }), langs)
 }
 
 #' The prompt of the LimeSurvey "Other:" input in one language
