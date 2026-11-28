@@ -46,7 +46,9 @@
 #' audit_lss(demo)
 #' @export
 audit_lss <- function(input) {
-  lss <- lss_resolve_input(input)
+  # The checks that read the tables (codes with a space, orphans) see the
+  # items of a ranking where the model does: as subquestions.
+  lss <- lss_ranking_as_subquestions(lss_resolve_input(input))
 
   langs <- lss$languages
   model <- lss_model(lss, languages = langs)

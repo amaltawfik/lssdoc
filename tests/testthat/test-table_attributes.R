@@ -90,7 +90,7 @@ test_that("table rows: a multiple choice and a ranking print theirs under the pa
   expect_identical(ta_kinds(ta_rows(list(mc))),
                    c("leaf", "attr", "mc_option", "mc_option"))
   rk <- ta_q("R", "q5", ta_attrs(PFX),
-             answers = list(ta_answer("A1"), ta_answer("A2")))
+             subquestions = list(ta_sq("A1"), ta_sq("A2")))
   expect_identical(ta_kinds(ta_rows(list(rk))),
                    c("leaf", "attr", "mc_option", "mc_option", "value", "value"))
 })

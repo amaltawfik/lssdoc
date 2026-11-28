@@ -46,7 +46,7 @@ lss_question_types <- function() {
     c("1", "Array (dual scale)", "array", TRUE, TRUE, TRUE, FALSE),
     c(":", "Array (numbers)", "array", FALSE, TRUE, FALSE, FALSE),
     c(";", "Array (texts)", "array", FALSE, TRUE, FALSE, FALSE),
-    c("R", "Ranking", "list", TRUE, FALSE, FALSE, FALSE),
+    c("R", "Ranking", "list", FALSE, TRUE, FALSE, FALSE),
     c("G", "Gender", "list", FALSE, FALSE, FALSE, FALSE),
     c("Y", "Yes/No", "list", FALSE, FALSE, FALSE, FALSE),
     c("5", "5 point choice", "list", FALSE, FALSE, FALSE, FALSE),

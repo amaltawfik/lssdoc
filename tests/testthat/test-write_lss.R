@@ -835,8 +835,12 @@ test_that("the write-side table joins the read-side type taxonomy", {
   rt <- lss_question_types()
   expect_true(all(lss_kinds$type %in% rt$code))
   m <- match(lss_kinds$type, rt$code)
-  expect_identical(rt$has_answers[m], !is.na(lss_kinds$answers_from))
-  expect_identical(rt$has_subquestions[m], !is.na(lss_kinds$subquestions_from))
+  # The writer still stores the items of a ranking as answer options, while
+  # the reader models them as subquestions.
+  k <- lss_kinds$kind != "ranking"
+  expect_identical(rt$has_answers[m][k], !is.na(lss_kinds$answers_from)[k])
+  expect_identical(rt$has_subquestions[m][k],
+                   !is.na(lss_kinds$subquestions_from)[k])
   expect_identical(rt$display_only[m], !lss_kinds$collects_response)
 })
 

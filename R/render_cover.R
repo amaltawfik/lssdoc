@@ -23,6 +23,8 @@ lss_render_cover <- function(doc, lss, model, theme,
                              titles = NULL,
                              authors = NULL,
                              description = NULL) {
+  # The items of a ranking count as subquestions, in every form of the file.
+  lss <- lss_ranking_as_subquestions(lss)
   if (is.null(subtitle)) subtitle <- theme$chrome$cover_subtitle_review
   ls_settings <- lss$survey_language_settings
   langs <- model$languages

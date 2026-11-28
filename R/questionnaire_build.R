@@ -705,9 +705,13 @@ lss_q_answer_items <- function(ctx, q, scale = "0") {
 }
 
 #' The subquestions of a question (one scale), as items
+#'
+#' With `filter = FALSE`, the condition of a subquestion is not printed
+#' (the items of a ranking, whose conditions no document prints).
+#'
 #' @keywords internal
 #' @noRd
-lss_q_subq_items <- function(ctx, q, scale = "0") {
+lss_q_subq_items <- function(ctx, q, scale = "0", filter = TRUE) {
   sqs <- q$subquestions
   if (length(sqs) == 0L) return(list())
   sid <- vapply(sqs, function(s) {
@@ -718,7 +722,7 @@ lss_q_subq_items <- function(ctx, q, scale = "0") {
     it <- lss_q_item(s$code, x$text, x$missing)
     # The subquestion's own condition, written with codes: printed only
     # when the codes are.
-    if (ctx$show_codes) it$filter <- lss_q_filter(s$relevance, ctx$theme)
+    if (filter && ctx$show_codes) it$filter <- lss_q_filter(s$relevance, ctx$theme)
     it
   })
 }
@@ -984,9 +988,11 @@ lss_q_body <- function(ctx, q) {
     items <- lss_q_subq_items(ctx, q, "0")
     if (other) items <- c(items, list(lss_q_other_item(ctx, q, "other")))
     lss_q_option_paras(ctx, items)
-  } else if (type %in% c("L", "!", "R")) {
+  } else if (identical(type, "R")) {
+    lss_q_option_paras(ctx, lss_q_subq_items(ctx, q, "0", filter = FALSE))
+  } else if (type %in% c("L", "!")) {
     items <- lss_q_answer_items(ctx, q, "0")
-    if (other && type != "R") {
+    if (other) {
       items <- c(items, list(lss_q_other_item(ctx, q, "-oth-")))
     }
     lss_q_option_paras(ctx, items)

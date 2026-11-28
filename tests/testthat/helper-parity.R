@@ -272,7 +272,8 @@ parity_missing <- function(expected, doc) {
 # - a help on the list with comment langhome, which the row of its comment
 #   field does not repeat;
 # - an ordered list of three items, the second with a nested unordered
-#   list, in the help of height.
+#   list, in the help of height;
+# - a bold and an italic word in the first item of the ranking devicerank.
 # The questions that carry none of these cases are dropped, one or more
 # questions stay in every group, so that a render takes seconds.
 parity_lss <- function() {
@@ -424,6 +425,13 @@ parity_lss <- function() {
     "<ul><li>vos chaussures</li><li>votre chapeau</li></ul></li>",
     "<li>Lisez la toise</li></ol>"
   ))
+  # A formatted item of the ranking.
+  da <- lss$answers$aid[lss$answers$qid == qid("devicerank")][1]
+  dl <- lss$answer_l10ns$aid == da
+  lss$answer_l10ns$answer[dl & lss$answer_l10ns$language == "en"] <-
+    "<strong>Smart</strong>phone <em>of any brand</em>"
+  lss$answer_l10ns$answer[dl & lss$answer_l10ns$language == "fr"] <-
+    "<strong>Smart</strong>phone <em>de toute marque</em>"
   keep <- c("respondentrole", "age", "height", "weight", "imc",
             "nationality", "langhome", "healthself", "physicalactivitydays",
             "sleephours", "loneliness", "chroniccondition", "incomefeel",

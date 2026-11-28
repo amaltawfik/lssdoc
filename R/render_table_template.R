@@ -788,10 +788,10 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
   }
 
   # One grouped block for a ranking question: a parent stem row (the
-  # question's number), one position column per item (named by the
-  # item's answer id, the CSV form `code[aid]`, carrying its rank and its
-  # sub-item number `28.1`, `28.2`, ...), then the rankable items as value
-  # rows (the codes that can appear as a cell's value).
+  # question's number), one row per rank column (named by the rank,
+  # `code[1]`, carrying its rank and its sub-item number `28.1`, `28.2`,
+  # ...; as many as lss_ranking_positions() gives), then the items as value
+  # rows (the codes a rank column can hold).
   emit_ranking <- function(q) {
     out <- list()
     parent_no <- lss_item_label(state$numbers, q$qid)
@@ -799,9 +799,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
     prow$mc_parent <- TRUE
     out[[length(out) + 1L]] <- prow
     out <- c(out, attr_rows(q))
-    for (i in seq_along(q$answers)) {
-      a <- q$answers[[i]]
-      item_code <- lss_variable_name(q$code, a$aid, style = theme$variable_names)
+    for (i in seq_len(lss_ranking_positions(q))) {
+      item_code <- lss_variable_name(q$code, i, style = theme$variable_names)
       position_no <- lss_item_label(state$numbers, q$qid, i)
       state$index_entries[[length(state$index_entries) + 1L]] <- list(
         code = item_code, no = position_no
@@ -814,8 +813,8 @@ lss_table_template_rows_for_group <- function(g, langs, theme,
         )
       )
     }
-    out <- c(out, emit_values(q$answers))
-    onr <- order_note_row(q, "answer_order", chrome$item_order)
+    out <- c(out, emit_values(lss_ranking_items(q, langs)))
+    onr <- order_note_row(q, "subquestion_order", chrome$item_order)
     if (!is.null(onr)) out[[length(out) + 1L]] <- onr
     out
   }

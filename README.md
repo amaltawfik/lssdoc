@@ -75,7 +75,7 @@ Other things lssdoc takes care of for you:
   `parent[subq]` / `parent[other]`, dual-scale arrays split into one
   block per scale (`parent[subq][1]`), two-dimensional arrays as the row
   x column cross-product (`parent[row_col]`), ranking expanded into one
-  column per position (`parent[answerid]`), list-with-comment into
+  column per position (`parent[1]`), list-with-comment into
   `parent[_Ccomment]`, and the comment of each option of a multiple
   choice with comments as `parent[subqcomment]`. Pass
   `variable_names = "underscore"` for the Expression Manager / SPSS /

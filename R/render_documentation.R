@@ -233,7 +233,7 @@
 #'     `parent[subq][1]` (dual scale), `parent[CH]` / `parent[other]`
 #'     (multiple choice), `parent[CHcomment]` / `parent[othercomment]`
 #'     (the comments of a multiple choice with comments),
-#'     `parent[59842]` (ranking, by answer id), `parent[_Ccomment]`
+#'     `parent[1]` (ranking, by rank), `parent[_Ccomment]`
 #'     (list-with-comment).
 #'   * `"underscore"` -- the sanitized code form used by the Expression
 #'     Manager / relevance equations and the SPSS / Stata / R exports

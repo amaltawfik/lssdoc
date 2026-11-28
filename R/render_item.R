@@ -112,9 +112,8 @@ lss_render_question_block <- function(doc, q, langs, theme,
                                       show_technical_attrs, state) {
   info <- lss_type_info(q$type)
   if (identical(q$type, "R")) {
-    # Ranking: N items -> N data columns, one per rank position, named by
-    # the i-th item's answer id (LimeSurvey's CSV form, e.g.
-    # devicerank[59842]). Rendered like multiple choice.
+    # Ranking: one data column per rank, named by the rank (devicerank[1]),
+    # as many as the items and at most max_subquestions. One card.
     doc <- lss_render_ranking_item(
       doc, q, langs, theme,
       show_help = show_help, show_attrs = show_attrs,
@@ -281,14 +280,13 @@ lss_render_compound_question <- function(doc, q, langs, theme,
 
 #' Render a ranking question (R) as one grouped card
 #'
-#' A ranking of N items produces N data columns, one per rank position,
-#' which LimeSurvey names by the i-th item's answer id (e.g.
-#' `devicerank[59842]`). Rendered like multiple choice: the variable
-#' family `parent[*]` in the meta band, a "Positions" section listing each
-#' position column (the bare answer id, with its rank), and a "Value"
-#' section listing the rankable items (the codes that can appear as a
-#' cell's value). Every position column is registered in the variable
-#' index.
+#' A ranking has one data column per rank, `parent[1]`, `parent[2]` and so
+#' on, as many as its items (its subquestions) and at most
+#' `max_subquestions` (`lss_ranking_positions()`). Rendered like multiple
+#' choice: the variable family `parent[*]` in the meta band, a "Positions"
+#' section listing each rank column (its rank, the suffix of its name), and
+#' a "Value" section listing the items (the codes a rank column can hold).
+#' Every rank column is registered in the variable index.
 #'
 #' @keywords internal
 #' @noRd
@@ -296,10 +294,10 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
                                     show_help, show_attrs, state) {
   chrome <- theme$chrome
   item_no <- lss_item_label(state$numbers, q$qid)
-  n <- length(q$answers)
-  for (a in q$answers) {
+  n <- lss_ranking_positions(q)
+  for (i in seq_len(n)) {
     state$index_entries[[length(state$index_entries) + 1L]] <- list(
-      code = lss_variable_name(q$code, a$aid, style = theme$variable_names),
+      code = lss_variable_name(q$code, i, style = theme$variable_names),
       no = item_no
     )
   }
@@ -347,38 +345,41 @@ lss_render_ranking_item <- function(doc, q, langs, theme,
     )
   }
   rows <- c(rows, lss_attr_rows(q, langs, theme, show_attrs))
-  # Positions section: one row per rank slot. The bare answer id is the
-  # suffix that fills the `[*]` family in the meta band; the rank it
-  # records is the chrome annotation across the language columns.
+  # Positions section: one row per rank column. The rank is the suffix
+  # that fills the `[*]` family in the meta band, and the chrome
+  # annotation across the language columns.
   rows[[length(rows) + 1L]] <- list(
     label = sprintf("%s (%d)", chrome$item_positions, n),
     texts = blank, size = theme$size_meta, section_header = TRUE
   )
-  for (i in seq_along(q$answers)) {
+  for (i in seq_len(n)) {
     rows[[length(rows) + 1L]] <- list(
-      label = as.character(q$answers[[i]]$aid),
+      label = as.character(i),
       texts = stats::setNames(
         rep(list(sprintf(chrome$item_rank_fmt, i)), length(langs)), langs
       ),
       size = theme$size_answer, code_row = TRUE, span_note = TRUE
     )
   }
-  # Value section: the rankable items -- the codes that can appear as a
-  # position column's value. A non-default presentation order of the
-  # items (answer_order) is noted on the section header.
+  # Value section: the items -- the codes a rank column can hold. A
+  # non-default presentation order of the items is noted on the section
+  # header.
   vrows <- list(list(
     label = chrome$item_value, texts = blank,
     size = theme$size_meta, section_header = TRUE
   ))
-  for (a in q$answers) {
+  for (a in lss_ranking_items(q, langs)) {
     vrows[[length(vrows) + 1L]] <- list(
       label = a$code,
       texts = stats::setNames(lapply(langs, function(lg) a$labels[[lg]]), langs),
       size = theme$size_answer, value_row = TRUE
     )
   }
-  vrows <- lss_apply_order_note(vrows, lss_answer_order_note(q, theme),
-                               langs, theme)
+  vrows <- lss_apply_order_note(
+    vrows,
+    lss_answer_order_note(q, theme, attr = "subquestion_order"),
+    langs, theme
+  )
   rows <- c(rows, vrows)
   lss_render_item_table(doc, theme, langs, rows)
 }

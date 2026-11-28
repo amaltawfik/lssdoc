@@ -226,13 +226,16 @@ test_that("ranking item shows its heading and a Help row (render_item 292, 327-3
       en = list(question = "Rank these devices", help = "Drag to order"),
       fr = list(question = "Classez ces appareils", help = "Glissez pour ordonner")
     ),
-    answers = list(
-      list(aid = "501", code = "phone", scale_id = "0", sortorder = "0",
-           labels = list(en = "Phone", fr = "Telephone")),
-      list(aid = "502", code = "tablet", scale_id = "0", sortorder = "1",
-           labels = list(en = "Tablet", fr = "Tablette"))
+    answers = NULL, scales = NULL,
+    subquestions = list(
+      list(qid = "-501", code = "phone", scale_id = "0", relevance = "1",
+           texts = list(en = list(question = "Phone", help = ""),
+                        fr = list(question = "Telephone", help = ""))),
+      list(qid = "-502", code = "tablet", scale_id = "0", relevance = "1",
+           texts = list(en = list(question = "Tablet", help = ""),
+                        fr = list(question = "Tablette", help = "")))
     ),
-    scales = NULL, subquestions = NULL, attributes = NULL
+    attributes = NULL
   )
   st <- ri_state(show_heading = TRUE)
   doc <- officer::read_docx()

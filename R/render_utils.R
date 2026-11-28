@@ -31,15 +31,15 @@ lss_render_state <- function(model) {
 #'   export** header, so the rendered questionnaire and its variable index
 #'   match the raw data file column for column: `parent[part]`,
 #'   `parent[part][scale]` (e.g. `sleephours[WEEK]`,
-#'   `trustinstitutions[PARL][1]`, `devicerank[59842]`).
+#'   `trustinstitutions[PARL][1]`, `devicerank[1]`).
 #' * `"underscore"` -- the sanitized code form used by the Expression
 #'   Manager / relevance equations and the SPSS / Stata / R exports:
 #'   `parent_part`, `parent_part_scale`.
 #'
 #' `part` is the subquestion code, the multiple-choice answer code, the
 #' literal `"other"` / `"_Cother"` / `"_Ccomment"` appendix marker, the
-#' part of a comment variable (`lss_comment_variable()`), the ranking
-#' slot's answer id, or `"*"` for the family placeholder shown in a
+#' part of a comment variable (`lss_comment_variable()`), the rank of a
+#' ranking column, or `"*"` for the family placeholder shown in a
 #' multiple-choice meta band. `scale` is the 1-based dual-scale index.
 #'
 #' @keywords internal

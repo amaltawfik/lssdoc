@@ -32,6 +32,9 @@ lss_model <- function(lss, languages = NULL) {
       class = "lssdoc_bad_lss"
     )
   }
+  # The items of a ranking stored as answer options become subquestions
+  # before anything reads the tables, the indexes of the texts included.
+  lss <- lss_ranking_as_subquestions(lss)
   langs <- lss_resolve_languages(lss, languages)
 
   groups <- lss$groups
@@ -89,6 +92,168 @@ lss_model <- function(lss, languages = NULL) {
     ),
     class = "lss_model"
   )
+}
+
+#' The items of a ranking as subquestions, the form of LimeSurvey 7.12.1
+#'
+#' LimeSurvey 7.12.1 stores the items of a ranking (type `R`) as
+#' subquestions. LimeSurvey 6, the versions before it and the first beta of
+#' 7.0.0 stored them as answer options, and the import of 7.12.1 converts
+#' that form, whatever the DBVersion of the file
+#' (`handleLegacyRankingAnswers()`). This function does the same on an `lss`
+#' object. For each answer row of a ranking it adds
+#' a subquestion row: `parent_qid` the question, `title` the answer code,
+#' `question_order` its `sortorder`, its `scale_id`, `type` `R`, `relevance`
+#' `1`, `mandatory` `N`, and the `sid` and `gid` of the question. For each
+#' `answer_l10ns` row of that answer it adds a `question_l10ns` row, the
+#' answer text as `question`, with an empty `help` and `script`. The answer
+#' rows of the ranking and their texts are removed.
+#'
+#' A converted row gets the qid `-<aid>`. The ids of a file are positive and
+#' the aid is unique in its table, so a converted row shares its id with no
+#' other row. The import of LimeSurvey gives its converted rows a negative
+#' id too. The id only joins an item to its texts and attributes; no
+#' bookmark or index key of a document is made from it.
+#'
+#' The order of the items goes with them. A ranking stored as answer
+#' options holds it in `answer_order`, a ranking stored as subquestions in
+#' `subquestion_order`, the only one LimeSurvey 7.12.1 reads for a ranking.
+#' The `answer_order` rows of a converted ranking are renamed
+#' `subquestion_order`, as the database upgrade of LimeSurvey 7 does
+#' (`updateRankingAnswerOrderAttribute()`), unless the question already
+#' holds a `subquestion_order` with a value. No other attribute changes.
+#'
+#' The new rows take the columns of the tables of the object: a column the
+#' table has and the converter does not fill is empty (`NA`) on them, a
+#' column the converter fills and the table lacks is added, empty on the
+#' rows already there. A missing `subquestions` table is created. Items
+#' already stored as subquestions are kept, and the converted ones follow
+#' them. An object without a ranking stored
+#' as answer options comes back identical, so a second call changes
+#' nothing.
+#'
+#' @param lss An `lss` object from [read_lss()].
+#' @return The `lss` object, its rankings in the form of LimeSurvey 7.12.1.
+#' @keywords internal
+#' @noRd
+lss_ranking_as_subquestions <- function(lss) {
+  qs <- lss$questions
+  ans <- lss$answers
+  if (
+    is.null(qs) || is.null(ans) || nrow(ans) == 0L ||
+      !all(c("qid", "type") %in% names(qs)) || !("qid" %in% names(ans))
+  ) {
+    return(lss)
+  }
+  rk <- qs[qs$type %in% "R", , drop = FALSE]
+  move <- ans$qid %in% rk$qid
+  if (!any(move)) {
+    return(lss)
+  }
+  col <- function(df, name) {
+    if (name %in% names(df)) as.character(df[[name]]) else rep(NA_character_, nrow(df))
+  }
+  a <- ans[move, , drop = FALSE]
+  parent <- rk[match(a$qid, rk$qid), , drop = FALSE]
+  aid <- col(a, "aid")
+  new_qid <- make.unique(paste0("-", aid))
+  lss$subquestions <- lss_bind_rows(lss$subquestions, data.frame(
+    qid = new_qid, parent_qid = col(a, "qid"), sid = col(parent, "sid"),
+    gid = col(parent, "gid"), type = "R", title = col(a, "code"),
+    mandatory = "N", question_order = col(a, "sortorder"),
+    scale_id = col(a, "scale_id"), relevance = "1",
+    stringsAsFactors = FALSE
+  ))
+  al <- lss$answer_l10ns
+  if (!is.null(al) && "aid" %in% names(al)) {
+    hit <- !is.na(al$aid) & al$aid %in% aid
+    l <- al[hit, , drop = FALSE]
+    if (nrow(l) > 0L) {
+      lss$question_l10ns <- lss_bind_rows(lss$question_l10ns, data.frame(
+        qid = new_qid[match(l$aid, aid)], question = col(l, "answer"),
+        help = "", script = "", language = col(l, "language"),
+        stringsAsFactors = FALSE
+      ))
+    }
+    lss$answer_l10ns <- al[!hit, , drop = FALSE]
+  }
+  lss$answers <- ans[!move, , drop = FALSE]
+  # The order of the items goes with them: answer_order becomes
+  # subquestion_order, unless the question already holds one with a value.
+  qa <- lss$question_attributes
+  if (!is.null(qa) && all(c("qid", "attribute", "value") %in% names(qa))) {
+    ids <- unique(col(a, "qid"))
+    set <- qa$qid %in% ids & qa$attribute %in% "subquestion_order" &
+      !is.na(qa$value) & nzchar(trimws(qa$value))
+    ren <- qa$qid %in% setdiff(ids, qa$qid[set]) &
+      qa$attribute %in% "answer_order"
+    qa$attribute[ren] <- "subquestion_order"
+    lss$question_attributes <- qa
+  }
+  lss
+}
+
+#' Append the rows of `new` to the table `old`, on the columns of both
+#'
+#' The columns of `old` come first, in their order, then those only `new`
+#' has. A column one of the two lacks is `NA` on its rows. `old` may be
+#' `NULL`.
+#'
+#' @keywords internal
+#' @noRd
+lss_bind_rows <- function(old, new) {
+  if (is.null(old)) {
+    return(new)
+  }
+  cols <- union(names(old), names(new))
+  for (cc in setdiff(cols, names(old))) old[[cc]] <- rep(NA_character_, nrow(old))
+  for (cc in setdiff(cols, names(new))) new[[cc]] <- rep(NA_character_, nrow(new))
+  out <- rbind(old[, cols, drop = FALSE], new[, cols, drop = FALSE])
+  rownames(out) <- NULL
+  out
+}
+
+#' The number of rank columns of a ranking
+#'
+#' One column per item, at most `max_subquestions` when that attribute is a
+#' whole number above 0, as LimeSurvey 7.12.1 builds the columns of a
+#' ranking (`createFieldMap()`) and shows its ranks (`RenderRanking`). Both
+#' layouts of the documentation, their numbers and their variable indexes
+#' read it here.
+#'
+#' @param q A question of `lss_model()`.
+#' @return An integer, 0 for a ranking without items.
+#' @keywords internal
+#' @noRd
+lss_ranking_positions <- function(q) {
+  n <- length(q$subquestions)
+  cap <- lss_question_attr_value(q, "max_subquestions")
+  if (!is.null(cap) && grepl("^[0-9]+$", trimws(cap))) {
+    cap <- as.integer(trimws(cap))
+    if (cap > 0L) n <- min(n, cap)
+  }
+  as.integer(n)
+}
+
+#' The items of a ranking, as the rows of a value list
+#'
+#' Each item (a subquestion) as `code` and `labels`, its text by language,
+#' the form of an answer option, so that both layouts list the items as the
+#' values a rank column takes.
+#'
+#' @param q A question of `lss_model()`.
+#' @param langs The languages of the document.
+#' @keywords internal
+#' @noRd
+lss_ranking_items <- function(q, langs) {
+  lapply(q$subquestions, function(s) {
+    list(
+      code = s$code,
+      labels = stats::setNames(
+        lapply(langs, function(lg) s$texts[[lg]]$question), langs
+      )
+    )
+  })
 }
 
 #' Resolve and validate the requested languages

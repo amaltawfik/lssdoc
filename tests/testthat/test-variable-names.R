@@ -30,7 +30,7 @@ test_that("brackets (default) reproduce the CSV/Excel column names", {
     "trustinstitutions[PARL][1]", "trustinstitutions[PARL][2]",  # dual scale
     "adaptability[NEW_NOW]",       # 2-D array (row x column)
     "mediaquality[REL_EX]",        # 2-D array texts
-    "devicerank[59842]",           # ranking position (answer id)
+    "devicerank[1]",               # ranking, rank 1
     "langhome[_Ccomment]"          # list-with-comment
   )
   for (tmpl in c("cards", "table")) {

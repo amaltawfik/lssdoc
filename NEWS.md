@@ -20,6 +20,13 @@
   count the cover prints under "Questions". A document rendered with an
   earlier version carries other numbers.
 
+* The rank columns of a ranking are now named by rank: `devicerank[1]`,
+  `devicerank[2]` and so on, or `devicerank_1` with
+  `variable_names = "underscore"`. These are the names LimeSurvey 7.12.1
+  gives them. They were named by answer id (`devicerank[59842]`). A
+  ranking has as many rank columns as items, or fewer when
+  `max_subquestions` sets a lower number.
+
 ## New features
 
 * `render_questionnaire()` now renders the questionnaire as it reads, in
@@ -152,6 +159,19 @@
   and group headings an outline level: Word lists them in its navigation
   pane and the PDF carries bookmarks (#8). In the table layout the groups
   are table rows and stay out of the pane.
+
+* A ranking exported by LimeSurvey 7 is now rendered with its items.
+  Since version 7.0.0 LimeSurvey stores the items of a ranking as
+  subquestions. Earlier versions, and the first beta of 7.0.0, stored
+  them as answer options, the only form lssdoc read. A file in the new
+  form gave a ranking without positions or items, and `audit_lss()`
+  reported that it had no answer options. Both forms now give the same
+  documents. The cover counts the items of a ranking under
+  "Subquestions", and `audit_lss()` names them as subquestions: a ranking
+  without items raises `missing_subquestions`, where it raised
+  `missing_options`. The order of the items is read from
+  `subquestion_order`, and from `answer_order` in a file of the earlier
+  form.
 
 # lssdoc 0.3.0
 
