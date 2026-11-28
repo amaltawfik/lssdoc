@@ -58,6 +58,7 @@ test_that("render_documentation rejects an output path that is neither .docx nor
 # ---- URL splitter on an empty fragment ------------------------------
 
 test_that("lss_split_text_urls returns no chunks for an empty fragment", {
+  skip_if_not_installed("officer")
   props <- officer::fp_text()
   expect_identical(lss_split_text_urls("", props, props), list())
 })
